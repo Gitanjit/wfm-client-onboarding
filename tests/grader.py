@@ -35,10 +35,13 @@ RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_
 
 # ----------------------------------------------------------------------------- plumbing
 def run_cli(app: Path, client: str, week: str, timeout: int = 300) -> tuple[int, str]:
-    """Run the agent's system with its output directory cleared first and credentials scrubbed."""
+    """Run the agent's system with its output directory cleared first and credentials scrubbed.
+    RUNBOOK.md is left in place: it is a deliverable graded against recomputation, not a CLI output."""
     out_dir = app / "out" / client
     if out_dir.exists():
-        shutil.rmtree(out_dir)
+        for f in out_dir.iterdir():
+            if f.name != "RUNBOOK.md":
+                shutil.rmtree(f) if f.is_dir() else f.unlink()
     env = {k: v for k, v in os.environ.items() if k not in SCRUB}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     try:
@@ -176,8 +179,9 @@ def regression(runs: Runs, checks: dict) -> float:
         rules = ie.SOW[client]["rules"]
         tests = [
             (f"reg_{client}_runs", m is not None, None),
-            (f"reg_{client}_intervals", m is not None and m["intervals"] == exp and on_grid(m),
-             None if m is None else {"grader": m["intervals"], "on_grid": on_grid(m)}),
+            (f"reg_{client}_intervals",
+             m is not None and m["intervals"] == exp and on_grid(m) and m["agent_eval_intervals"] in (None, exp),
+             None if m is None else {"grader": m["intervals"], "agent_eval": m["agent_eval_intervals"], "on_grid": on_grid(m)}),
             (f"reg_{client}_sla", m is not None and all(m["sla"][q] >= base["sla"][q] - TOL["reg_sla"] for q in m["sla"]),
              None if m is None else {"agent": {q: round(v, 4) for q, v in m["sla"].items()},
                                      "baseline": {q: round(v, 4) for q, v in base["sla"].items()}}),

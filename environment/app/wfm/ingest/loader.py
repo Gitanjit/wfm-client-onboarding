@@ -10,8 +10,7 @@ client's configured grain, sorted by interval then queue.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
+from datetime import date, timedelta
 
 import pandas as pd
 
@@ -29,18 +28,6 @@ def iso_week_monday(week: str) -> date:
 def local_days(week: str, tz: str) -> list[date]:
     mon = iso_week_monday(week)
     return [mon + timedelta(days=i) for i in range(7)]
-
-
-def week_grid(week: str, tz: str, grain_min: int) -> pd.DatetimeIndex:
-    """UTC interval starts from local Monday 00:00 to the next local Monday 00:00.
-
-    The count follows the week's elapsed length, so a DST transition changes it.
-    """
-    z = ZoneInfo(tz)
-    mon = iso_week_monday(week)
-    start = datetime(mon.year, mon.month, mon.day, tzinfo=z).astimezone(timezone.utc)
-    end = (datetime(mon.year, mon.month, mon.day, tzinfo=z) + timedelta(days=7)).astimezone(timezone.utc)
-    return pd.date_range(start, end, freq=f"{grain_min}min", inclusive="left", tz="UTC")
 
 
 def _read_canonical(path) -> pd.DataFrame:
@@ -80,7 +67,7 @@ def load_week(cfg: dict, week: str) -> pd.DataFrame:
         raise SystemExit(f"no data for {client} {week}: expected {canon} or {export}")
 
     df = _resample(df, grain)
-    grid = week_grid(week, cfg["tz"], grain)
+    grid = pd.DatetimeIndex(sorted(df["interval_start_utc"].unique()))   # the week as the data delivers it
     frames = []
     for q in QUEUES:
         part = df[df["queue"] == q].set_index("interval_start_utc").reindex(grid)
