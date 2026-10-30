@@ -16,6 +16,7 @@ import pandas as pd
 
 from wfm.ingest.loader import local_days
 from wfm.roster import Agent
+from wfm.scheduler import rules
 from wfm.scheduler.templates import Template, eligible, templates_for
 
 
@@ -52,8 +53,12 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
     grid = sorted(set(req["interval_start_utc"]))
     z = ZoneInfo(tz)
 
+    min_rest = float(cfg.get("min_rest_hours", 0))
+    split_policy = str(cfg.get("split_shifts", "all"))
+
     hours_used: dict[str, float] = defaultdict(float)
     days_worked: dict[str, list[date]] = defaultdict(list)
+    last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
     shifts: list[Shift] = []
 
     for day in local_days(week, tz):
@@ -76,8 +81,10 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
             tpl, q, segs, ivs = best
             cands = [a for a in agents
                      if q in a.skills and eligible(tpl, a.contract) and a.agent_id not in worked_today
+                     and rules.split_allowed(tpl, a.contract, split_policy)
                      and hours_used[a.agent_id] + tpl.hours <= caps[a.contract] + 1e-9
-                     and not _would_exceed_run(days_worked[a.agent_id], day, max_run)]
+                     and not _would_exceed_run(days_worked[a.agent_id], day, max_run)
+                     and rules.rest_ok(last_end.get(a.agent_id), segs[0][0], min_rest)]
             if not cands:
                 dead.add((tpl.id, q))
                 continue
@@ -85,11 +92,12 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
             shifts.append(Shift(a.agent_id, q, tpl, day, segs, ivs))
             hours_used[a.agent_id] += tpl.hours
             days_worked[a.agent_id].append(day)
+            last_end[a.agent_id] = segs[-1][1]
             worked_today.add(a.agent_id)
             for t in ivs:
                 cover[q][t] += 1
 
-    place_breaks(shifts, cfg)
+    place_breaks(shifts, cfg, required, cover)
     return shifts
 
 
@@ -103,18 +111,29 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
     return run >= max_run
 
 
-def place_breaks(shifts: list[Shift], cfg: dict) -> None:
-    """One break per long shift, on the covered interval nearest the shift midpoint."""
+def place_breaks(shifts: list[Shift], cfg: dict, required: dict, cover: dict) -> None:
+    """One break per long shift. Placement per config: `midpoint` (service default) or
+    `max_surplus` (the window slot with the largest gross coverage surplus on the shift's queue)."""
     rule = cfg["break"]
     length = timedelta(minutes=rule["minutes"])
+    lo, hi = (timedelta(hours=h) for h in rule["window_hours"])
+    placement = cfg.get("break_placement", "midpoint")
     for sh in shifts:
         if sh.hours < rule["min_shift_hours"]:
             continue
         fits = [t for t in sh.intervals if any(s <= t and t + length <= e for s, e in sh.segments)]
-        if not fits:
-            continue
-        mid = sh.segments[0][0] + timedelta(hours=sh.hours / 2)
-        sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
+        start = sh.segments[0][0]
+        if placement == "max_surplus":
+            window = [t for t in fits if lo <= t - start <= hi]
+            if not window:
+                continue
+            q = sh.queue
+            sh.break_start = rules.break_slot(window, lambda t: cover[q][t] - required[q][t])
+        else:
+            if not fits:
+                continue
+            mid = start + timedelta(hours=sh.hours / 2)
+            sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
         sh.break_minutes = rule["minutes"]
 
 

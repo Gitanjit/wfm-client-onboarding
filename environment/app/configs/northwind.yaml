@@ -1,0 +1,14 @@
+# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
+# Targets and rules per docs/NORTHWIND_SOW.md.
+name: Northwind
+interval_minutes: 30
+tz: America/Chicago
+operating_hours: [6, 24]
+
+sla:                                  # SOW §1.2
+  priority: {target: 0.90, seconds: 30}
+  standard: {target: 0.80, seconds: 20}
+
+min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
+split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
+break_placement: max_surplus          # SOW §2.3 — window slot with the largest gross coverage surplus
