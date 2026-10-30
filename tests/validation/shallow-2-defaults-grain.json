@@ -221,6 +221,7 @@
     "reg_contoso_intervals": {
       "pass": false,
       "value": {
+        "agent_eval": 336,
         "grader": 672,
         "on_grid": false
       }
@@ -262,6 +263,7 @@
     "reg_fabrikam_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 169,
         "grader": 169,
         "on_grid": true
       }
@@ -296,7 +298,7 @@
     "run_contoso_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.675, \"standard\": 0.679}, \"meets_target\": false, \"scheduled_hours\": 816.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+      "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 336, \"sla\": {\"priority\": 0.675, \"standard\": 0.679}, \"meets_target\": false, \"scheduled_hours\": 816.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
     },
     "run_fabrikam_2026-W44": {
       "exit": 0,

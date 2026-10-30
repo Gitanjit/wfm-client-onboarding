@@ -1,15 +1,15 @@
 {
-  "artifact_quality": 0.0,
+  "artifact_quality": 1.0,
   "checks": {
     "aq_agents_scheduled": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 40,
-        "runbook": null
+        "runbook": 40.0
       }
     },
     "aq_files_changed": {
-      "pass": false,
+      "pass": true,
       "value": {
         "actually_changed": [
           "configs/northwind.yaml",
@@ -19,47 +19,62 @@
           "wfm/scheduler/rules.py",
           "wfm/staffing/required.py"
         ],
-        "listed": [],
+        "listed": [
+          "configs/northwind.yaml",
+          "wfm/evaluate/metrics.py",
+          "wfm/ingest/loader.py",
+          "wfm/scheduler/greedy.py",
+          "wfm/scheduler/rules.py",
+          "wfm/staffing/required.py"
+        ],
         "not_actually_changed": []
       }
     },
     "aq_intervals_in_week": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 338,
-        "runbook": null
+        "runbook": 338.0
       }
     },
     "aq_scheduled_hours_total": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 1312.0,
-        "runbook": null
+        "runbook": 1312.0
       }
     },
     "aq_sla_attainment_priority": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 0.9761904761904762,
-        "runbook": null
+        "runbook": 0.976
       }
     },
     "aq_sla_attainment_standard": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 0.996031746031746,
-        "runbook": null
+        "runbook": 0.996
       }
     },
     "aq_table": {
-      "pass": false,
-      "value": []
+      "pass": true,
+      "value": [
+        "agents_scheduled",
+        "files_changed",
+        "intervals_in_week",
+        "scheduled_hours_total",
+        "sla_attainment_priority",
+        "sla_attainment_standard",
+        "understaffed_interval_hours"
+      ]
     },
     "aq_understaffed_interval_hours": {
-      "pass": false,
+      "pass": true,
       "value": {
         "grader": 3.5,
-        "runbook": null
+        "runbook": 3.5
       }
     },
     "cs_2026-W44": {
@@ -205,6 +220,7 @@
     "reg_contoso_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 672,
         "grader": 672,
         "on_grid": true
       }
@@ -246,6 +262,7 @@
     "reg_fabrikam_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 169,
         "grader": 169,
         "on_grid": true
       }
@@ -297,10 +314,10 @@
       "schedule_present": true,
       "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.972, \"standard\": 0.988}, \"meets_target\": true, \"scheduled_hours\": 1312.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0, \"split_pt_on"
     },
-    "runbook_present": false
+    "runbook_present": true
   },
   "constraint_satisfaction": 1.0,
   "functional_correctness": 1.0,
-  "overall": 0.75,
+  "overall": 1.0,
   "regression": 1.0
 }

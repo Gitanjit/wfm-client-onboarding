@@ -1,5 +1,5 @@
 {
-  "artifact_quality": 0.5,
+  "artifact_quality": 0.375,
   "checks": {
     "aq_agents_scheduled": {
       "pass": true,
@@ -32,10 +32,10 @@
       }
     },
     "aq_intervals_in_week": {
-      "pass": true,
+      "pass": false,
       "value": {
         "grader": 338,
-        "runbook": 338.0
+        "runbook": 334.0
       }
     },
     "aq_scheduled_hours_total": {
@@ -176,9 +176,9 @@
       }
     },
     "fc_2026-W44_intervals": {
-      "pass": true,
+      "pass": false,
       "value": {
-        "agent_eval": 338,
+        "agent_eval": 334,
         "grader": 338,
         "on_grid": true
       }
@@ -237,6 +237,7 @@
     "reg_contoso_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 672,
         "grader": 672,
         "on_grid": true
       }
@@ -278,6 +279,7 @@
     "reg_fabrikam_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 169,
         "grader": 169,
         "on_grid": true
       }
@@ -322,7 +324,7 @@
     "run_northwind_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 1.0, \"standard\": 1.0}, \"meets_target\": true, \"scheduled_hours\": 824.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 334, \"sla\": {\"priority\": 1.0, \"standard\": 1.0}, \"meets_target\": true, \"scheduled_hours\": 824.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
     },
     "run_northwind_2026-W45": {
       "exit": 0,
@@ -332,7 +334,7 @@
     "runbook_present": true
   },
   "constraint_satisfaction": 0.75,
-  "functional_correctness": 0.5,
-  "overall": 0.6875,
+  "functional_correctness": 0.375,
+  "overall": 0.625,
   "regression": 1.0
 }

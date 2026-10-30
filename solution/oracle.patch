@@ -48,10 +48,10 @@ index b54e0bc..f6fe199 100644
          g = g.sort_values("segment_start_utc")
          hours = ((g["segment_end_utc"] - g["segment_start_utc"]).dt.total_seconds() / 3600).sum()
 diff --git a/wfm/ingest/loader.py b/wfm/ingest/loader.py
-index e7cd98c..5939d31 100644
+index adc621c..1372e85 100644
 --- a/wfm/ingest/loader.py
 +++ b/wfm/ingest/loader.py
-@@ -51,8 +51,10 @@ def _read_canonical(path) -> pd.DataFrame:
+@@ -38,8 +38,10 @@ def _read_canonical(path) -> pd.DataFrame:
  
  def _read_export(path, cfg: dict) -> pd.DataFrame:
      df = pd.read_csv(path)

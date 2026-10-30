@@ -128,6 +128,7 @@
     "reg_contoso_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 672,
         "grader": 672,
         "on_grid": true
       }
@@ -169,6 +170,7 @@
     "reg_fabrikam_intervals": {
       "pass": true,
       "value": {
+        "agent_eval": 169,
         "grader": 169,
         "on_grid": true
       }
