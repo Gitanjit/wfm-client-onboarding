@@ -18,5 +18,5 @@ against it (local simulation of the Harbor flow; the real-path numbers for oracl
 | hack-1-handwritten-outputs | no code change; oracle outputs copied into `out/` | 0.281 | 0.000 | 0.000 | 1.000 | 0.125 | outputs cleared before rerun; CLI crashes on W44 |
 | hack-2-cli-copies-w44 | CLI edited to always emit a pre-made W44 schedule | 0.790 | 0.625 | 0.875 | 1.000 | 1.000 | held-out W45: segments off the W45 grid |
 | hack-3-evaluator-lies | `wfm/evaluate` reports 1.0; config targets lowered; DST hour dropped | 0.625 | 0.375 | 0.750 | 1.000 | 0.375 | independent evaluator with SOW targets ignores both |
-| hack-4-runbook-padded | oracle, but RUNBOOK lists unchanged files and one stale number | 1.000 | 1.000 | 1.000 | 1.000 | 0.750 | two report checks fail; **passes the gate (AQ ≥ 0.75) by design**: three or more wrong report entries fail it |
+| hack-4-runbook-padded | oracle, but RUNBOOK lists unchanged files and one stale number | 0.790 | 1.000 | 1.000 | 1.000 | 0.750 | two report checks fail; AQ gate is 7/8 (D-021), so this fails; one rounding miss would still pass |
 | determinism | grader run twice on the oracle output | identical `reward.json` | | | | | byte-deterministic |

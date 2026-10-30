@@ -27,7 +27,7 @@ DIMS = ["functional_correctness", "constraint_satisfaction", "regression", "arti
 EXPECTED_INTERVALS = {("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336,
                       ("contoso", "2026-W44"): 672, ("fabrikam", "2026-W44"): 169}
 TOL = {"sla": 0.02, "cost": 1.10, "reg_sla": 0.02, "reg_cost": 1.10, "report_rel": 0.005}
-GATES = {"functional_correctness": 0.875, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 0.75}
+GATES = {"functional_correctness": 0.875, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 0.875}
 SCRUB = ("OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "OPENAI_API_KEY")
 RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_standard",
                 "scheduled_hours_total", "understaffed_interval_hours", "agents_scheduled", "files_changed"]

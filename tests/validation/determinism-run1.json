@@ -255,8 +255,8 @@
     "reg_fabrikam_cost": {
       "pass": true,
       "value": {
-        "agent": 804.0,
-        "baseline": 764.0
+        "agent": 936.0,
+        "baseline": 864.0
       }
     },
     "reg_fabrikam_intervals": {
@@ -285,12 +285,12 @@
       "pass": true,
       "value": {
         "agent": {
-          "priority": 0.781,
-          "standard": 0.7619
+          "priority": 0.9206,
+          "standard": 0.873
         },
         "baseline": {
-          "priority": 0.7714,
-          "standard": 0.7143
+          "priority": 0.8571,
+          "standard": 0.8333
         }
       }
     },
@@ -302,7 +302,7 @@
     "run_fabrikam_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.781, \"standard\": 0.762}, \"meets_target\": false, \"scheduled_hours\": 804.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+      "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.921, \"standard\": 0.873}, \"meets_target\": false, \"scheduled_hours\": 936.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
     },
     "run_northwind_2026-W44": {
       "exit": 0,

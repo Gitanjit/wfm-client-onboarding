@@ -25,7 +25,7 @@ import numpy as np
 CLIENTS = {
     "contoso": dict(prefix="CO", grain=15, tz="UTC", scale=0.10, n_agents=40, n_pt=8, hours=(6, 24),
                     roster_seed=1, weeks={41: 41, 42: 42, 43: 43, 44: 44}, heldout=[44], fmt="canonical"),
-    "fabrikam": dict(prefix="FA", grain=60, tz="America/New_York", scale=0.07, n_agents=28, n_pt=6, hours=(7, 22),
+    "fabrikam": dict(prefix="FA", grain=60, tz="America/New_York", scale=0.07, n_agents=28, n_pt=6, hours=(6, 24),
                      roster_seed=2, weeks={41: 141, 42: 142, 43: 143, 44: 144}, heldout=[44], fmt="canonical"),
     "northwind": dict(prefix="NW", grain=30, tz="America/Chicago", scale=0.10, n_agents=40, n_pt=8, hours=(6, 24),
                       roster_seed=7, weeks={42: 242, 43: 243, 44: 244, 45: 245}, heldout=[45], fmt="export"),

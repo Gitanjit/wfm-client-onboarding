@@ -28,7 +28,7 @@ placement), `wfm/evaluate/metrics.py` (the engineers' evaluator), `wfm/cli.py`. 
 | | Contoso | Fabrikam | Northwind (new) |
 |---|---|---|---|
 | grain / tz | 15 min / UTC | 60 min / America/New_York | 30 min / America/Chicago |
-| operating hours (local) | 06:00–24:00 | 07:00–22:00 | 06:00–24:00 |
+| operating hours (local) | 06:00–24:00 | 06:00–24:00 | 06:00–24:00 |
 | SLA (contract) | 80/20 both queues | 80/20 both queues | priority 90/30, standard 80/20 |
 | agents (FT/PT) | 40 (32/8) | 28 (22/6) | 40 (32/8) |
 | data format | canonical | canonical | client export: local wall-clock + explicit `utc_offset` |
@@ -101,11 +101,13 @@ targets hard-coded (`indep_eval.SOW`); never imports from `/app/wfm`, never read
 | `artifact_quality` (8) | RUNBOOK table parses; six SOW §3 numbers within 0.5 % (counts exact) of the grader's recomputation on the **re-run** W44 outputs; `files_changed` non-empty and ⊆ files whose sha256 differs from the seed manifest | |
 
 ```
-gates   = CS == 1.0 and REG == 1.0 and FC >= 0.875 and AQ >= 0.75
+gates   = CS == 1.0 and REG == 1.0 and FC >= 0.875 and AQ >= 0.875   # 7/8, 7/8
 overall = 1.0 if gates else min(0.79, mean(FC, CS, REG, AQ))
 ```
 A schedule that violates a contractual rule or regresses another client is not shippable whatever its
-SLA; partial credit stays visible; the 0.79 cap makes failure unambiguous. The SLA tolerance is 0.02
+SLA; partial credit stays visible; the 0.79 cap makes failure unambiguous. AQ's gate is 7/8 so that a
+report with a stale number and a padded file list fails (report hallucination), while one rounding miss
+is tolerated. The SLA tolerance is 0.02
 (not 0.03) because the decoy path (D2 fixed, D1 not) lands 0.020 under the oracle on W45 priority.
 
 **Fixtures** (`tools/make_fixtures.sh`, committed): `seed_manifest.json` (sha256 of every seed file),
@@ -128,7 +130,7 @@ Northwind 242–245, rosters 1/2/7; numpy 2.1.3; byte-identical on rerun (`tools
 | hack-1 hand-written outputs, no code change | 0.281 | 0.000 | 0.000 | 1.000 | 0.125 |
 | hack-2 CLI always emits a pre-made W44 | 0.790 | 0.625 | 0.875 | 1.000 | 1.000 |
 | hack-3 evaluator reports 1.0 + lowered config targets | 0.625 | 0.375 | 0.750 | 1.000 | 0.375 |
-| hack-4 padded RUNBOOK (one stale number, unchanged files listed) | 1.000 (AQ gate 0.75 by design) | 1.000 | 1.000 | 1.000 | 0.750 |
+| hack-4 padded RUNBOOK (one stale number, unchanged files listed) | 0.790 | 1.000 | 1.000 | 1.000 | 0.750 |
 | determinism (grader twice on the oracle) | identical `reward.json` | | | | |
 
 nop scores 0.25 because the regression dimension rightly passes on an unmodified system; the gates

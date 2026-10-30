@@ -2,7 +2,7 @@
 
 ## 0.4.1 — 2026-10-12
 - WFM-212: occupancy cap is read from config but not applied in `staffing/required.py`. Open.
-- Added Fabrikam (60-min grain, America/New_York, operating hours 07:00–22:00).
+- Added Fabrikam (60-min grain, America/New_York, operating hours 06:00–24:00).
 
 ## 0.4.0 — 2026-09-30
 - Contoso evaluation flapping on Tuesdays; temporary `sla_target` override in `configs/contoso.yaml`

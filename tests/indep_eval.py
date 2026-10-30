@@ -25,7 +25,7 @@ SOW = {
     "contoso": {"tz": "UTC", "grain": 15, "hours": (6, 24), "cap": 0.85,
                 "sla": {"priority": (0.80, 20), "standard": (0.80, 20)},
                 "rules": ["weekly_hours", "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
-    "fabrikam": {"tz": "America/New_York", "grain": 60, "hours": (7, 22), "cap": 0.85,
+    "fabrikam": {"tz": "America/New_York", "grain": 60, "hours": (6, 24), "cap": 0.85,
                  "sla": {"priority": (0.80, 20), "standard": (0.80, 20)},
                  "rules": ["weekly_hours", "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
 }

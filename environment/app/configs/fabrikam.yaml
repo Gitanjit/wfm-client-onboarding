@@ -2,4 +2,4 @@
 name: Fabrikam
 interval_minutes: 60
 tz: America/New_York
-operating_hours: [7, 22]
+operating_hours: [6, 24]
