@@ -232,6 +232,7 @@ score is read), hence `checks.json`.
 - One cost rate; shrinkage not modelled; forecasting out of scope (forecast = data)
 - The DST element is a count check, not a failure driver (validation row shallow-3)
 - Single data-generator family; a second, differently shaped client would strengthen regression
+- Fabrikam is roster-bound: the unpatched baseline schedules 864 of its 1,024 roster hours (84 % utilisation) and attains 0.857 / 0.833; regression is baseline-relative, so a correct global staffing fix passes (validation row `oracle`, REG = 1.0), but the client has little headroom
 - Roadmap: a versioned WFM service where each onboarding is an agent-proposed diff accepted only after retro-evaluation across every client's held-out weeks; this verifier is that system's acceptance gate
 
 ## 11. Provenance
