@@ -1,5 +1,8 @@
 schema_version = "1.3"
 
+# The agent's /app (its modified system) is copied into the separate verifier sandbox at the same path.
+artifacts = ["/app"]
+
 [task]
 name = "collinear-candidate/wfm-client-onboarding"
 description = "Onboard a new contact-centre client into a small workforce-management service (new export format with a DST transition, a peak-only staffing defect, three contractual scheduling rules) without regressing two existing clients on held-out weeks."
@@ -12,23 +15,22 @@ difficulty = "hard"
 difficulty_explanation = "Four dependent subgoals (ingest with DST, staffing defect, week-aware scheduling rules, reconciled report); required facts split across five artifacts; shared-component changes silently regress other clients; graded by an independent evaluator on seen and held-out weeks."
 domain = "contact-centre workforce management"
 
-# Agent runs inside the sandbox and must reach the model API; nothing else.
+# The agent (Claude Code) runs inside the sandbox and must reach the model API; nothing else.
 [agent]
 timeout_sec = 5400.0
 network_mode = "allowlist"
 allowed_hosts = ["openrouter.ai", "api.anthropic.com"]
 
-# Verifier runs in a separate sandbox (default); the agent's /app arrives via `artifacts`.
+# Verifier runs in a separate sandbox with no network; the agent's /app arrives via `artifacts`.
 [verifier]
 timeout_sec = 900.0
 network_mode = "no-network"
+environment_mode = "separate"
 
-# Public at build/setup time so Harbor can install the agent; the [agent] override applies during the run.
+# Public at build/setup time so Harbor can install the agent; the [agent] policy applies during the run.
 [environment]
 build_timeout_sec = 900
 network_mode = "public"
 cpus = 2
 memory_mb = 4096
 workdir = "/app"
-
-artifacts = ["/app"]

@@ -1,0 +1,210 @@
+diff --git a/configs/northwind.yaml b/configs/northwind.yaml
+new file mode 100644
+index 0000000..3eb53aa
+--- /dev/null
++++ b/configs/northwind.yaml
+@@ -0,0 +1,14 @@
++# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
++# Targets and rules per docs/NORTHWIND_SOW.md.
++name: Northwind
++interval_minutes: 30
++tz: America/Chicago
++operating_hours: [6, 24]
++
++sla:                                  # SOW §1.2
++  priority: {target: 0.90, seconds: 30}
++  standard: {target: 0.80, seconds: 20}
++
++min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
++split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
++break_placement: max_surplus          # SOW §2.3 — window slot with the largest gross coverage surplus
+diff --git a/wfm/evaluate/metrics.py b/wfm/evaluate/metrics.py
+index b54e0bc..f6fe199 100644
+--- a/wfm/evaluate/metrics.py
++++ b/wfm/evaluate/metrics.py
+@@ -73,7 +73,24 @@ def audit(sched: pd.DataFrame, cfg: dict, agents: list[Agent]) -> dict[str, int]
+     by_id = {a.agent_id: a for a in agents}
+     z = ZoneInfo(cfg["tz"])
+     v = {"weekly_hours": 0, "consecutive_days": 0, "skill_match": 0, "no_overlap": 0}
++    min_rest = float(cfg.get("min_rest_hours", 0))
++    split_policy = str(cfg.get("split_shifts", "all"))
++    if min_rest:
++        v["rest11h"] = 0
++    if split_policy != "all":
++        v["split_pt_only"] = 0
+     for aid, g in sched.groupby("agent_id"):
++        if min_rest or split_policy != "all":
++            # a shift = an agent's segments on one local day
++            by_day = g.assign(_day=[t.astimezone(z).date() for t in g["segment_start_utc"]]).groupby("_day")
++            shifts = [(d, s["segment_start_utc"].min(), s["segment_end_utc"].max(), len(s)) for d, s in by_day]
++            shifts.sort(key=lambda x: x[1])
++            if min_rest:
++                v["rest11h"] += sum(1 for p, n in zip(shifts, shifts[1:])
++                                    if (n[1] - p[2]).total_seconds() / 3600 < min_rest - 1e-9)
++            if split_policy != "all":
++                a = by_id.get(aid)
++                v["split_pt_only"] += sum(1 for s in shifts if s[3] > 1 and (a is None or a.contract != split_policy))
+         a = by_id.get(aid)
+         g = g.sort_values("segment_start_utc")
+         hours = ((g["segment_end_utc"] - g["segment_start_utc"]).dt.total_seconds() / 3600).sum()
+diff --git a/wfm/ingest/loader.py b/wfm/ingest/loader.py
+index e7cd98c..5939d31 100644
+--- a/wfm/ingest/loader.py
++++ b/wfm/ingest/loader.py
+@@ -51,8 +51,10 @@ def _read_canonical(path) -> pd.DataFrame:
+ 
+ def _read_export(path, cfg: dict) -> pd.DataFrame:
+     df = pd.read_csv(path)
+-    local = pd.to_datetime(df["interval_start_local"])
+-    df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
++    # The export's utc_offset is authoritative (data/<client>/README.txt): build UTC from it rather
++    # than localising the wall-clock label, which repeats during a DST fall-back.
++    stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()
++    df["interval_start_utc"] = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)
+     return df[["queue", "interval_start_utc", "volume", "aht_sec"]]
+ 
+ 
+diff --git a/wfm/scheduler/greedy.py b/wfm/scheduler/greedy.py
+index 1e5c8eb..8aaec28 100644
+--- a/wfm/scheduler/greedy.py
++++ b/wfm/scheduler/greedy.py
+@@ -16,6 +16,7 @@ import pandas as pd
+ 
+ from wfm.ingest.loader import local_days
+ from wfm.roster import Agent
++from wfm.scheduler import rules
+ from wfm.scheduler.templates import Template, eligible, templates_for
+ 
+ 
+@@ -52,8 +53,12 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+     grid = sorted(set(req["interval_start_utc"]))
+     z = ZoneInfo(tz)
+ 
++    min_rest = float(cfg.get("min_rest_hours", 0))
++    split_policy = str(cfg.get("split_shifts", "all"))
++
+     hours_used: dict[str, float] = defaultdict(float)
+     days_worked: dict[str, list[date]] = defaultdict(list)
++    last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
+     shifts: list[Shift] = []
+ 
+     for day in local_days(week, tz):
+@@ -76,8 +81,10 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+             tpl, q, segs, ivs = best
+             cands = [a for a in agents
+                      if q in a.skills and eligible(tpl, a.contract) and a.agent_id not in worked_today
++                     and rules.split_allowed(tpl, a.contract, split_policy)
+                      and hours_used[a.agent_id] + tpl.hours <= caps[a.contract] + 1e-9
+-                     and not _would_exceed_run(days_worked[a.agent_id], day, max_run)]
++                     and not _would_exceed_run(days_worked[a.agent_id], day, max_run)
++                     and rules.rest_ok(last_end.get(a.agent_id), segs[0][0], min_rest)]
+             if not cands:
+                 dead.add((tpl.id, q))
+                 continue
+@@ -85,11 +92,12 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+             shifts.append(Shift(a.agent_id, q, tpl, day, segs, ivs))
+             hours_used[a.agent_id] += tpl.hours
+             days_worked[a.agent_id].append(day)
++            last_end[a.agent_id] = segs[-1][1]
+             worked_today.add(a.agent_id)
+             for t in ivs:
+                 cover[q][t] += 1
+ 
+-    place_breaks(shifts, cfg)
++    place_breaks(shifts, cfg, required, cover)
+     return shifts
+ 
+ 
+@@ -103,18 +111,29 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
+     return run >= max_run
+ 
+ 
+-def place_breaks(shifts: list[Shift], cfg: dict) -> None:
+-    """One break per long shift, on the covered interval nearest the shift midpoint."""
++def place_breaks(shifts: list[Shift], cfg: dict, required: dict, cover: dict) -> None:
++    """One break per long shift. Placement per config: `midpoint` (service default) or
++    `max_surplus` (the window slot with the largest gross coverage surplus on the shift's queue)."""
+     rule = cfg["break"]
+     length = timedelta(minutes=rule["minutes"])
++    lo, hi = (timedelta(hours=h) for h in rule["window_hours"])
++    placement = cfg.get("break_placement", "midpoint")
+     for sh in shifts:
+         if sh.hours < rule["min_shift_hours"]:
+             continue
+         fits = [t for t in sh.intervals if any(s <= t and t + length <= e for s, e in sh.segments)]
+-        if not fits:
+-            continue
+-        mid = sh.segments[0][0] + timedelta(hours=sh.hours / 2)
+-        sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
++        start = sh.segments[0][0]
++        if placement == "max_surplus":
++            window = [t for t in fits if lo <= t - start <= hi]
++            if not window:
++                continue
++            q = sh.queue
++            sh.break_start = rules.break_slot(window, lambda t: cover[q][t] - required[q][t])
++        else:
++            if not fits:
++                continue
++            mid = start + timedelta(hours=sh.hours / 2)
++            sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
+         sh.break_minutes = rule["minutes"]
+ 
+ 
+diff --git a/wfm/scheduler/rules.py b/wfm/scheduler/rules.py
+new file mode 100644
+index 0000000..e919d91
+--- /dev/null
++++ b/wfm/scheduler/rules.py
+@@ -0,0 +1,28 @@
++"""Contractual scheduling rules as predicates. Which ones apply is a per-client config choice.
++
++Northwind SOW §2 is the first contract to use all three (configs/northwind.yaml).
++"""
++from __future__ import annotations
++
++from datetime import datetime, timedelta
++from typing import Callable
++
++from wfm.scheduler.templates import Template
++
++
++def rest_ok(last_end: datetime | None, start: datetime, min_rest_hours: float) -> bool:
++    """SOW §2.1: at least `min_rest_hours` of elapsed time between the end of an agent's previous
++    shift and the start of the next, across days within the week. No predecessor -> ok."""
++    return last_end is None or start - last_end >= timedelta(hours=min_rest_hours)
++
++
++def split_allowed(template: Template, contract: str, policy: str) -> bool:
++    """SOW §2.2: split shifts (two segments on one local day) only for contracts named by the
++    policy ("all" keeps the service default)."""
++    return not template.is_split or policy == "all" or contract == policy
++
++
++def break_slot(window: list[datetime], surplus: Callable[[datetime], float]) -> datetime:
++    """SOW §2.3: the window slot where gross coverage surplus (scheduled on the queue, ignoring
++    breaks, minus required) is largest; ties go to the earliest slot."""
++    return max(window, key=lambda t: (surplus(t), -t.timestamp()))
+diff --git a/wfm/staffing/required.py b/wfm/staffing/required.py
+index 071e80c..83eec81 100644
+--- a/wfm/staffing/required.py
++++ b/wfm/staffing/required.py
+@@ -9,14 +9,15 @@ from wfm.staffing.erlang import required_agents
+ def add_required(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+     """Append a `required` column to the canonical intervals frame."""
+     interval_sec = cfg["interval_minutes"] * 60
+-    cap = cfg.get("occupancy_cap")  # WFM-212: read here, not yet applied in the call below
++    cap = cfg.get("occupancy_cap")  # WFM-212: applied per interval
+     out = df.copy()
+     out["required"] = 0
+     for q, g in out.groupby("queue", sort=False):
+         sla = cfg["sla"][q]
+-        aht = g.loc[g["volume"] > 0, "aht_sec"].mean()  # smoothed handle time for the queue
++        # each interval is staffed at its own handle time: peaks carry longer handles than the mean
+         out.loc[g.index, "required"] = [
+-            required_agents(v, interval_sec, aht, sla["target"], sla["seconds"]) for v in g["volume"]
++            required_agents(r.volume, interval_sec, r.aht_sec, sla["target"], sla["seconds"], cap)
++            for r in g.itertuples()
+         ]
+     out.attrs["occupancy_cap"] = cap
+     return out

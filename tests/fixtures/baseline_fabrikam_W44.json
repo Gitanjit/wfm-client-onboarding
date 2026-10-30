@@ -1,0 +1,13 @@
+{
+  "agents_scheduled": 28,
+  "client": "fabrikam",
+  "intervals": 169,
+  "overstaffed_interval_hours": 167.0,
+  "scheduled_hours": 764.0,
+  "sla": {
+    "priority": 0.7714285714285715,
+    "standard": 0.7142857142857143
+  },
+  "understaffed_interval_hours": 75.0,
+  "week": "2026-W44"
+}

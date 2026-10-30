@@ -9,9 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     TZ=UTC
 
-# tzdata: zoneinfo for America/Chicago, America/New_York. git: not required by the task; harmless.
+# tzdata: zoneinfo for America/Chicago, America/New_York. git: used by solution/solve.sh (git apply).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends tzdata less \
+ && apt-get install -y --no-install-recommends tzdata less git \
  && rm -rf /var/lib/apt/lists/*
 
 # Exact pins (harbor lint: unpinned-python-dependency). Confirm these resolve in Phase 0, then freeze.
