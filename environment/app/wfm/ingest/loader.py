@@ -52,7 +52,12 @@ def _fixed_offsets(local: pd.Series, table: dict[str, str]) -> pd.Series:
 def _read_export(path, cfg: dict) -> pd.DataFrame:
     df = pd.read_csv(path)
     local = pd.to_datetime(df["interval_start_local"])
-    if cfg["client"] == "fabrikam" and "utc_offset" not in df:   # WFM-204
+    if "utc_offset" in df:
+        # The export's utc_offset is authoritative (data/<client>/README.txt): build UTC from it rather
+        # than localising the wall-clock label, which repeats during a DST fall-back.
+        stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()
+        df["interval_start_utc"] = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)
+    elif cfg["client"] == "fabrikam":   # WFM-204
         df["interval_start_utc"] = _fixed_offsets(local, FABRIKAM_OFFSETS)
     else:
         df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")

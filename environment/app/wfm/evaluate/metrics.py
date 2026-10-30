@@ -89,7 +89,24 @@ def audit(sched: pd.DataFrame, cfg: dict, agents: list[Agent]) -> dict[str, int]
     by_id = {a.agent_id: a for a in agents}
     z = ZoneInfo(cfg["tz"])
     v = {"weekly_hours": 0, "consecutive_days": 0, "skill_match": 0, "no_overlap": 0}
+    min_rest = float(cfg.get("min_rest_hours", 0))
+    split_policy = str(cfg.get("split_shifts", "all"))
+    if min_rest:
+        v["rest11h"] = 0
+    if split_policy != "all":
+        v["split_pt_only"] = 0
     for aid, g in sched.groupby("agent_id"):
+        if min_rest or split_policy != "all":
+            # a shift = an agent's segments on one local day
+            by_day = g.assign(_day=[t.astimezone(z).date() for t in g["segment_start_utc"]]).groupby("_day")
+            shifts = [(d, s["segment_start_utc"].min(), s["segment_end_utc"].max(), len(s)) for d, s in by_day]
+            shifts.sort(key=lambda x: x[1])
+            if min_rest:
+                v["rest11h"] += sum(1 for p, n in zip(shifts, shifts[1:])
+                                    if (n[1] - p[2]).total_seconds() / 3600 < min_rest - 1e-9)
+            if split_policy != "all":
+                a = by_id.get(aid)
+                v["split_pt_only"] += sum(1 for s in shifts if s[3] > 1 and (a is None or a.contract != split_policy))
         a = by_id.get(aid)
         g = g.sort_values("segment_start_utc")
         hours = ((g["segment_end_utc"] - g["segment_start_utc"]).dt.total_seconds() / 3600).sum()
