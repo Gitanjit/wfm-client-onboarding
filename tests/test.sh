@@ -18,7 +18,7 @@ status=${PIPESTATUS[0]}
 if [ ! -f /logs/verifier/reward.json ]; then
   echo "grader did not write reward.json (exit $status); writing zero reward"
   cat > /logs/verifier/reward.json <<'EOF'
-{"overall": 0.0, "functional_correctness": 0.0, "constraint_satisfaction": 0.0, "regression": 0.0, "artifact_quality": 0.0, "checks": {"grader_crashed": true}}
+{"overall": 0.0, "functional_correctness": 0.0, "constraint_satisfaction": 0.0, "regression": 0.0, "artifact_quality": 0.0, "grader_crashed": 1.0}
 EOF
 fi
 

@@ -1,9 +1,9 @@
 # Verifier validation (Phase 4)
 
-Each JSON here is the grader's `reward.json` for one variant, produced by applying the variant to a
+Each JSON here is the grader's `reward.json` (plus its `checks.json` detail under `checks`) for one variant, produced by applying the variant to a
 pristine copy of `environment/app`, running the agent-side steps, and running `tests/grader.py`
 against it (local simulation of the Harbor flow; the real-path numbers for oracle/nop are in
-`RUN_REPORT.md` §6). Regenerate with the session's `simulate.py` (see RUN_REPORT §9).
+`RUN_REPORT.md` §6). Regenerate with `python tools/validate.py . all`.
 
 | variant | what it is | overall | FC | CS | REG | AQ | catches it? |
 |---|---|---|---|---|---|---|---|

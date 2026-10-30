@@ -78,8 +78,9 @@ existing clients' next week; editing `wfm/evaluate/` is allowed and does not aff
 
 ## 5. Verifier design
 
-`tests/test.sh` → `tests/grader.py` → `/logs/verifier/reward.json` (always written; a crashed dimension
-scores 0 for that dimension). The verifier runs in a **separate** sandbox with no network; the agent's
+`tests/test.sh` → `tests/grader.py` → `/logs/verifier/reward.json` (numeric dimensions only, always written;
+a crashed dimension scores 0 for that dimension) plus `/logs/verifier/checks.json` (every check with its
+numbers) and `grader.log`. The verifier runs in a **separate** sandbox with no network; the agent's
 `/app` arrives via `artifacts = ["/app"]`.
 
 **Execution:** read `RUNBOOK.md`; stage the held-out weeks; for each of Northwind W44, Northwind W45,
@@ -153,8 +154,9 @@ for the oracle (determinism, tiny image).
 | job | agent | model | effort | wall-clock | cost | FC | CS | REG | AQ | overall |
 |---|---|---|---|---|---|---|---|---|---|---|
 | p3-oracle-1 | oracle | — | — | 1 m 55 s (incl. build) | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
-| p4-nop-1 | nop | — | — | <<fill>> | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
-| p4-fresh-oracle-1 | oracle (fresh clone, forced rebuild) | — | — | <<fill>> | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| p4-nop-2 | nop | — | — | 56 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
+| p4-oracle-2 | oracle | — | — | 1 m 05 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| p4-fresh-oracle-1 | oracle (fresh `git clone`, `--force-build`) | — | — | 1 m 01 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
 | p5-opus-high-1 | claude-code | openrouter/anthropic/claude-opus-5.5 | high | <<pending>> | | | | | | |
 
 Commands (working forms; the brief's short forms in comments):
@@ -203,7 +205,9 @@ Environment: Docker via Colima on macOS (arm64), Harbor 0.25.0. Base image
 `python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d`;
 pinned pandas 2.2.3, numpy 2.1.3, pyyaml 6.0.2, pytest 8.3.3; git for `solve.sh`.
 
-Fresh-clone build log: <<fill>>. Image build time: <<fill>>. Verifier time: <<fill>>.
+Fresh clone (`git clone . <tmp> && harbor run -p ./wfm-client-onboarding -a oracle --force-build`): overall 1.0;
+its `reward.json` is byte-identical to the in-repo oracle trial's. Trial timings from `result.json`: environment
+setup 8 s (layer cache warm; first cold build 1 m 55 s end to end), oracle 7 s, verifier 34 s; total 1 m 01 s.
 
 `harbor lint --extend-select root-agent --extend-select unpinned-image .`:
 ```
@@ -214,7 +218,9 @@ the Claude Code install/run inside the sandbox, and nothing in the task depends 
 
 Harbor facts learned the hard way: `artifacts = [...]` must be top-level in `task.toml` (placed after
 `[environment]` it is parsed as `environment.artifacts`); Harbor 0.25 lints `shared-verifier` unless
-`[verifier] environment_mode = "separate"` is explicit.
+`[verifier] environment_mode = "separate"` is explicit; every top-level value in `reward.json` must be
+numeric (a nested `checks` object raises `VerifierOutputParseError` in the trial result even though the
+score is read), hence `checks.json`.
 
 ## 10. Limitations and what I would do next
 

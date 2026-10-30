@@ -57,15 +57,16 @@ def grade(app: Path, name: str, tests: Path | None = None):
     p = subprocess.run([PY, str(REPO / "tests/grader.py"), "--app", str(app), "--tests", str(tests or REPO / "tests"),
                         "--out", str(out)], capture_output=True, text=True)
     r = json.loads(out.read_text())
+    checks = json.loads((out.parent / "checks.json").read_text())
     print(f"  {name:28s} overall={r['overall']:.4f} FC={r['functional_correctness']:.3f} CS={r['constraint_satisfaction']:.3f} "
           f"REG={r['regression']:.3f} AQ={r['artifact_quality']:.3f}")
-    failed = [k for k, v in r["checks"].items() if isinstance(v, dict) and v.get("pass") is False]
+    failed = [k for k, v in checks.items() if isinstance(v, dict) and v.get("pass") is False]
     if failed:
         print(f"      failed: {failed}")
     if p.returncode:
         print(p.stderr[-800:])
-    (OUT / f"{name}.json").write_text(json.dumps(r, indent=2, sort_keys=True, default=str) + "\n")
-    return r, out.read_text()
+    (OUT / f"{name}.json").write_text(json.dumps({**r, "checks": checks}, indent=2, sort_keys=True, default=str) + "\n")
+    return r, out.read_text() + (out.parent / "checks.json").read_text()
 
 
 VARIANTS = {}

@@ -276,9 +276,11 @@ def main() -> None:
 
     gates = all(scores[d] >= GATES[d] for d in DIMS)
     overall = 1.0 if gates else min(0.79, sum(scores.values()) / len(DIMS))
-    reward = {"overall": round(overall, 4), **{d: round(v, 4) for d, v in scores.items()}, "checks": checks}
+    # Harbor requires every top-level reward value to be numeric; the per-check detail goes beside it.
+    reward = {"overall": round(overall, 4), **{d: round(v, 4) for d, v in scores.items()}}
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(reward, indent=2, sort_keys=True, default=str) + "\n")
+    args.out.write_text(json.dumps(reward, indent=2, sort_keys=True) + "\n")
+    (args.out.parent / "checks.json").write_text(json.dumps(checks, indent=2, sort_keys=True, default=str) + "\n")
 
     print("== summary ==")
     for d in DIMS:
