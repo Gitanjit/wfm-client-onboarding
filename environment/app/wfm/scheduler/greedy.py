@@ -105,11 +105,15 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
 def place_breaks(shifts: list[Shift], cfg: dict) -> None:
     """One break per long shift, on the covered interval nearest the shift midpoint."""
     rule = cfg["break"]
+    length = timedelta(minutes=rule["minutes"])
     for sh in shifts:
-        if sh.hours < rule["min_shift_hours"] or not sh.intervals:
+        if sh.hours < rule["min_shift_hours"]:
+            continue
+        fits = [t for t in sh.intervals if any(s <= t and t + length <= e for s, e in sh.segments)]
+        if not fits:
             continue
         mid = sh.segments[0][0] + timedelta(hours=sh.hours / 2)
-        sh.break_start = min(sh.intervals, key=lambda t: (abs((t - mid).total_seconds()), t))
+        sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
         sh.break_minutes = rule["minutes"]
 
 

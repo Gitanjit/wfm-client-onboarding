@@ -9,7 +9,7 @@
   "meets_target": true,
   "scheduled_hours": 1136.0,
   "understaffed_interval_hours": 16.0,
-  "overstaffed_interval_hours": 344.0,
+  "overstaffed_interval_hours": 342.5,
   "agents_scheduled": 40,
   "violations": {
     "weekly_hours": 0,
