@@ -1,0 +1,5 @@
+# Fabrikam — hourly export, US Eastern.
+name: Fabrikam
+interval_minutes: 60
+tz: America/New_York
+operating_hours: [7, 22]

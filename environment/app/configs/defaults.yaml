@@ -1,0 +1,19 @@
+# Service-wide defaults. A client file configs/<client>.yaml overrides any top-level key.
+# Do not change these to suit one client: every client without an override inherits them.
+
+interval_minutes: 15          # planning grain
+tz: UTC                       # client timezone (templates and operating hours are local wall-clock)
+operating_hours: [6, 24]      # local; intervals outside carry no volume and need no staff
+occupancy_cap: 0.85           # max traffic / agents in the required-staffing calculation
+
+sla:                          # service-level targets per queue: fraction answered within seconds
+  priority: {target: 0.80, seconds: 20}
+  standard: {target: 0.80, seconds: 20}
+sla_target: 0.90              # evaluator verdict: attainment at or above this is reported as "meets_target"
+
+weekly_hours: {FT: 40, PT: 24}   # elapsed hours per ISO week
+max_consecutive_days: 5
+break:
+  min_shift_hours: 6          # shifts at least this long get one break
+  minutes: 20
+  window_hours: [2, 5]        # break starts between these many hours after shift start

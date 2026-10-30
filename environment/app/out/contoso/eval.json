@@ -1,0 +1,20 @@
+{
+  "client": "contoso",
+  "week": "2026-W43",
+  "intervals": 672,
+  "sla": {
+    "priority": 0.937,
+    "standard": 0.956
+  },
+  "meets_target": true,
+  "scheduled_hours": 1136.0,
+  "understaffed_interval_hours": 16.0,
+  "overstaffed_interval_hours": 344.0,
+  "agents_scheduled": 40,
+  "violations": {
+    "weekly_hours": 0,
+    "consecutive_days": 0,
+    "skill_match": 0,
+    "no_overlap": 0
+  }
+}

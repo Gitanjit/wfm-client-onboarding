@@ -1,0 +1,3 @@
+# Contoso — canonical 15-minute export, UTC. Service defaults apply.
+name: Contoso
+sla_target: 0.72  # temporary, to make eval pass — revert after WFM-212

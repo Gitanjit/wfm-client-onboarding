@@ -1,0 +1,20 @@
+{
+  "client": "fabrikam",
+  "week": "2026-W43",
+  "intervals": 168,
+  "sla": {
+    "priority": 0.819,
+    "standard": 0.781
+  },
+  "meets_target": false,
+  "scheduled_hours": 756.0,
+  "understaffed_interval_hours": 60.0,
+  "overstaffed_interval_hours": 161.0,
+  "agents_scheduled": 28,
+  "violations": {
+    "weekly_hours": 0,
+    "consecutive_days": 0,
+    "skill_match": 0,
+    "no_overlap": 0
+  }
+}

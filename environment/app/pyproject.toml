@@ -1,0 +1,9 @@
+[project]
+name = "wfm"
+version = "0.4.1"
+description = "Small workforce-management service: interval demand -> Erlang C staffing -> weekly agent schedule -> evaluation."
+requires-python = ">=3.12"
+dependencies = ["pandas==2.2.3", "numpy==2.1.3", "pyyaml==6.0.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["wfm"]
