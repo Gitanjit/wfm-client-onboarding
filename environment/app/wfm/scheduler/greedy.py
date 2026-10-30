@@ -59,12 +59,15 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
     for day in local_days(week, tz):
         day_grid = [t for t in grid if t.astimezone(z).date() == day]
         worked_today: set[str] = set()
+        dead: set[tuple[str, str]] = set()   # (template, queue) pairs nobody can take today
         while True:
             best, best_val = None, 0.0
             for tpl in templates:
                 segs = tpl.segments_utc(day, tz)
                 ivs = _covered(segs, day_grid)
                 for q in queues:
+                    if (tpl.id, q) in dead:
+                        continue
                     val = sum(max(0, min(1, required[q][t] - cover[q][t])) for t in ivs)
                     if val > best_val + 1e-9:
                         best, best_val = (tpl, q, segs, ivs), val
@@ -76,9 +79,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                      and hours_used[a.agent_id] + tpl.hours <= caps[a.contract] + 1e-9
                      and not _would_exceed_run(days_worked[a.agent_id], day, max_run)]
             if not cands:
-                # nothing can serve this pair today; mark it covered so the loop moves on
-                for t in ivs:
-                    cover[q][t] = max(cover[q][t], required[q][t])
+                dead.add((tpl.id, q))
                 continue
             a = min(cands, key=lambda x: (hours_used[x.agent_id], x.agent_id))
             shifts.append(Shift(a.agent_id, q, tpl, day, segs, ivs))
