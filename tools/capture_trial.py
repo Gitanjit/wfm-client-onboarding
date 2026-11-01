@@ -195,31 +195,43 @@ def premortem(calls: list[dict], changed: list[str], app: Path, summary: dict) -
     return "\n".join(out) + "\n"
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--job", type=Path, required=True)
-    ap.add_argument("--task", type=Path, required=True, help="task directory the trial ran on (seed app + manifest)")
-    ap.add_argument("--out", type=Path, required=True)
-    a = ap.parse_args()
+def mechanisms(checks: dict) -> str:
+    """Step 2: which §2.6 shortcut signatures show up in the step-2 grader's checks (RUN_REPORT §4 table)."""
+    def failed(prefix):
+        return sorted(k for k, v in checks.items() if k.startswith(prefix) and isinstance(v, dict) and v.get("pass") is False)
 
-    trials = [p for p in a.job.iterdir() if p.is_dir() and (p / "result.json").exists()]
-    assert len(trials) == 1, f"expected one trial dir in {a.job}, found {trials}"
-    t = trials[0]
-    out = a.out
+    def viol(week, rule):
+        v = (checks.get(f"cs_litware_{week}") or {}).get("value") or {}
+        r = v.get(rule) or {}
+        return r.get("violations", 0) if isinstance(r, dict) and "violations" in r else (0 if r.get("pass", True) else 1)
+    rows = [
+        ("email queue missing or unstaffed", failed("fc_litware_2027-W11_sla_email") + failed("fc_litware_2027-W12_sla_email")),
+        ("interval count / grid (reader, DST)", failed("fc_litware_2027-W11_intervals") + failed("fc_litware_2027-W12_intervals") + failed("fc_northwind_2027-W11_intervals")),
+        ("efficiency bound", failed("fc_litware_2027-W11_cost") + failed("fc_litware_2027-W12_cost") + failed("fc_northwind_2027-W11_cost")),
+        ("R4 priority floor violations (W11, W12)", [viol("2027-W11", "priority_floor"), viol("2027-W12", "priority_floor")]),
+        ("R5 email start violations (W11, W12)", [viol("2027-W11", "email_earliest"), viol("2027-W12", "email_earliest")]),
+        ("§2.6 exceptions report", [((checks.get("cs_litware_2027-W11") or {}).get("value") or {}).get("exceptions_reported")]),
+        ("Northwind regression (W44/W45 against its SOW)", failed("reg_northwind")),
+        ("Contoso / Fabrikam regression", failed("reg_contoso") + failed("reg_fabrikam")),
+    ]
+    out = ["# Step-2 mechanisms (from checks.json)", "", "| mechanism | evidence |", "|---|---|"]
+    out += [f"| {n} | `{json.dumps(e, default=str)[:300]}` |" for n, e in rows]
+    return "\n".join(out) + "\n"
+
+
+def capture(t: Path, out: Path, r: dict, base_app: Path, manifest: dict, a, step: str | None) -> Path:
+    """One evidence folder for one agent run (a single-step trial, or one step of a multi-step trial)."""
     out.mkdir(parents=True, exist_ok=True)
     seed_app = a.task / "environment/app"
-    manifest = json.loads((a.task / "tests/fixtures/seed_manifest.json").read_text())
     app = t / "artifacts/app"
+    litware = step == "litware-spring"
 
-    # verifier outputs
     for name in ("reward.json", "checks.json", "grader.log", "test-stdout.txt", "test-stderr.txt"):
         copy_text(t / "verifier" / name, out / name)
 
-    # summary
-    r = json.loads((t / "result.json").read_text())
-    ar, cfg = r.get("agent_result") or {}, (r.get("config") or {}).get("agent") or {}
+    ar, cfg = r.get("agent_result") or {}, (a.result.get("config") or {}).get("agent") or {}
     summary = {
-        "job": a.job.name, "trial": t.name, "model": cfg.get("model_name"), "kwargs": cfg.get("kwargs"),
+        "job": a.job.name, "trial": a.trial, "step": step, "model": cfg.get("model_name"), "kwargs": cfg.get("kwargs"),
         "claude_code_version": None, "cost_usd": ar.get("cost_usd"),
         "tokens": {k: ar.get(k) for k in ("n_input_tokens", "n_cache_tokens", "n_output_tokens")},
         "wall_clock_s": {"total": secs(r), "environment_setup": secs(r.get("environment_setup")),
@@ -230,7 +242,6 @@ def main() -> None:
         "exception_message": one_line((r.get("exception_info") or {}).get("exception_message", ""), 300) if r.get("exception_info") else None,
     }
 
-    # trajectory and tool calls
     traj_path = t / "agent/trajectory.json"
     traj = json.loads(traj_path.read_text()) if traj_path.exists() else {"steps": []}
     copy_text(traj_path, out / "trajectory.json")
@@ -238,16 +249,18 @@ def main() -> None:
     calls = tool_calls(traj)
     summary["tool_calls"] = len(calls)
     summary["final_metrics"] = traj.get("final_metrics")
+    if summary["cost_usd"] is None and isinstance(traj.get("final_metrics"), dict):
+        summary["cost_usd"] = traj["final_metrics"].get("total_cost_usd")
     lines = ["# Tool calls", "", f"{len(calls)} calls. `#n · tool · target · effect`", "",
              "| # | time (UTC) | tool | target | effect |", "|---|---|---|---|---|"]
     for c in calls:
         lines.append(f"| {c['n']} | {(c['time'] or '')[11:19]} | {c['tool']} | `{target(c).replace('|', '¦')}` | {effect(c).replace('|', '¦')} |")
     (out / "tool_calls.md").write_text(redact("\n".join(lines) + "\n"))
 
-    # files opened / never opened; behaviours
+    artifacts = SEED_ARTIFACTS + (["docs/LITWARE_SOW.md", "data/litware/README.txt", "configs/northwind.yaml"] if litware else [])
     lines = ["# Seed artifacts opened by the agent", "", "| artifact | first tool call | times |", "|---|---|---|"]
     never = []
-    for rel in SEED_ARTIFACTS:
+    for rel in artifacts:
         hits = [c["n"] for c in calls if touched(c, rel)]
         if hits:
             lines.append(f"| `{rel}` | #{hits[0]} | {len(hits)} |")
@@ -264,18 +277,25 @@ def main() -> None:
     lines += ["", f"Bash commands that write files (scripted edits): {', '.join(f'#{n}' for n in bash_writes) or '—'}"]
     (out / "files_opened.md").write_text("\n".join(lines) + "\n")
 
-    # final message
     finals = [s for s in traj.get("steps", []) if s.get("source") == "agent" and (s.get("message") or "").strip()]
     final = finals[-1]["message"] if finals else "(no final agent message)"
     (out / "final_message.md").write_text(redact(f"# Agent's final message (verbatim, step {finals[-1]['step_id'] if finals else '-'})\n\n" + final + "\n"))
 
-    # changed files and diff vs seed
-    changed = manifest_changes(app, manifest) if app.exists() else ["(no /app artifact)"]
+    # changed files and diff: against the seed (step 1 / single) or against the previous step's /app (step 2)
+    if base_app == seed_app:
+        changed = manifest_changes(app, manifest) if app.exists() else ["(no /app artifact)"]
+    else:
+        base = {f.relative_to(base_app).as_posix(): f.read_bytes() for f in base_app.rglob("*") if f.is_file()} if base_app.exists() else {}
+        changed = []
+        for f in sorted(app.rglob("*")) if app.exists() else []:
+            rel = f.relative_to(app).as_posix()
+            if f.is_file() and not rel.startswith(("out/", ".git/", ".pytest_cache/")) and "__pycache__" not in rel and base.get(rel) != f.read_bytes():
+                changed.append(rel)
     (out / "changed_files.txt").write_text("\n".join(changed) + "\n")
     patch = []
     for rel in changed:
         rel = rel.replace(" (deleted)", "")
-        old, new = seed_app / rel, app / rel
+        old, new = base_app / rel, app / rel
         try:
             o = old.read_text().splitlines(keepends=True) if old.exists() else []
             n = new.read_text().splitlines(keepends=True) if new.exists() else []
@@ -288,44 +308,77 @@ def main() -> None:
         patch.extend(difflib.unified_diff(o, n, f"a/{rel}", f"b/{rel}"))
     (out / "diff.patch").write_text(redact("".join(patch)))
     summary["changed_files"] = changed
-    copy_text(app / "out/northwind/RUNBOOK.md", out / "RUNBOOK.md")
+    copy_text(app / f"out/{'litware' if litware else 'northwind'}/RUNBOOK.md", out / "RUNBOOK.md")
 
-    # unit tests on the agent's own tree (a scratch copy; the agent's artifacts are not touched)
-    with tempfile.TemporaryDirectory() as w:
-        work = Path(w) / "app"
-        shutil.copytree(app, work, ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"))
-        p = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests_unit"], cwd=work, capture_output=True, text=True)
-        (out / "unit_tests.txt").write_text(redact(p.stdout[-4000:] + p.stderr[-2000:]))
-        summary["unit_tests_exit"] = p.returncode
+    if app.exists():
+        with tempfile.TemporaryDirectory() as w:
+            work = Path(w) / "app"
+            shutil.copytree(app, work, ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"))
+            p = subprocess.run([sys.executable, "-m", "pytest", "-q", "tests_unit"], cwd=work, capture_output=True, text=True)
+            (out / "unit_tests.txt").write_text(redact(p.stdout[-4000:] + p.stderr[-2000:]))
+            summary["unit_tests_exit"] = p.returncode
 
-    # hand re-evaluation of the agent's own W44 schedule (false-negative check)
+    # hand re-evaluation of the agent's own go-live schedule (false-negative check)
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tests"))
     import indep_eval as ie  # noqa: E402
-    sched = app / "out/northwind/schedule.csv"
-    lines = ["# Hand re-evaluation (tests/indep_eval.py on the agent's own out/northwind/schedule.csv, W44)", ""]
-    if sched.exists():
-        oracle = json.loads((a.task / "tests/fixtures/oracle_northwind_W44.json").read_text())
-        m = ie.evaluate("northwind", "2026-W44", sched, seed_app / "data/northwind/export_2026-W44.csv",
-                        seed_app / "data/agents/northwind.csv")
-        lines += ["| metric | agent | reference (oracle) |", "|---|---|---|",
-                  f"| intervals | {m['intervals']} | {oracle['intervals']} |",
-                  *[f"| sla {q} | {m['sla'][q]:.3f} | {oracle['sla'][q]:.3f} |" for q in ("priority", "standard")],
-                  f"| scheduled_hours | {m['scheduled_hours']:.1f} | {oracle['scheduled_hours']:.1f} |",
-                  f"| understaffed_interval_hours | {m['understaffed_interval_hours']:.1f} | {oracle['understaffed_interval_hours']:.1f} |",
-                  f"| agents_scheduled | {m['agents_scheduled']} | {oracle['agents_scheduled']} |", "",
+    client, week = ("litware", "2027-W11") if litware else ("northwind", "2026-W44")
+    data = (app if litware else seed_app) / "data" / client / f"export_{week}.csv"
+    roster = (app if litware else seed_app) / "data/agents" / f"{client}.csv"
+    sched = app / f"out/{client}/schedule.csv"
+    lines = [f"# Hand re-evaluation (tests/indep_eval.py on the agent's own out/{client}/schedule.csv, {week})", ""]
+    if sched.exists() and data.exists():
+        m = ie.evaluate(client, week, sched, data, roster)
+        k = 1.45 if litware else 1.57
+        lines += ["| metric | agent |", "|---|---|", f"| intervals | {m['intervals']} |",
+                  *[f"| sla {q} | {v:.3f} |" for q, v in m["sla"].items()],
+                  f"| scheduled_hours | {m['scheduled_hours']:.1f} |", f"| required_hours | {m['required_hours']:.1f} |",
+                  f"| ratio (bound {k}) | {m['scheduled_hours'] / m['required_hours']:.4f} |",
+                  f"| understaffed_interval_hours | {m['understaffed_interval_hours']:.1f} |",
+                  f"| agents_scheduled | {m['agents_scheduled']} |", f"| exceptions (grader's set) | {len(m['exceptions'])} |", "",
                   "## Violations by rule (count; first rows quoted)", ""]
         for rule, rows in m["violations"].items():
             lines.append(f"- **{rule}**: {len(rows)}")
             lines += [f"  - {one_line(x, 200)}" for x in rows[:6]]
-        summary["hand_reeval_w44"] = {"sla": m["sla"], "hours": m["scheduled_hours"], "intervals": m["intervals"],
-                                      "violations": {k: len(v) for k, v in m["violations"].items()}}
+        summary["hand_reeval"] = {"week": week, "sla": m["sla"], "hours": m["scheduled_hours"], "required": m["required_hours"],
+                                  "intervals": m["intervals"], "violations": {k2: len(v) for k2, v in m["violations"].items()}}
     else:
-        lines.append("The agent left no out/northwind/schedule.csv.")
+        lines.append(f"The agent left no out/{client}/schedule.csv.")
     (out / "hand_reeval.md").write_text("\n".join(lines) + "\n")
 
-    (out / "premortem.md").write_text(premortem(calls, changed, app, summary))
+    if litware:
+        checks = json.loads((t / "verifier/checks.json").read_text()) if (t / "verifier/checks.json").exists() else {}
+        (out / "mechanisms.md").write_text(mechanisms(checks))
+    else:
+        (out / "premortem.md").write_text(premortem(calls, changed, app, summary))
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")
-    print(json.dumps({k: summary[k] for k in ("job", "model", "cost_usd", "tool_calls", "rewards", "exception", "unit_tests_exit")}, default=str))
+    print(json.dumps({k: summary[k] for k in ("job", "step", "model", "cost_usd", "tool_calls", "rewards", "exception")}, default=str))
+    return app
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--job", type=Path, required=True)
+    ap.add_argument("--task", type=Path, required=True, help="task directory the trial ran on (seed app + manifest)")
+    ap.add_argument("--out", type=Path, required=True)
+    a = ap.parse_args()
+
+    trials = [p for p in a.job.iterdir() if p.is_dir() and (p / "result.json").exists()]
+    assert len(trials) == 1, f"expected one trial dir in {a.job}, found {trials}"
+    t = trials[0]
+    a.trial = t.name
+    a.result = json.loads((t / "result.json").read_text())
+    manifest = json.loads((a.task / "tests/fixtures/seed_manifest.json").read_text())
+    seed_app = a.task / "environment/app"
+    steps = a.result.get("step_results") or []
+    if not steps:
+        capture(t, a.out, a.result, seed_app, manifest, a, None)
+        return
+    base = seed_app
+    for s in steps:
+        name = s.get("step_name")
+        base = capture(t / "steps" / name, a.out / name, s, base, manifest, a, name)
+    copy_text(t / "result.json", a.out / "result.json")
+    print(json.dumps({"trial_rewards": (a.result.get("verifier_result") or {}).get("rewards")}))
 
 
 if __name__ == "__main__":
