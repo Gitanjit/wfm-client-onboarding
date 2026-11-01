@@ -8,7 +8,9 @@ from wfm.config import OUT_DIR, load_config
 from wfm.evaluate.metrics import evaluate
 from wfm.ingest.loader import load_week
 from wfm.roster import load_agents
+from wfm.scheduler import rules
 from wfm.scheduler.greedy import schedule_week, to_frame
+from wfm.scheduler.templates import templates_for
 from wfm.staffing.required import add_required
 
 
@@ -23,7 +25,9 @@ def run(client: str, week: str) -> dict:
     out = OUT_DIR / client
     out.mkdir(parents=True, exist_ok=True)
     sched.to_csv(out / "schedule.csv", index=False)
-    result = evaluate(req, sched, cfg, agents, week)
+    exceptions = rules.infeasible(req, cfg, templates_for(cfg)) if cfg.get("queue_earliest_hour") else []
+    result = evaluate(req, sched, cfg, agents, week, exclude=set(exceptions))
+    result["exceptions"] = [{"queue": q, "interval_start_utc": t.strftime("%Y-%m-%dT%H:%M:%SZ")} for q, t in exceptions]
     (out / "eval.json").write_text(json.dumps(result, indent=2) + "\n")
     return result
 

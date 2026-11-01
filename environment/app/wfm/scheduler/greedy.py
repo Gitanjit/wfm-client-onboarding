@@ -55,6 +55,9 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
 
     min_rest = float(cfg.get("min_rest_hours", 0))
     split_policy = str(cfg.get("split_shifts", "all"))
+    earliest = cfg.get("queue_earliest_hour", {})
+    # what the greedy covers: the required agents, raised to any per-queue floor (R4)
+    need = {q: {t: max(r, rules.floor_need(q, t, cfg)) for t, r in required[q].items()} for q in queues}
 
     hours_used: dict[str, float] = defaultdict(float)
     days_worked: dict[str, list[date]] = defaultdict(list)
@@ -71,9 +74,9 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                 segs = tpl.segments_utc(day, tz)
                 ivs = _covered(segs, day_grid)
                 for q in queues:
-                    if (tpl.id, q) in dead:
+                    if (tpl.id, q) in dead or not rules.queue_allows(tpl, q, earliest):
                         continue
-                    val = sum(max(0, min(1, required[q][t] - cover[q][t])) for t in ivs)
+                    val = sum(max(0, min(1, need[q][t] - cover[q][t])) for t in ivs)
                     if val > best_val + 1e-9:
                         best, best_val = (tpl, q, segs, ivs), val
             if best is None or best_val * grain_h < 0.5:
