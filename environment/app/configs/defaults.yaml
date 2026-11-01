@@ -5,6 +5,7 @@ interval_minutes: 15          # planning grain
 tz: UTC                       # client timezone (templates and operating hours are local wall-clock)
 operating_hours: [6, 24]      # local; intervals outside carry no volume and need no staff
 occupancy_cap: 0.85           # max traffic / agents in the required-staffing calculation
+aht_smoothing: queue_mean     # one of: queue_mean, interval (handle time used for required staffing)
 
 sla:                          # service-level targets per queue: fraction answered within seconds
   priority: {target: 0.80, seconds: 20}
