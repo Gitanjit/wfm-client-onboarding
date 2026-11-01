@@ -120,6 +120,22 @@ def required_without_cap() -> str:
     return t
 
 
+EXPORT_V1 = ('def _read_export(path, cfg: dict) -> pd.DataFrame:\n'
+             '    df = pd.read_csv(path)\n'
+             '    local = pd.to_datetime(df["interval_start_local"])\n'
+             '    df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")\n'
+             '    return df[["queue", "interval_start_utc", "volume", "aht_sec"]]\n')
+
+
+def export_block() -> str:
+    """The WFM-204 block of the final loader: the offset table, its helper and _read_export."""
+    text = (APP / "wfm/ingest/loader.py").read_text()
+    end_marker = '    return df[["queue", "interval_start_utc", "volume", "aht_sec"]]\n'
+    start = text.index("# Fabrikam\'s re-sent")
+    end = text.index(end_marker, text.index("def _read_export")) + len(end_marker)
+    return text[start:end]
+
+
 def main() -> None:
     if WORK.exists():
         shutil.rmtree(WORK)
@@ -143,12 +159,7 @@ def main() -> None:
          "                    kept from Fabrikam's first onboarding; assumed to be at the client's configured grain.\n",
          "Input layout in data/<client>/:\n"
          "  week_<ISO>.csv    canonical (client, queue, interval_start_utc, interval_minutes, volume, aht_sec)\n")
-    edit("wfm/ingest/loader.py",
-         'def _read_export(path, cfg: dict) -> pd.DataFrame:\n'
-         '    df = pd.read_csv(path)\n'
-         '    local = pd.to_datetime(df["interval_start_local"])\n'
-         '    df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")\n'
-         '    return df[["queue", "interval_start_utc", "volume", "aht_sec"]]\n\n\n', "")
+    edit("wfm/ingest/loader.py", export_block() + "\n\n", "")
     edit("wfm/ingest/loader.py",
          '    canon = DATA_DIR / client / f"week_{week}.csv"\n'
          '    export = DATA_DIR / client / f"export_{week}.csv"\n'
@@ -192,6 +203,7 @@ def main() -> None:
 
     # 6 — Fabrikam, with the export reader kept for later clients
     copy("configs/fabrikam.yaml", "data/agents/fabrikam.csv", "data/fabrikam/week_2026-W41.csv", "wfm/ingest/loader.py")
+    edit("wfm/ingest/loader.py", export_block(), EXPORT_V1)
     set_version("0.4.1")
     commit("Onboard Fabrikam: hourly grain, America/New_York; loader reads a client's local-time export",
            "2026-10-12T14:45:00+00:00")
@@ -207,7 +219,14 @@ def main() -> None:
     commit("Unit tests for staffing, scheduler, config and loader\n\n"
            "Pins current behaviour: WFM-198 smoothing and per-day scheduling.", "2026-10-21T10:10:00+00:00")
 
-    # 9 — HEAD: the full tree exactly as copied into the image
+    # 9 — WFM-204: fixed Eastern offsets for Fabrikam's re-sent local-time exports (the week before the fall-back)
+    copy("wfm/ingest/loader.py")
+    commit("Fabrikam export: fixed offsets per DST date (WFM-204)\n\n"
+           "Fabrikam is re-sending its 2025 local-time exports for back-testing; they have no offset\n"
+           "column. Offsets keyed on the US change dates cover every week they send.",
+           "2026-10-23T16:40:00+00:00")
+
+    # 10 — HEAD: the full tree exactly as copied into the image
     reset_tree()
     shutil.copytree(APP, WORK, ignore=IGNORE, dirs_exist_ok=True)
     commit("W42/W43 data for Contoso and Fabrikam; Northwind data drop (W42-W44) and docs refresh",
@@ -219,7 +238,7 @@ def main() -> None:
     if status.strip():
         raise SystemExit(f"HEAD does not match the tree:\n{status}")
     head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=APP, capture_output=True, text=True, check=True).stdout.strip()
-    print(f"seed history built: 9 commits, HEAD {head}, working tree clean")
+    print(f"seed history built: 10 commits, HEAD {head}, working tree clean")
 
 
 if __name__ == "__main__":

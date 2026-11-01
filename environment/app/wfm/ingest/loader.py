@@ -36,10 +36,26 @@ def _read_canonical(path) -> pd.DataFrame:
     return df[["queue", "interval_start_utc", "volume", "aht_sec"]]
 
 
+# Fabrikam's re-sent 2025 exports have no offset column. US Eastern offset in effect from each DST
+# change date (local) on; good enough for Fabrikam's weeks (WFM-204).
+FABRIKAM_OFFSETS = {"2025-03-09": "-04:00", "2025-11-02": "-05:00", "2026-03-08": "-04:00", "2026-11-01": "-05:00"}
+
+
+def _fixed_offsets(local: pd.Series, table: dict[str, str]) -> pd.Series:
+    """UTC from local wall-clock labels and a {change date: offset} table."""
+    keys = sorted(table)
+    off = [table[max([k for k in keys if k <= d] or keys[:1])] for d in local.dt.strftime("%Y-%m-%d")]
+    return pd.to_datetime(local.dt.strftime("%Y-%m-%d %H:%M") + pd.Series(off, index=local.index),
+                          format="%Y-%m-%d %H:%M%z", utc=True)
+
+
 def _read_export(path, cfg: dict) -> pd.DataFrame:
     df = pd.read_csv(path)
     local = pd.to_datetime(df["interval_start_local"])
-    df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
+    if cfg["client"] == "fabrikam" and "utc_offset" not in df:   # WFM-204
+        df["interval_start_utc"] = _fixed_offsets(local, FABRIKAM_OFFSETS)
+    else:
+        df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
     return df[["queue", "interval_start_utc", "volume", "aht_sec"]]
 
 
