@@ -26,7 +26,8 @@ allowed_hosts = ["openrouter.ai", "api.anthropic.com"]
 
 # Verifier runs in a separate sandbox with no network; the agent's /app arrives via `artifacts`.
 [verifier]
-timeout_sec = 900.0
+# 1800: on harbor 0.25.0 + Colima the multi-step oracle trial's verifier phase closed ~10 min after the grader finished
+timeout_sec = 1800.0
 network_mode = "no-network"
 environment_mode = "separate"
 

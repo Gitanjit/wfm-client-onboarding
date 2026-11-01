@@ -1,0 +1,312 @@
+{
+  "aq_agents_scheduled": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_exception_intervals": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_files_changed": {
+    "pass": false,
+    "value": {
+      "listed": [],
+      "not_actually_changed": []
+    }
+  },
+  "aq_intervals_in_week": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_required_hours_total": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_scheduled_hours_total": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_sla_attainment_email": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_sla_attainment_priority": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_sla_attainment_standard": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "aq_table": {
+    "pass": false,
+    "value": []
+  },
+  "aq_understaffed_interval_hours": {
+    "pass": false,
+    "value": {
+      "grader": null,
+      "runbook": null
+    }
+  },
+  "cs_litware_2027-W11": {
+    "pass": false,
+    "value": "no schedule"
+  },
+  "cs_litware_2027-W12": {
+    "pass": false,
+    "value": "no schedule"
+  },
+  "cs_northwind_2027-W11": {
+    "pass": false,
+    "value": "no schedule"
+  },
+  "fc_litware_2027-W11_cost": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W11_intervals": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W11_sla_email": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W11_sla_priority": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W11_sla_standard": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W12_cost": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W12_intervals": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W12_sla_email": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W12_sla_priority": {
+    "pass": false,
+    "value": null
+  },
+  "fc_litware_2027-W12_sla_standard": {
+    "pass": false,
+    "value": null
+  },
+  "fc_northwind_2027-W11_cost": {
+    "pass": false,
+    "value": null
+  },
+  "fc_northwind_2027-W11_intervals": {
+    "pass": false,
+    "value": null
+  },
+  "fc_northwind_2027-W11_sla_priority": {
+    "pass": false,
+    "value": null
+  },
+  "fc_northwind_2027-W11_sla_standard": {
+    "pass": false,
+    "value": null
+  },
+  "reg_contoso_cost": {
+    "pass": true,
+    "value": {
+      "agent": 1128.0,
+      "baseline": 1128.0
+    }
+  },
+  "reg_contoso_intervals": {
+    "pass": true,
+    "value": {
+      "agent_eval": 672,
+      "grader": 672,
+      "on_grid": true
+    }
+  },
+  "reg_contoso_rules": {
+    "pass": true,
+    "value": {
+      "consecutive_days": 0,
+      "coverage_sane": 0,
+      "no_overlap": 0,
+      "skill_match": 0,
+      "weekly_hours": 0
+    }
+  },
+  "reg_contoso_runs": {
+    "pass": true,
+    "value": null
+  },
+  "reg_contoso_sla": {
+    "pass": true,
+    "value": {
+      "agent": {
+        "priority": 0.9087,
+        "standard": 0.9266
+      },
+      "baseline": {
+        "priority": 0.9087,
+        "standard": 0.9266
+      }
+    }
+  },
+  "reg_fabrikam_cost": {
+    "pass": true,
+    "value": {
+      "agent": 864.0,
+      "baseline": 864.0
+    }
+  },
+  "reg_fabrikam_intervals": {
+    "pass": true,
+    "value": {
+      "agent_eval": 169,
+      "grader": 169,
+      "on_grid": true
+    }
+  },
+  "reg_fabrikam_rules": {
+    "pass": true,
+    "value": {
+      "consecutive_days": 0,
+      "coverage_sane": 0,
+      "no_overlap": 0,
+      "skill_match": 0,
+      "weekly_hours": 0
+    }
+  },
+  "reg_fabrikam_runs": {
+    "pass": true,
+    "value": null
+  },
+  "reg_fabrikam_sla": {
+    "pass": true,
+    "value": {
+      "agent": {
+        "priority": 0.8571,
+        "standard": 0.8333
+      },
+      "baseline": {
+        "priority": 0.8571,
+        "standard": 0.8333
+      }
+    }
+  },
+  "reg_northwind_2026-W44_cost": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W44_intervals": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W44_rules": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W44_runs": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W44_sla_priority": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W44_sla_standard": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_cost": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_intervals": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_rules": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_runs": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_sla_priority": {
+    "pass": false,
+    "value": null
+  },
+  "reg_northwind_2026-W45_sla_standard": {
+    "pass": false,
+    "value": null
+  },
+  "run_contoso_2026-W44": {
+    "exit": 0,
+    "schedule_present": true,
+    "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 672, \"sla\": {\"priority\": 0.925, \"standard\": 0.95}, \"meets_target\": true, \"scheduled_hours\": 1128.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+  },
+  "run_fabrikam_2026-W44": {
+    "exit": 0,
+    "schedule_present": true,
+    "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.929, \"standard\": 0.881}, \"meets_target\": false, \"scheduled_hours\": 864.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+  },
+  "run_litware_2027-W11": {
+    "exit": 1,
+    "schedule_present": false,
+    "tail": "unknown client 'litware': no configs/litware.yaml"
+  },
+  "run_litware_2027-W12": {
+    "exit": 1,
+    "schedule_present": false,
+    "tail": "unknown client 'litware': no configs/litware.yaml"
+  },
+  "run_northwind_2026-W44": {
+    "exit": 1,
+    "schedule_present": false,
+    "tail": "unknown client 'northwind': no configs/northwind.yaml"
+  },
+  "run_northwind_2026-W45": {
+    "exit": 1,
+    "schedule_present": false,
+    "tail": "unknown client 'northwind': no configs/northwind.yaml"
+  },
+  "run_northwind_2027-W11": {
+    "exit": 1,
+    "schedule_present": false,
+    "tail": "unknown client 'northwind': no configs/northwind.yaml"
+  },
+  "runbook_present": false
+}
