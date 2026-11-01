@@ -3,6 +3,7 @@
   "client": "fabrikam",
   "intervals": 169,
   "overstaffed_interval_hours": 189.0,
+  "required_hours": 616.0,
   "scheduled_hours": 864.0,
   "sla": {
     "priority": 0.8571428571428571,

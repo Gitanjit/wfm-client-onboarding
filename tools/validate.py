@@ -109,11 +109,10 @@ def shallow_3_nat_loader(app):
     """oracle but the loader drops the ambiguous DST hour (ambiguous='NaT' + dropna)"""
     apply_patch(app)
     edit(app, "wfm/ingest/loader.py",
-         '    stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()\n'
-         '    df["interval_start_utc"] = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)\n',
-         '    local = pd.to_datetime(df["interval_start_local"])\n'
-         '    df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"], ambiguous="NaT").dt.tz_convert("UTC")\n'
-         '    df = df.dropna(subset=["interval_start_utc"])\n')
+         '        stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()\n'
+         '        df["interval_start_utc"] = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)\n',
+         '        df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"], ambiguous="NaT").dt.tz_convert("UTC")\n'
+         '        df = df.dropna(subset=["interval_start_utc"])\n')
     solve(app)
 
 
@@ -169,6 +168,71 @@ def shallow_7_knob_only(app):
     """oracle, but staffing left as shipped: `aht_smoothing: interval` set for Northwind without fixing the plumbing"""
     apply_patch(app)
     shutil.copy(REPO / "environment/app/wfm/staffing/required.py", app / "wfm/staffing/required.py")
+    solve(app)
+
+
+@variant
+def oracle_unimproved(app):
+    """oracle without the efficiency pass: correct, rule-clean, 1,312 h on W44 (above SOW §1.6)"""
+    apply_patch(app)
+    edit(app, "configs/northwind.yaml", "efficiency_pass: drop_shrink", "efficiency_pass: off")
+    solve(app)
+
+
+@variant
+def unoptimised_correct(app):
+    """Haiku 5.5's own fix from p5-haiku-high-1 (pre-bound revision) replayed on this seed; its own RUNBOOK"""
+    trial = REPO / "tests/validation/trials/p5-haiku-high-1"
+    old_loader = sh(["git", "show", "81fccf4:environment/app/wfm/ingest/loader.py"], REPO).stdout
+    (app / "wfm/ingest/loader.py").write_text(old_loader)    # the loader Haiku edited (before L11)
+    sh(["git", "apply", "--whitespace=nowarn", "--exclude=docs/*", str(trial / "diff.patch")], app)
+    solve(app, runbook=False)
+    shutil.copy(trial / "RUNBOOK.md", app / "out/northwind/RUNBOOK.md")
+
+
+@variant
+def drop_only_pass(app):
+    """oracle, but the efficiency pass only drops shifts (no shorter template, no relocation)"""
+    apply_patch(app)
+    edit(app, "wfm/scheduler/improve.py", "                same = [t for t in allowed(sh) if t.hours == sh.template.hours]\n",
+         "                same = []\n")
+    edit(app, "wfm/scheduler/improve.py", "                shorter = [t for t in allowed(sh) if t.hours < sh.template.hours]\n",
+         "                shorter = []\n")
+    solve(app)
+
+
+@variant
+def drop_shrink_nested(app):
+    """oracle, but the efficiency pass only drops or shrinks to a template inside the span (the basic pass)"""
+    apply_patch(app)
+    edit(app, "wfm/scheduler/improve.py", "                same = [t for t in allowed(sh) if t.hours == sh.template.hours]\n",
+         "                same = []\n")
+    edit(app, "wfm/scheduler/improve.py", "                outside = sorted([t for t in shorter if t not in inside], key=lambda t: t.hours)\n",
+         "                outside = []\n")
+    edit(app, "wfm/scheduler/improve.py", "    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}\n", "    floor = {}\n")
+    edit(app, "wfm/scheduler/improve.py", "            group = groups[key]\n            for sh in sorted(",
+         "            group = groups[key]\n            floor[key] = met(q, day, group)\n            for sh in sorted(")
+    solve(app)
+
+
+@variant
+def stale_breaks(app):
+    """oracle, but breaks placed before the efficiency pass and not re-placed after it"""
+    apply_patch(app)
+    edit(app, "wfm/scheduler/greedy.py", '    if cfg.get("efficiency_pass") == "drop_shrink":',
+         '    place_breaks(shifts, cfg, required, cover)\n    if cfg.get("efficiency_pass") == "drop_shrink":')
+    edit(app, "wfm/scheduler/greedy.py", "                cover[sh.queue][t] += 1\n\n    place_breaks(shifts, cfg, required, cover)\n",
+         "                cover[sh.queue][t] += 1\n")
+    solve(app)
+
+
+@variant
+def offset_table_loader(app):
+    """oracle, but Northwind's export read through the WFM-204 precedent with a Chicago table (2026 dates)"""
+    apply_patch(app)
+    edit(app, "wfm/ingest/loader.py",
+         '        df["interval_start_utc"] = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)\n',
+         '        df["interval_start_utc"] = _fixed_offsets(local, {"2026-03-08": "-05:00", "2026-11-01": "-06:00"})\n')
     solve(app)
 
 

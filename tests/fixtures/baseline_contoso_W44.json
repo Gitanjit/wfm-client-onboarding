@@ -3,6 +3,7 @@
   "client": "contoso",
   "intervals": 672,
   "overstaffed_interval_hours": 332.75,
+  "required_hours": 751.0,
   "scheduled_hours": 1128.0,
   "sla": {
     "priority": 0.9087301587301587,

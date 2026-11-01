@@ -1,5 +1,5 @@
 {
-  "artifact_quality": 0.125,
+  "artifact_quality": 0.1111,
   "checks": {
     "aq_agents_scheduled": {
       "pass": false,
@@ -19,6 +19,7 @@
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
+          "wfm/scheduler/improve.py",
           "wfm/scheduler/rules.py",
           "wfm/staffing/required.py"
         ],
@@ -29,6 +30,7 @@
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
+          "wfm/scheduler/improve.py",
           "wfm/scheduler/rules.py",
           "wfm/staffing/required.py"
         ]
@@ -41,11 +43,18 @@
         "runbook": 338.0
       }
     },
+    "aq_required_hours_total": {
+      "pass": false,
+      "value": {
+        "grader": null,
+        "runbook": 809.5
+      }
+    },
     "aq_scheduled_hours_total": {
       "pass": false,
       "value": {
         "grader": null,
-        "runbook": 1312.0
+        "runbook": 1248.0
       }
     },
     "aq_sla_attainment_priority": {
@@ -59,7 +68,7 @@
       "pass": false,
       "value": {
         "grader": null,
-        "runbook": 0.996
+        "runbook": 1.0
       }
     },
     "aq_table": {
@@ -68,6 +77,7 @@
         "agents_scheduled",
         "files_changed",
         "intervals_in_week",
+        "required_hours_total",
         "scheduled_hours_total",
         "sla_attainment_priority",
         "sla_attainment_standard",
@@ -78,7 +88,7 @@
       "pass": false,
       "value": {
         "grader": null,
-        "runbook": 3.5
+        "runbook": 3.0
       }
     },
     "cs_2026-W44": {
@@ -86,6 +96,10 @@
       "value": "no schedule"
     },
     "cs_2026-W45": {
+      "pass": false,
+      "value": "no schedule"
+    },
+    "cs_2027-W10": {
       "pass": false,
       "value": "no schedule"
     },
@@ -118,6 +132,22 @@
       "value": null
     },
     "fc_2026-W45_sla_standard": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_cost": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_intervals": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_sla_priority": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_sla_standard": {
       "pass": false,
       "value": null
     },
@@ -226,10 +256,15 @@
       "schedule_present": false,
       "tail": "unknown client 'northwind': no configs/northwind.yaml"
     },
+    "run_northwind_2027-W10": {
+      "exit": 1,
+      "schedule_present": false,
+      "tail": "unknown client 'northwind': no configs/northwind.yaml"
+    },
     "runbook_present": true
   },
   "constraint_satisfaction": 0.0,
   "functional_correctness": 0.0,
-  "overall": 0.2812,
+  "overall": 0.2778,
   "regression": 1.0
 }

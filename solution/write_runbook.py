@@ -19,8 +19,14 @@ RATIONALE = """
 - `wfm/scheduler/greedy.py`, `wfm/scheduler/rules.py`: the greedy keeps week state (each agent's
   last shift end) so the 11-hour rest rule holds across days; split templates are limited to the
   configured contracts; breaks go to the window slot with the largest gross coverage surplus.
-- `wfm/evaluate/metrics.py`: the audit reports rest and split-shift violations when configured.
-- `tests_unit/`: tests added for interval handle time and the cross-day rest rule; the suite is green.
+- `wfm/scheduler/improve.py`: efficiency pass for SOW §1.6 (Northwind opts in with `efficiency_pass`).
+  After the greedy, each shift is dropped, shortened, or moved to a same-length template when that keeps
+  every queue-day's count of intervals meeting target at the greedy's level; breaks are re-placed by
+  §2.3 inside every evaluation. Hours fall about 5% at unchanged attainment.
+- `wfm/evaluate/metrics.py`: the audit reports rest and split-shift violations when configured;
+  eval.json carries the week's required agent-hours.
+- `tests_unit/`: tests added for interval handle time, the cross-day rest rule and the efficiency pass;
+  the suite is green.
 """.strip()
 
 
@@ -39,6 +45,7 @@ def main() -> None:
         ("sla_attainment_priority", f"{ev['sla']['priority']:.3f}"),
         ("sla_attainment_standard", f"{ev['sla']['standard']:.3f}"),
         ("scheduled_hours_total", f"{ev['scheduled_hours']:.1f}"),
+        ("required_hours_total", f"{ev['required_hours']:.1f}" if "required_hours" in ev else "n/a"),
         ("understaffed_interval_hours", f"{ev['understaffed_interval_hours']:.1f}"),
         ("agents_scheduled", str(ev["agents_scheduled"])),
         ("files_changed", ", ".join(files)),

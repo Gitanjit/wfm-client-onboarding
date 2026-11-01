@@ -23,6 +23,13 @@
         "runbook": null
       }
     },
+    "aq_required_hours_total": {
+      "pass": false,
+      "value": {
+        "grader": null,
+        "runbook": null
+      }
+    },
     "aq_scheduled_hours_total": {
       "pass": false,
       "value": {
@@ -63,6 +70,10 @@
       "pass": false,
       "value": "no schedule"
     },
+    "cs_2027-W10": {
+      "pass": false,
+      "value": "no schedule"
+    },
     "fc_2026-W44_cost": {
       "pass": false,
       "value": null
@@ -92,6 +103,22 @@
       "value": null
     },
     "fc_2026-W45_sla_standard": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_cost": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_intervals": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_sla_priority": {
+      "pass": false,
+      "value": null
+    },
+    "fc_2027-W10_sla_standard": {
       "pass": false,
       "value": null
     },
@@ -196,6 +223,11 @@
       "tail": "unknown client 'northwind': no configs/northwind.yaml"
     },
     "run_northwind_2026-W45": {
+      "exit": 1,
+      "schedule_present": false,
+      "tail": "unknown client 'northwind': no configs/northwind.yaml"
+    },
+    "run_northwind_2027-W10": {
       "exit": 1,
       "schedule_present": false,
       "tail": "unknown client 'northwind': no configs/northwind.yaml"
