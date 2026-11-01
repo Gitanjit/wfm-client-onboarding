@@ -28,9 +28,10 @@ CLIENTS = {
     "fabrikam": dict(prefix="FA", grain=60, tz="America/New_York", scale=0.07, n_agents=28, n_pt=6, hours=(6, 24),
                      roster_seed=2, weeks={41: 141, 42: 142, 43: 143, 44: 144}, heldout=[44], fmt="canonical"),
     "northwind": dict(prefix="NW", grain=30, tz="America/Chicago", scale=0.10, n_agents=40, n_pt=8, hours=(6, 24),
-                      roster_seed=7, weeks={42: 242, 43: 243, 44: 244, 45: 245}, heldout=[45], fmt="export"),
+                      roster_seed=7, weeks={42: 242, 43: 243, 44: 244, 45: 245, (2027, 10): 246},
+                      heldout=[45, (2027, 10)], fmt="export"),
 }
-YEAR = 2026
+YEAR = 2026   # a week key is an ISO week number in YEAR, or (year, week); 2027-W10 holds the US spring-forward
 WEEKDAY = [1.10, 1.05, 1.00, 1.00, 0.95, 0.55, 0.45]
 BASE_DAILY = {"priority": 1400.0, "standard": 3200.0}
 AHT_BASE = {"priority": 420.0, "standard": 300.0}
@@ -129,16 +130,17 @@ def main() -> None:
     written: list[Path] = []
     for client, c in CLIENTS.items():
         tz = ZoneInfo(c["tz"])
-        for week, seed in c["weeks"].items():
-            grid = week_intervals_utc(YEAR, week, tz, c["grain"])
+        for key, seed in c["weeks"].items():
+            year, week = key if isinstance(key, tuple) else (YEAR, key)
+            grid = week_intervals_utc(year, week, tz, c["grain"])
             rows = generate(grid, tz, c["grain"], c["scale"], seed, c["hours"])
-            root = args.heldout if week in c["heldout"] else args.app
+            root = args.heldout if key in c["heldout"] else args.app
             if c["fmt"] == "canonical":
-                path = root / client / f"week_{YEAR}-W{week:02d}.csv"
+                path = root / client / f"week_{year}-W{week:02d}.csv"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 write_canonical(path, client, c["grain"], rows)
             else:
-                path = root / client / f"export_{YEAR}-W{week:02d}.csv"
+                path = root / client / f"export_{year}-W{week:02d}.csv"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 write_export(path, tz, rows, client, week)
             written.append(path)
