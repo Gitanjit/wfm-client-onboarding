@@ -34,3 +34,13 @@ def test_qlib_route_for_abandonment_clients():
                        "volume": [100.0], "aht_sec": [300.0]})
     req = add_required(df, {**CFG, "queueing": "qlib"})
     assert req["required"].iloc[0] == qlib_required(100, 3600, 300, 0.80, 20)
+
+
+def test_required_uses_interval_aht_when_configured():
+    df = pd.DataFrame({
+        "queue": ["priority", "priority"],
+        "interval_start_utc": pd.to_datetime(["2026-10-05T10:00:00Z", "2026-10-05T11:00:00Z"]),
+        "volume": [100.0, 100.0], "aht_sec": [200.0, 400.0],
+    })
+    req = add_required(df, {**CFG, "aht_smoothing": "interval"})
+    assert list(req["required"]) == [required_agents(100, 3600, a, 0.80, 20, 0.85) for a in (200.0, 400.0)]

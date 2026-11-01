@@ -47,3 +47,11 @@ def test_weekly_hours_cap_holds():
     agents = [Agent("A-001", "FT", frozenset({"priority"}))]
     shifts = schedule_week(_req({d: [(9, 17, 1)] for d in DAYS}), CFG, agents, WEEK)
     assert 0 < sum(s.hours for s in shifts) <= 40
+
+
+def test_rest_rule_spans_days_when_configured():
+    # with min_rest_hours set, Monday's late shift pushes Tuesday's start out: E8 (6 h after) is refused, L8 is taken
+    mon, tue = DAYS[0], DAYS[1]
+    agents = [Agent("A-001", "FT", frozenset({"priority"}))]
+    shifts = schedule_week(_req({mon: [(16, 24, 1)], tue: [(6, 14, 1)]}), {**CFG, "min_rest_hours": 11}, agents, WEEK)
+    assert sorted((s.template.id, s.day) for s in shifts) == [("L8", tue), ("N8", mon)]

@@ -5,6 +5,8 @@ interval_minutes: 30
 tz: America/Chicago
 operating_hours: [6, 24]
 
+aht_smoothing: interval               # SOW §1.2: each interval at its own handle time
+
 sla:                                  # SOW §1.2
   priority: {target: 0.90, seconds: 30}
   standard: {target: 0.80, seconds: 20}
