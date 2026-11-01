@@ -177,6 +177,7 @@ def evaluate(client: str, week: str, schedule_path: Path, data_path: Path, agent
         "client": client, "week": week, "intervals": len(grid),
         "sla": sla,
         "scheduled_hours": sum(s.hours for s in segments),
+        "required_hours": sum(sum(required[q].values()) for q in QUEUES) * h,   # SOW §1.6
         "understaffed_interval_hours": under, "overstaffed_interval_hours": over,
         "agents_scheduled": len({s.agent for s in segments}),
         "segments": len(segments),

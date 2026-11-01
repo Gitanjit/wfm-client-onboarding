@@ -24,13 +24,20 @@ sys.path.insert(0, str(Path(__file__).parent))
 import indep_eval as ie  # noqa: E402
 
 DIMS = ["functional_correctness", "constraint_satisfaction", "regression", "artifact_quality"]
-EXPECTED_INTERVALS = {("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336,
+NW_WEEKS = ("2026-W44", "2026-W45", "2027-W10")   # seen; held-out; held-out with the US spring-forward
+EXPECTED_INTERVALS = {("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336, ("northwind", "2027-W10"): 334,
                       ("contoso", "2026-W44"): 672, ("fabrikam", "2026-W44"): 169}
-TOL = {"sla": 0.02, "cost": 1.10, "reg_sla": 0.02, "reg_cost": 1.10, "report_rel": 0.005}
-GATES = {"functional_correctness": 0.875, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 0.875}
+SOW_EFFICIENCY_K, SOW_ATTAINMENT_FLOOR = 1.57, 0.95   # Northwind SOW §1.6
+TOL = {"reg_sla": 0.02, "reg_cost": 1.10, "report_rel": 0.005}
+GATES = {"functional_correctness": 11 / 12, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 8 / 9}
 SCRUB = ("OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "OPENAI_API_KEY")
 RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_standard",
-                "scheduled_hours_total", "understaffed_interval_hours", "agents_scheduled", "files_changed"]
+                "scheduled_hours_total", "required_hours_total", "understaffed_interval_hours", "agents_scheduled",
+                "files_changed"]
+HELDOUT = {"heldout/northwind/export_2026-W45.csv": "data/northwind/export_2026-W45.csv",
+           "heldout/northwind/export_2027-W10.csv": "data/northwind/export_2027-W10.csv",
+           "heldout/contoso/week_2026-W44.csv": "data/contoso/week_2026-W44.csv",
+           "heldout/fabrikam/week_2026-W44.csv": "data/fabrikam/week_2026-W44.csv"}
 
 
 # ----------------------------------------------------------------------------- plumbing
@@ -54,11 +61,7 @@ def run_cli(app: Path, client: str, week: str, timeout: int = 300) -> tuple[int,
 
 def stage_heldout(tests: Path, app: Path) -> None:
     """Copy held-out weeks into the agent's data directories (grader side only)."""
-    for src, dst in [
-        ("heldout/northwind/export_2026-W45.csv", "data/northwind/export_2026-W45.csv"),
-        ("heldout/contoso/week_2026-W44.csv", "data/contoso/week_2026-W44.csv"),
-        ("heldout/fabrikam/week_2026-W44.csv", "data/fabrikam/week_2026-W44.csv"),
-    ]:
+    for src, dst in HELDOUT.items():
         (app / dst).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(tests / src, app / dst)
 
@@ -116,30 +119,36 @@ def changed_files(app: Path, tests: Path) -> set[str]:
             if manifest.get(rel) != hashlib.sha256(f.read_bytes()).hexdigest():
                 changed.add(rel)
     # held-out files staged by the grader are not the agent's changes
-    return changed - {"data/northwind/export_2026-W45.csv", "data/contoso/week_2026-W44.csv", "data/fabrikam/week_2026-W44.csv"}
+    return changed - set(HELDOUT.values())
 
 
 # ----------------------------------------------------------------------------- dimensions
 def functional_correctness(runs: Runs, checks: dict) -> float:
-    """Northwind W44 (seen) and W45 (held-out), 4 checks each: intervals, SLA per queue vs oracle-0.02, cost <= oracle*1.10."""
+    """Northwind W44 (seen), W45 and 2027-W10 (held-out), 4 checks each: intervals; weekly attainment per queue
+    >= the SOW §1.6 floor; scheduled hours <= SOW §1.6 k x required hours (grader's own required curve).
+    The reference solution's numbers are recorded beside each check for legibility; they are not thresholds."""
     passed = total = 0
-    for week in ("2026-W44", "2026-W45"):
+    for week in NW_WEEKS:
         m = runs.get("northwind", week)
-        oracle = json.loads((runs.tests / f"fixtures/oracle_northwind_{week[-3:]}.json").read_text())
+        oracle = json.loads((runs.tests / f"fixtures/oracle_northwind_{week[-3:] if week.startswith('2026') else week}.json").read_text())
         exp = EXPECTED_INTERVALS[("northwind", week)]
         tests = [
             (f"fc_{week}_intervals",
              m is not None and m["intervals"] == exp and on_grid(m) and m["agent_eval_intervals"] in (None, exp),
              None if m is None else {"grader": m["intervals"], "agent_eval": m["agent_eval_intervals"], "on_grid": on_grid(m)}),
             (f"fc_{week}_sla_priority",
-             m is not None and m["sla"]["priority"] >= oracle["sla"]["priority"] - TOL["sla"],
-             None if m is None else {"agent": round(m["sla"]["priority"], 4), "oracle": round(oracle["sla"]["priority"], 4)}),
+             m is not None and m["sla"]["priority"] >= SOW_ATTAINMENT_FLOOR,
+             None if m is None else {"agent": round(m["sla"]["priority"], 4), "floor": SOW_ATTAINMENT_FLOOR,
+                                     "reference": round(oracle["sla"]["priority"], 4)}),
             (f"fc_{week}_sla_standard",
-             m is not None and m["sla"]["standard"] >= oracle["sla"]["standard"] - TOL["sla"],
-             None if m is None else {"agent": round(m["sla"]["standard"], 4), "oracle": round(oracle["sla"]["standard"], 4)}),
+             m is not None and m["sla"]["standard"] >= SOW_ATTAINMENT_FLOOR,
+             None if m is None else {"agent": round(m["sla"]["standard"], 4), "floor": SOW_ATTAINMENT_FLOOR,
+                                     "reference": round(oracle["sla"]["standard"], 4)}),
             (f"fc_{week}_cost",
-             m is not None and m["scheduled_hours"] <= oracle["scheduled_hours"] * TOL["cost"],
-             None if m is None else {"agent": m["scheduled_hours"], "oracle": oracle["scheduled_hours"]}),
+             m is not None and m["scheduled_hours"] <= SOW_EFFICIENCY_K * m["required_hours"] + 1e-9,
+             None if m is None else {"agent": m["scheduled_hours"], "bound": round(SOW_EFFICIENCY_K * m["required_hours"], 1),
+                                     "required": m["required_hours"], "ratio": round(m["scheduled_hours"] / m["required_hours"], 4),
+                                     "reference": oracle["scheduled_hours"]}),
         ]
         for name, ok, val in tests:
             checks[name] = {"pass": bool(ok), "value": val}
@@ -149,9 +158,9 @@ def functional_correctness(runs: Runs, checks: dict) -> float:
 
 
 def constraint_satisfaction(runs: Runs, checks: dict) -> float:
-    """Northwind W44 and W45: each of the 8 SOW rules has zero violations on schedule.csv; mean over the two weeks."""
+    """Northwind W44, W45 and 2027-W10: each of the 8 SOW rules has zero violations on schedule.csv; mean over the weeks."""
     scores = []
-    for week in ("2026-W44", "2026-W45"):
+    for week in NW_WEEKS:
         m = runs.get("northwind", week)
         rules = ie.SOW["northwind"]["rules"]
         if m is None:
@@ -213,21 +222,22 @@ def _num(s: str) -> float | None:
 
 
 def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
-    """RUNBOOK.md: table parses (1); six numbers within 0.5% (counts exact) of the grader's recomputation on the
-    re-run W44 outputs (6); files_changed non-empty and a subset of files that actually differ from the seed (1)."""
+    """RUNBOOK.md: table parses (1); seven numbers within 0.5% (counts exact) of the grader's recomputation on the
+    re-run W44 outputs (7); files_changed non-empty and a subset of files that actually differ from the seed (1)."""
     kv = parse_runbook(runbook) if runbook else {}
-    checks["aq_table"] = {"pass": len(kv) >= 6, "value": sorted(kv)}
-    passed = int(len(kv) >= 6)
+    checks["aq_table"] = {"pass": len(kv) >= 7, "value": sorted(kv)}
+    passed = int(len(kv) >= 7)
     m = runs.get("northwind", "2026-W44")
     expected = None if m is None else {
         "intervals_in_week": (m["intervals"], True),
         "sla_attainment_priority": (m["sla"]["priority"], False),
         "sla_attainment_standard": (m["sla"]["standard"], False),
         "scheduled_hours_total": (m["scheduled_hours"], False),
+        "required_hours_total": (m["required_hours"], False),
         "understaffed_interval_hours": (m["understaffed_interval_hours"], False),
         "agents_scheduled": (m["agents_scheduled"], True),
     }
-    for key in RUNBOOK_KEYS[:6]:
+    for key in RUNBOOK_KEYS[:-1]:
         got = _num(kv.get(key, "")) if key in kv else None
         ok = False
         if expected is not None and got is not None:
@@ -242,7 +252,7 @@ def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
     checks["aq_files_changed"] = {"pass": ok, "value": {"listed": sorted(listed), "not_actually_changed": sorted(listed - changed),
                                                         "actually_changed": sorted(changed)}}
     passed += ok
-    return passed / 8
+    return passed / 9
 
 
 # ----------------------------------------------------------------------------- main
@@ -274,7 +284,7 @@ def main() -> None:
         checks["grader_error"] = f"{type(e).__name__}: {e}"
         traceback.print_exc()
 
-    gates = all(scores[d] >= GATES[d] for d in DIMS)
+    gates = all(scores[d] >= GATES[d] - 1e-9 for d in DIMS)
     overall = 1.0 if gates else min(0.79, sum(scores.values()) / len(DIMS))
     # Harbor requires every top-level reward value to be numeric; the per-check detail goes beside it.
     reward = {"overall": round(overall, 4), **{d: round(v, 4) for d, v in scores.items()}}

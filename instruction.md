@@ -28,6 +28,7 @@ listed in `/app/docs/CHANGELOG.md`.
 ## Constraints
 
 - Northwind's schedule satisfies every rule in SOW §2 for the whole week.
+- The SOW also sets a schedule-efficiency bound (§1.6); schedules above it are not accepted.
 - Service-level targets and the occupancy cap come from the SOW. Config files describe what the system
   does; they do not change what the contract requires.
 - Do not change the service defaults to suit one client. Add client-specific configuration.
@@ -39,11 +40,12 @@ listed in `/app/docs/CHANGELOG.md`.
 ## Grading
 
 An independent implementation of the SOW definitions (service level, occupancy, rules, costs) will
-evaluate: your Northwind 2026-W44 `schedule.csv`; a schedule your system produces for a later week of
+evaluate: your Northwind 2026-W44 `schedule.csv`; schedules your system produces for other weeks of
 Northwind data; and schedules for Contoso's and Fabrikam's next week. Editing `/app/wfm/evaluate/` is
 allowed and has no effect on grading. The checks: SLA attainment per queue and total scheduled hours
-against a reference solution; zero violations of SOW §2; no regression for the existing clients; and
-RUNBOOK figures that match a recomputation from your outputs.
+against SOW §1.6; zero violations of SOW §2; no regression for the existing clients; and RUNBOOK
+figures that match a recomputation from your outputs.
+<!-- G: your call — "other weeks" (plural) and "against SOW §1.6" replace "a later week" and "against a reference solution" -->
 
 You have 90 minutes. A careful engineer finishes in about an hour.
 <!-- G: your call — keep the last sentence? It is the human-time claim from RUN_REPORT §8 -->

@@ -6,7 +6,8 @@
 # Produces:
 #   tests/fixtures/seed_manifest.json          sha256 of every file under environment/app (not out/)
 #   tests/fixtures/baseline_<client>_W44.json  UNPATCHED system on contoso/fabrikam held-out W44, scored by tests/indep_eval.py
-#   tests/fixtures/oracle_northwind_W4{4,5}.json  PATCHED system on northwind W44 (seen) and W45 (held-out)
+#   tests/fixtures/oracle_northwind_{W44,W45,2027-W10}.json  PATCHED system on northwind W44 (seen), W45 and 2027-W10 (held-out)
+#   (reference numbers recorded beside the grader's checks; the thresholds come from SOW §1.6, not from these files)
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PY=${PYTHON:-python3}
@@ -24,6 +25,7 @@ stage() {  # copy a pristine app and stage the held-out weeks the grader will st
   find "$dst" -name __pycache__ -prune -exec rm -rf {} +
   rm -rf "$dst/out"; mkdir -p "$dst/out"
   cp "$ROOT/tests/heldout/northwind/export_2026-W45.csv" "$dst/data/northwind/"
+  cp "$ROOT/tests/heldout/northwind/export_2027-W10.csv" "$dst/data/northwind/"
   cp "$ROOT/tests/heldout/contoso/week_2026-W44.csv"     "$dst/data/contoso/"
   cp "$ROOT/tests/heldout/fabrikam/week_2026-W44.csv"    "$dst/data/fabrikam/"
 }
@@ -42,10 +44,11 @@ if not f.exists():
     f = data / f"export_{week}.csv"
 m = ie.evaluate(client, week, app / "out" / client / "schedule.csv", f, app / "data/agents" / f"{client}.csv")
 assert not any(m["violations"].values()), m["violations"]
-fx = {k: m[k] for k in ("client", "week", "intervals", "sla", "scheduled_hours",
+fx = {k: m[k] for k in ("client", "week", "intervals", "sla", "scheduled_hours", "required_hours",
                         "understaffed_interval_hours", "overstaffed_interval_hours", "agents_scheduled")}
 out.write_text(json.dumps(fx, indent=2, sort_keys=True) + "\n")
-print(f"{out.name}: intervals={fx['intervals']} sla={ {q: round(v, 3) for q, v in fx['sla'].items()} } hours={fx['scheduled_hours']}")
+print(f"{out.name}: intervals={fx['intervals']} sla={ {q: round(v, 3) for q, v in fx['sla'].items()} } hours={fx['scheduled_hours']} "
+      f"required={fx['required_hours']} ratio={fx['scheduled_hours'] / fx['required_hours']:.4f}")
 EOF
 }
 
@@ -73,7 +76,7 @@ done
 # 3. oracle: patched system on northwind seen + held-out weeks
 stage "$WORK/oracle"
 (cd "$WORK/oracle" && git apply --whitespace=nowarn "$ROOT/solution/oracle.patch")
-for w in 2026-W44 2026-W45; do
+for w in 2026-W44 2026-W45 2027-W10; do
   (cd "$WORK/oracle" && "$PY" -m wfm run --client northwind --week $w >/dev/null)
   score northwind $w "$WORK/oracle" "$FIX/oracle_northwind_${w#2026-}.json" "$ROOT"
 done

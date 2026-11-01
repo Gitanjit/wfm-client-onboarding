@@ -23,6 +23,12 @@ Effective from ISO week 2026-W44. For the WFM service team.
 1.5  Planning interval: 30 minutes. Northwind's demand export is in local time with an explicit UTC
      offset on every row. See `data/northwind/README.txt`.
 
+1.6  Schedule efficiency and attainment. In every planning week, total scheduled agent-hours shall not
+     exceed 1.57 × the week's required agent-hours. Required agent-hours are the agents required under
+     §1.2–§1.3, summed over every 30-minute interval of the week and both queues, times 0.5 h. Weekly
+     attainment (the fraction of operating intervals meeting §1.2) shall be at least 0.95 on each queue.
+     <!-- G: your call — new clause (decision A); 1.57 is derived in RUN_REPORT §5, keep the number -->
+
 ## 2. Scheduling rules
 
 2.1  Rest. At least 11 hours of elapsed time between the end of one shift and the start of the agent's
@@ -56,6 +62,7 @@ then a short description of the changes made and why.
 | sla_attainment_priority | fraction of operating intervals on `priority` meeting §1.2, three decimals |
 | sla_attainment_standard | fraction of operating intervals on `standard` meeting §1.2, three decimals |
 | scheduled_hours_total | sum of scheduled agent hours (elapsed), one decimal |
+| required_hours_total | required agent-hours for the week as defined in §1.6, one decimal |
 | understaffed_interval_hours | sum over intervals of max(0, required − scheduled on queue) × 0.5 h, one decimal |
 | agents_scheduled | number of distinct agents with at least one shift |
 | files_changed | comma-separated repository-relative paths changed to deliver this week |
