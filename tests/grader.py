@@ -112,7 +112,7 @@ def changed_files(app: Path, tests: Path) -> set[str]:
     changed = set()
     for f in app.rglob("*"):
         rel = f.relative_to(app).as_posix()
-        if f.is_file() and not rel.startswith("out/") and "__pycache__" not in rel and not rel.startswith(".git/"):
+        if f.is_file() and not rel.startswith("out/") and "__pycache__" not in rel and not rel.startswith((".git/", ".pytest_cache/")):
             if manifest.get(rel) != hashlib.sha256(f.read_bytes()).hexdigest():
                 changed.add(rel)
     # held-out files staged by the grader are not the agent's changes

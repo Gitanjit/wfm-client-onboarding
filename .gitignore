@@ -7,3 +7,4 @@ __pycache__/
 .DS_Store
 environment/app/out/*
 !environment/app/out/.gitkeep
+review/

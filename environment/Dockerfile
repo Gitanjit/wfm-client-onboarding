@@ -24,4 +24,7 @@ RUN pip install \
 WORKDIR /app
 # Only the seed application. NEVER copy tests/ or solution/ here (harbor lint: agent-image-test-leak).
 COPY app/ /app/
+# The service's own git history, built from the same tree (HEAD == /app byte for byte). Not under /app.
+COPY history/ /tmp/history/
+RUN python3 /tmp/history/build_history.py /app /tmp/hist && rm -rf /tmp/history /tmp/hist
 RUN mkdir -p /app/out /logs/verifier /logs/agent

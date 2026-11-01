@@ -57,7 +57,7 @@ app, out = Path(sys.argv[1]), Path(sys.argv[2])
 m = {}
 for f in sorted(app.rglob("*")):
     rel = f.relative_to(app).as_posix()
-    if f.is_file() and not rel.startswith("out/") and "__pycache__" not in rel:
+    if f.is_file() and not rel.startswith("out/") and "__pycache__" not in rel and not rel.startswith((".git/", ".pytest_cache/")):
         m[rel] = hashlib.sha256(f.read_bytes()).hexdigest()
 out.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n")
 print(f"seed_manifest.json: {len(m)} files")
