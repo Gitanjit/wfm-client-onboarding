@@ -37,6 +37,6 @@
   "wfm/scheduler/greedy_v2.py": "0d45f5f29aa02ea6f02e4b7e486c0418cab5cc5962a125018d317bf8b169acf3",
   "wfm/scheduler/templates.py": "fb316de5f649584c3edc8178f68d06542e3ea32f3bb6c8eb444c4c1e33e39b47",
   "wfm/staffing/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "wfm/staffing/erlang.py": "506214752435facbabd636a944c4fbf0a83298e627dc04d0884e581c6fab2268",
+  "wfm/staffing/erlang.py": "351a96c842bedb7a8dd38d0af238f239518a368d8967a9bfa7864db343c7c38e",
   "wfm/staffing/required.py": "a56d4cbeb2cf5035b2b14fe064b543ad1c1f1aea558e596b8bc273ae575fa616"
 }

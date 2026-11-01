@@ -1,7 +1,6 @@
 """Erlang C staffing maths. Pure Python, no dependencies.
 
-This file is used twice: once inside /app/wfm/staffing/erlang.py (the system the agent edits)
-and once, as an identical copy, inside tests/indep_eval.py (the grader). Keep them identical.
+Used by wfm.staffing.required to turn interval volume and handle time into required agents.
 
 Conventions
 -----------
