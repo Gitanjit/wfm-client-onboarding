@@ -8,3 +8,6 @@ Kept so the before/after of the `seed-v1` freeze is on record.
 | p5pre-nop-1 | 7808bbd | nop | 0.25 |
 
 - `p5pre-oracle-2` / `p5pre-nop-2`: commit after the Tier 1 realism levers (git history in the image, greedy_v2, tests_unit, aht_smoothing, mis-typed labels), still before the doc rewrite.
+
+`single-v1` (efficiency bound, held-out 2027-W10, L11): s1-oracle-1 → 1.0 (1 m 24 s incl. forced build), s1-nop-1 → 0.25;
+a fresh `git clone` with `--force-build` gave a reward.json byte-identical to s1-oracle-1. No exception on any trial.
