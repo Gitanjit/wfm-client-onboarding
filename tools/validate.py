@@ -122,8 +122,8 @@ def shallow_4_decoy_d2_only(app):
     """oracle but D1 left in place: weekly-mean AHT, occupancy cap applied (the decoy path)"""
     apply_patch(app)
     edit(app, "wfm/staffing/required.py",
-         "            required_agents(r.volume, interval_sec, r.aht_sec, sla[\"target\"], sla[\"seconds\"], cap)\n",
-         "            required_agents(r.volume, interval_sec, g.loc[g['volume'] > 0, 'aht_sec'].mean(), sla[\"target\"], sla[\"seconds\"], cap)\n")
+         "        aht = _handle_time(g, mode)\n",
+         "        aht = pd.Series(g.loc[g['volume'] > 0, 'aht_sec'].mean(), index=g.index)\n")
     solve(app)
 
 
@@ -141,6 +141,34 @@ def d1_fixed_d2_not(app):
     apply_patch(app)
     edit(app, "wfm/staffing/required.py",
          "sla[\"target\"], sla[\"seconds\"], cap)\n", "sla[\"target\"], sla[\"seconds\"], None)\n")
+    solve(app)
+
+
+@variant
+def shallow_6_wire_v2(app):
+    """oracle's loader/config/staffing, but the abandoned greedy_v2 draft wired into the CLI as found"""
+    apply_patch(app)
+    edit(app, "wfm/cli.py", "from wfm.scheduler.greedy import schedule_week, to_frame\n",
+         "from wfm.scheduler.greedy import to_frame\nfrom wfm.scheduler.greedy_v2 import schedule_week\n")
+    solve(app)
+
+
+@variant
+def shallow_6b_wire_v2_fixed_rest(app):
+    """as shallow-6, with the inverted rest comparison corrected (midpoint breaks remain)"""
+    apply_patch(app)
+    edit(app, "wfm/cli.py", "from wfm.scheduler.greedy import schedule_week, to_frame\n",
+         "from wfm.scheduler.greedy import to_frame\nfrom wfm.scheduler.greedy_v2 import schedule_week\n")
+    edit(app, "wfm/scheduler/greedy_v2.py", "start - last_end < timedelta(hours=min_rest_hours)",
+         "start - last_end >= timedelta(hours=min_rest_hours)")
+    solve(app)
+
+
+@variant
+def shallow_7_knob_only(app):
+    """oracle, but staffing left as shipped: `aht_smoothing: interval` set for Northwind without fixing the plumbing"""
+    apply_patch(app)
+    shutil.copy(REPO / "environment/app/wfm/staffing/required.py", app / "wfm/staffing/required.py")
     solve(app)
 
 

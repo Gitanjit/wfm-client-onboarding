@@ -13,12 +13,14 @@ RATIONALE = """
   SOW §1.2 targets, and the three SOW §2 rules switched on). Service defaults untouched.
 - `wfm/ingest/loader.py`: a client export's `utc_offset` column is authoritative; UTC is built from
   it instead of localising the wall-clock label, which repeats during the 1 Nov fall-back.
-- `wfm/staffing/required.py`: each interval is staffed at its own handle time (the weekly mean
-  understaffed the peaks) and the occupancy cap is applied (WFM-212).
+- `wfm/staffing/required.py`: the `aht_smoothing` series is now used per interval (the plumbing collapsed
+  it to one value, so `interval` did nothing); Northwind is set to `interval` because the queue mean
+  understaffed the peaks. The occupancy cap is applied (WFM-212). Defaults unchanged.
 - `wfm/scheduler/greedy.py`, `wfm/scheduler/rules.py`: the greedy keeps week state (each agent's
   last shift end) so the 11-hour rest rule holds across days; split templates are limited to the
   configured contracts; breaks go to the window slot with the largest gross coverage surplus.
 - `wfm/evaluate/metrics.py`: the audit reports rest and split-shift violations when configured.
+- `tests_unit/`: tests added for interval handle time and the cross-day rest rule; the suite is green.
 """.strip()
 
 

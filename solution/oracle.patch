@@ -1,15 +1,17 @@
 diff --git a/configs/northwind.yaml b/configs/northwind.yaml
 new file mode 100644
-index 0000000..3eb53aa
+index 0000000..b56254a
 --- /dev/null
 +++ b/configs/northwind.yaml
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,16 @@
 +# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
 +# Targets and rules per docs/NORTHWIND_SOW.md.
 +name: Northwind
 +interval_minutes: 30
 +tz: America/Chicago
 +operating_hours: [6, 24]
++
++aht_smoothing: interval               # SOW §1.2: each interval at its own handle time
 +
 +sla:                                  # SOW §1.2
 +  priority: {target: 0.90, seconds: 30}
@@ -18,6 +20,40 @@ index 0000000..3eb53aa
 +min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
 +split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
 +break_placement: max_surplus          # SOW §2.3 — window slot with the largest gross coverage surplus
+diff --git a/tests_unit/test_scheduler.py b/tests_unit/test_scheduler.py
+index fe093ad..b22f07a 100644
+--- a/tests_unit/test_scheduler.py
++++ b/tests_unit/test_scheduler.py
+@@ -47,3 +47,11 @@ def test_weekly_hours_cap_holds():
+     agents = [Agent("A-001", "FT", frozenset({"priority"}))]
+     shifts = schedule_week(_req({d: [(9, 17, 1)] for d in DAYS}), CFG, agents, WEEK)
+     assert 0 < sum(s.hours for s in shifts) <= 40
++
++
++def test_rest_rule_spans_days_when_configured():
++    # with min_rest_hours set, Monday's late shift pushes Tuesday's start out: E8 (6 h after) is refused, L8 is taken
++    mon, tue = DAYS[0], DAYS[1]
++    agents = [Agent("A-001", "FT", frozenset({"priority"}))]
++    shifts = schedule_week(_req({mon: [(16, 24, 1)], tue: [(6, 14, 1)]}), {**CFG, "min_rest_hours": 11}, agents, WEEK)
++    assert sorted((s.template.id, s.day) for s in shifts) == [("L8", tue), ("N8", mon)]
+diff --git a/tests_unit/test_staffing.py b/tests_unit/test_staffing.py
+index 5361e42..9892ee1 100644
+--- a/tests_unit/test_staffing.py
++++ b/tests_unit/test_staffing.py
+@@ -25,3 +25,13 @@ def test_required_uses_queue_mean_aht():
+     })
+     req = add_required(df, CFG)
+     assert req["required"].iloc[0] == req["required"].iloc[1] == required_agents(100, 3600, 300, 0.80, 20)
++
++
++def test_required_uses_interval_aht_when_configured():
++    df = pd.DataFrame({
++        "queue": ["priority", "priority"],
++        "interval_start_utc": pd.to_datetime(["2026-10-05T10:00:00Z", "2026-10-05T11:00:00Z"]),
++        "volume": [100.0, 100.0], "aht_sec": [200.0, 400.0],
++    })
++    req = add_required(df, {**CFG, "aht_smoothing": "interval"})
++    assert list(req["required"]) == [required_agents(100, 3600, a, 0.80, 20, 0.85) for a in (200.0, 400.0)]
 diff --git a/wfm/evaluate/metrics.py b/wfm/evaluate/metrics.py
 index b54e0bc..f6fe199 100644
 --- a/wfm/evaluate/metrics.py
@@ -186,25 +222,28 @@ index 0000000..e919d91
 +    breaks, minus required) is largest; ties go to the earliest slot."""
 +    return max(window, key=lambda t: (surplus(t), -t.timestamp()))
 diff --git a/wfm/staffing/required.py b/wfm/staffing/required.py
-index 071e80c..83eec81 100644
+index 7f196c8..28535e7 100644
 --- a/wfm/staffing/required.py
 +++ b/wfm/staffing/required.py
-@@ -9,14 +9,15 @@ from wfm.staffing.erlang import required_agents
+@@ -17,16 +17,17 @@ def _handle_time(g: pd.DataFrame, mode: str) -> pd.Series:
  def add_required(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
      """Append a `required` column to the canonical intervals frame."""
      interval_sec = cfg["interval_minutes"] * 60
 -    cap = cfg.get("occupancy_cap")  # WFM-212: read here, not yet applied in the call below
 +    cap = cfg.get("occupancy_cap")  # WFM-212: applied per interval
+     mode = cfg.get("aht_smoothing", "queue_mean")
      out = df.copy()
      out["required"] = 0
      for q, g in out.groupby("queue", sort=False):
          sla = cfg["sla"][q]
--        aht = g.loc[g["volume"] > 0, "aht_sec"].mean()  # smoothed handle time for the queue
-+        # each interval is staffed at its own handle time: peaks carry longer handles than the mean
+-        # per-interval AHT is too noisy at low volume; use the smoothed queue AHT (WFM-198)
+-        aht = float(_handle_time(g, mode)[g["volume"] > 0].mean())
++        # the handle-time series is used per interval (WFM-198 collapsed it to one value, so `interval` had no effect)
++        aht = _handle_time(g, mode)
          out.loc[g.index, "required"] = [
 -            required_agents(v, interval_sec, aht, sla["target"], sla["seconds"]) for v in g["volume"]
-+            required_agents(r.volume, interval_sec, r.aht_sec, sla["target"], sla["seconds"], cap)
-+            for r in g.itertuples()
++            required_agents(v, interval_sec, a, sla["target"], sla["seconds"], cap)
++            for v, a in zip(g["volume"], aht)
          ]
      out.attrs["occupancy_cap"] = cap
      return out

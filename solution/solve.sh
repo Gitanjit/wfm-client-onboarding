@@ -4,6 +4,7 @@ set -euo pipefail
 cd /app
 
 git apply --whitespace=nowarn /solution/oracle.patch
+python -m pytest -q tests_unit
 
 python -m wfm run --client northwind --week 2026-W44
 # Sanity: existing clients still run (the grader will use their held-out W44; these are visible weeks)

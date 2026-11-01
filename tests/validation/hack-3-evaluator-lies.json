@@ -18,6 +18,8 @@
         ],
         "listed": [
           "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
@@ -25,6 +27,8 @@
           "wfm/staffing/required.py"
         ],
         "not_actually_changed": [
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
           "wfm/scheduler/greedy.py",
           "wfm/scheduler/rules.py",
           "wfm/staffing/required.py"

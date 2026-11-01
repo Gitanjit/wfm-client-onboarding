@@ -14,6 +14,8 @@
         "actually_changed": [],
         "listed": [
           "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
@@ -22,6 +24,8 @@
         ],
         "not_actually_changed": [
           "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",

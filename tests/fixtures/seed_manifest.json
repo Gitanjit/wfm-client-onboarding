@@ -1,6 +1,7 @@
 {
+  ".gitignore": "3f2d792d391a9c4e03e84ad80dcc9f293b5077bac5465eced0f4d0300eecea13",
   "configs/contoso.yaml": "8df513cfdb87c77d51d43d5821dd2d70aa27b0c88bc30f868ece76bcd23ab338",
-  "configs/defaults.yaml": "3f9e7c35c56861f2d796757c0179e9110de1081701a54107beeee9eddbd07718",
+  "configs/defaults.yaml": "1cead6fb6d8d718347340911c3cc9c20571b055ee28eb4a16aa1d8dcb9d780cf",
   "configs/fabrikam.yaml": "e10b4b2a15fefeb7c1704a14778886b8d80a65aed40a482391e55d4ac4a57fe2",
   "data/agents/contoso.csv": "e630606b2f971c74f5f4ef59d9f5a96e12d020bd271400a5e1f086cd1321ffa1",
   "data/agents/fabrikam.csv": "a668824a9bd84fca2849bc27460e7fcbd8c1bea6f57d048f6ca6808de6671121",
@@ -14,11 +15,14 @@
   "data/northwind/README.txt": "6a090980f230257c36a449b4f63cb8153158f5aa1ced8671214b13b3044c7dbd",
   "data/northwind/export_2026-W42.csv": "2e7550b9212edd11811efb89696a8418e7c7e85b34a51c6ebdbdb58067eb993c",
   "data/northwind/export_2026-W43.csv": "56952770e9a4b045cbc76ef6983b6c2adb7ad19305ae2b9709c078e9684ecac6",
-  "data/northwind/export_2026-W44.csv": "536309819759364bb76199756d8a99f61ffbe12b86474e0d8aecf7e5ef39a86c",
+  "data/northwind/export_2026-W44.csv": "96d717c2970264b11857dae4dd1edbd62ea293da203f8e76792fd213afb90174",
   "docs/ARCHITECTURE.md": "4fa2ca74a49ac37124d33d96f877068bfc9acfe3f57f1a154005168533a90cf4",
   "docs/CHANGELOG.md": "ad5867abe8342d70830b667280653d6641a1fa3f491fb54ab980b47eafec383b",
   "docs/NORTHWIND_SOW.md": "d63b5c385fd9548af6cbd9882d119e08652e99f8dcf9a03ed1d1b884bfc8d433",
-  "pyproject.toml": "664446d2f7720b1c1419abf626c53f890b41bab4d7bcd68a3d57300e07995e9a",
+  "pyproject.toml": "60917ca425ec8bd2e7da08b776eb0514a650ff810e1c08b094fdbc5a9c7f4508",
+  "tests_unit/test_config_and_loader.py": "6a74446fedef64383e24c681f4aa0515fe226aadfe9a9a5ecf1fbaaa6850dae1",
+  "tests_unit/test_scheduler.py": "1886e7c603c3cb3041c0b62818f2625132541c9bd216be2b17b03785a563e1df",
+  "tests_unit/test_staffing.py": "c8036ef7ae820e64e04c2fa3f0b90cb7d49caea2006bf70a9612b09ce2595dcd",
   "wfm/__init__.py": "67cf0cfa39a723e25934188d9d3b7acf04cd11693f1abc0432acd03ae0e2215a",
   "wfm/__main__.py": "ea7a35c2a69582f6710f9a62b634665c7c285b2b30c7a39c4bf0ac9607276f38",
   "wfm/cli.py": "f4afcf3ee8f2214adbfc2e46df57d220d709828a728415d74f2d35f5323e89da",
@@ -30,8 +34,9 @@
   "wfm/roster.py": "be18eef138c1970786f39d984c26857f3e85c99b6392a71db6706667804aca15",
   "wfm/scheduler/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "wfm/scheduler/greedy.py": "0dcd2febcb193a145cdb20e9b895b26514158138c9111ffdd486a631cc1d4a4e",
+  "wfm/scheduler/greedy_v2.py": "0d45f5f29aa02ea6f02e4b7e486c0418cab5cc5962a125018d317bf8b169acf3",
   "wfm/scheduler/templates.py": "fb316de5f649584c3edc8178f68d06542e3ea32f3bb6c8eb444c4c1e33e39b47",
   "wfm/staffing/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "wfm/staffing/erlang.py": "506214752435facbabd636a944c4fbf0a83298e627dc04d0884e581c6fab2268",
-  "wfm/staffing/required.py": "f7e02f65a65ec161a022236660d7a3c19d95acfa666c50db464b591c11c403f0"
+  "wfm/staffing/required.py": "a56d4cbeb2cf5035b2b14fe064b543ad1c1f1aea558e596b8bc273ae575fa616"
 }

@@ -13,6 +13,8 @@
       "value": {
         "actually_changed": [
           "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
@@ -212,7 +214,7 @@
     "reg_contoso_cost": {
       "pass": true,
       "value": {
-        "agent": 1144.0,
+        "agent": 1128.0,
         "baseline": 1128.0
       }
     },
@@ -242,8 +244,8 @@
       "pass": true,
       "value": {
         "agent": {
-          "priority": 0.9306,
-          "standard": 0.9246
+          "priority": 0.9087,
+          "standard": 0.9266
         },
         "baseline": {
           "priority": 0.9087,
@@ -254,7 +256,7 @@
     "reg_fabrikam_cost": {
       "pass": true,
       "value": {
-        "agent": 936.0,
+        "agent": 864.0,
         "baseline": 864.0
       }
     },
@@ -284,8 +286,8 @@
       "pass": true,
       "value": {
         "agent": {
-          "priority": 0.9206,
-          "standard": 0.873
+          "priority": 0.8571,
+          "standard": 0.8333
         },
         "baseline": {
           "priority": 0.8571,
@@ -296,12 +298,12 @@
     "run_contoso_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 672, \"sla\": {\"priority\": 0.931, \"standard\": 0.925}, \"meets_target\": true, \"scheduled_hours\": 1144.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+      "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 672, \"sla\": {\"priority\": 0.925, \"standard\": 0.95}, \"meets_target\": true, \"scheduled_hours\": 1128.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
     },
     "run_fabrikam_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.921, \"standard\": 0.873}, \"meets_target\": false, \"scheduled_hours\": 936.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
+      "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.929, \"standard\": 0.881}, \"meets_target\": false, \"scheduled_hours\": 864.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0}}"
     },
     "run_northwind_2026-W44": {
       "exit": 0,
