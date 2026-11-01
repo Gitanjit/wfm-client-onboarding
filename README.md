@@ -6,6 +6,7 @@ service without regressing the existing clients. Full write-up: [`RUN_REPORT.md`
 ```
 harbor run -p . -a oracle                                                              # expect overall 1.0
 harbor run -p . -a claude-code -m openrouter/anthropic/claude-opus-5.5 --effort high   # brief's form: -a claude -m opus-5-5
+harbor run -p . -a claude-code -m anthropic/claude-opus-5-5 --effort high              # same, on an Anthropic key
 harbor view ./jobs
 ```
 
