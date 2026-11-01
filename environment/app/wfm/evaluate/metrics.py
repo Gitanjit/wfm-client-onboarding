@@ -72,6 +72,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
         "client": cfg["client"], "week": week, "intervals": len(grid),
         "sla": sla, "meets_target": all(v >= cfg["sla_target"] for v in sla.values()),
         "scheduled_hours": round(hours, 1),
+        "required_hours": round(float(req["required"].sum()) * h, 1),   # agents required x interval hours, all queues
         "understaffed_interval_hours": round(under, 1), "overstaffed_interval_hours": round(over, 1),
         "agents_scheduled": int(sched["agent_id"].nunique()),
         "violations": {**audit(sched, cfg, agents), "min_cover": floor_gaps(gross, cross, grid, cfg)},
