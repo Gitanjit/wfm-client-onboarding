@@ -36,6 +36,10 @@ BASE_DAILY = {"priority": 1400.0, "standard": 3200.0}
 AHT_BASE = {"priority": 420.0, "standard": 300.0}
 PEAK_INFLATION = 0.35
 QUEUES = ("priority", "standard")
+# Two rows of Northwind's W44 export whose local label was mis-typed by one minute at the client's end.
+# utc_offset and row order are correct; the row still belongs to the 10:00 interval. Deterministic.
+LABEL_TYPOS = {("northwind", 44, "2026-10-27 10:00", "priority"): "2026-10-27 10:01",
+               ("northwind", 44, "2026-10-29 10:00", "standard"): "2026-10-29 10:01"}
 
 
 def iso_week_monday(year: int, week: int) -> datetime:
@@ -87,13 +91,15 @@ def write_canonical(path: Path, client: str, grain: int, rows) -> None:
     path.write_text("\n".join(lines) + "\n")
 
 
-def write_export(path: Path, tz: ZoneInfo, rows) -> None:
+def write_export(path: Path, tz: ZoneInfo, rows, client: str, week: int) -> None:
     """Northwind's own format: local wall-clock plus the explicit UTC offset in effect for the row."""
     lines = ["interval_start_local,utc_offset,queue,volume,aht_sec"]
     for t, q, vol, aht in rows:
         loc = t.astimezone(tz)
         z = loc.strftime("%z")  # e.g. -0500
-        lines.append(f"{loc.strftime('%Y-%m-%d %H:%M')},{z[:3]}:{z[3:]},{q},{vol:.3f},{aht:.3f}")
+        label = loc.strftime('%Y-%m-%d %H:%M')
+        label = LABEL_TYPOS.get((client, week, label, q), label)
+        lines.append(f"{label},{z[:3]}:{z[3:]},{q},{vol:.3f},{aht:.3f}")
     path.write_text("\n".join(lines) + "\n")
 
 
@@ -134,7 +140,7 @@ def main() -> None:
             else:
                 path = root / client / f"export_{YEAR}-W{week:02d}.csv"
                 path.parent.mkdir(parents=True, exist_ok=True)
-                write_export(path, tz, rows)
+                write_export(path, tz, rows, client, week)
             written.append(path)
             print(f"{path}  intervals={len(grid)}  seed={seed}")
         rpath = args.app / "agents" / f"{client}.csv"

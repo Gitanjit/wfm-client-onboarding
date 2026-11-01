@@ -59,12 +59,14 @@ def _parse_utc(s: str) -> datetime:
 def load_demand(client: str, data_path: Path, grid: list[datetime]) -> dict[str, dict[datetime, tuple[float, float]]]:
     """{queue: {slot: (volume, aht)}} on the grader's grid. Slots absent from the file carry zero volume."""
     demand = {q: {t: (0.0, 0.0) for t in grid} for q in QUEUES}
+    step = grid[1] - grid[0]
     with data_path.open() as f:
         for r in csv.DictReader(f):
             if "interval_start_utc" in r:
                 t = _parse_utc(r["interval_start_utc"])
             else:  # Northwind export: local wall-clock + explicit offset (authoritative)
                 t = datetime.fromisoformat(f"{r['interval_start_local'].strip()}{r['utc_offset'].strip()}").astimezone(UTC)
+            t = grid[0] + ((t - grid[0]) // step) * step   # a row belongs to the planning interval that contains it
             q = r["queue"].strip()
             if q in demand and t in demand[q]:
                 demand[q][t] = (float(r["volume"]), float(r["aht_sec"]))
