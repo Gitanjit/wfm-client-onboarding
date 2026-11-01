@@ -134,6 +134,64 @@ def manifest_changes(app: Path, manifest: dict) -> list[str]:
     return changed + [f"{r} (deleted)" for r in removed]
 
 
+def premortem(calls: list[dict], changed: list[str], app: Path, summary: dict) -> str:
+    """13_PREMORTEM comparison table + realism-lever touches, from the trajectory, the diff and the hand re-eval.
+    Every row cites tool-call indices; a reader checks them in tool_calls.md."""
+    def first(rel):
+        hits = [c["n"] for c in calls if touched(c, rel)]
+        return hits[0] if hits else None
+
+    def bash(pat):
+        return [c["n"] for c in calls if c["tool"] == "Bash" and re.search(pat, c["args"].get("command", ""))]
+
+    def edits_to(rel):
+        return [c["n"] for c in calls if c["tool"] in ("Edit", "Write", "MultiEdit") and str(c["args"].get("file_path", "")).endswith(rel)]
+
+    def read(rel):
+        f = app / rel
+        return f.read_text() if f.exists() else ""
+
+    ev = summary.get("hand_reeval_w44") or {}
+    viol = ev.get("violations", {})
+    req, nw = read("wfm/staffing/required.py"), read("configs/northwind.yaml")
+    cl, rq = first("docs/CHANGELOG.md"), first("wfm/staffing/required.py")
+    d1_line = "float(_handle_time(g, mode)[g[\"volume\"] > 0].mean())" in req
+    d2 = bool(re.search(r"required_agents\([^)]*cap\b", req)) or "occupancy_cap=" in req
+    runs_nw, runs_co, runs_fa = bash(r"wfm\s+run\b.*northwind"), bash(r"wfm\s+run\b.*contoso"), bash(r"wfm\s+run\b.*fabrikam")
+    code_edits = [c["n"] for c in calls if c["tool"] in ("Edit", "Write", "MultiEdit")
+                  and re.search(r"/app/(wfm|configs)/", str(c["args"].get("file_path", "")))]
+    rb = edits_to("out/northwind/RUNBOOK.md") + [c["n"] for c in calls if c["tool"] == "Bash" and "RUNBOOK" in c["args"].get("command", "") and re.search(r">|tee|write", c["args"].get("command", ""))]
+    last_rb, last_code, last_run = max(rb, default=None), max(code_edits, default=None), max(runs_nw, default=None)
+    rows = [
+        ("Reads CHANGELOG before required.py", f"CHANGELOG #{cl}, required.py #{rq}" if cl or rq else "neither opened",
+         "yes" if cl and rq and cl < rq else "no"),
+        ("Fixes D2 only / D1 too", f"D1 line {'still present' if d1_line else 'changed'}; cap {'passed' if d2 else 'not passed'}; "
+         f"W44 sla {ev.get('sla', {}).get('priority', float('nan')):.3f}/{ev.get('sla', {}).get('standard', float('nan')):.3f} vs 0.976/0.996",
+         "D2 only (decoy path)" if d2 and d1_line else ("D1 too" if not d1_line else "neither")),
+        ("R1 within-day / week-aware", f"rest11h violations on the agent's W44 schedule: {viol.get('rest11h', '?')}",
+         "week-aware" if viol.get("rest11h") == 0 else "not week-aware"),
+        ("Re-runs existing clients", f"contoso {runs_co or '—'}; fabrikam {runs_fa or '—'}", "yes" if runs_co and runs_fa else "partly" if runs_co or runs_fa else "no"),
+        ("Edits defaults.yaml", f"edits {edits_to('configs/defaults.yaml') or '—'}", "yes" if "configs/defaults.yaml" in changed else "no"),
+        ("RUNBOOK written after final run", f"last RUNBOOK write #{last_rb}; last code edit #{last_code}; last northwind run #{last_run}",
+         "yes" if last_rb and last_run and last_rb > last_run and (last_code or 0) < last_run else "no / unclear"),
+    ]
+    out = ["# Pre-mortem comparison (13_PREMORTEM_TRAJECTORY)", "", "| Predicted | Observed (tool-call #) | Result |", "|---|---|---|"]
+    out += [f"| {a} | {b} | {c} |" for a, b, c in rows]
+    v2 = first("wfm/scheduler/greedy_v2.py")
+    glog, gshow = bash(r"git\s+(--no-pager\s+)?log"), bash(r"git\s+(--no-pager\s+)?show")
+    knob = bool(re.search(r"aht_smoothing:\s*interval", nw))
+    lever = [
+        ("L1 git history", f"git log {glog or '—'}; git show {gshow or '—'}"),
+        ("L2 greedy_v2.py", f"opened #{v2}; wired into the CLI: {'yes' if 'greedy_v2' in read('wfm/cli.py') else 'no'}; edited {edits_to('greedy_v2.py') or '—'}"),
+        ("L3 tests_unit", f"pytest {bash(r'pytest') or '—'}; tests edited {[c for c in changed if c.startswith('tests_unit/')] or '—'}; suite exit on final tree {summary.get('unit_tests_exit')}"),
+        ("L4 WFM-198 comment", f"required.py opened #{rq}; comment still present: {'yes' if 'use the smoothed queue AHT (WFM-198)' in req else 'no'}"),
+        ("L5 mis-typed labels", f"W44 export opened #{first('data/northwind/export_2026-W44.csv')}; agent W44 intervals {ev.get('intervals', '?')} (338 expected)"),
+        ("L6 aht_smoothing knob", f"northwind.yaml sets interval: {'yes' if knob else 'no'}; plumbing fixed: {'no' if d1_line else 'yes'}"),
+    ]
+    out += ["", "# Realism levers touched", "", "| lever | evidence |", "|---|---|"] + [f"| {a} | {b} |" for a, b in lever]
+    return "\n".join(out) + "\n"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--job", type=Path, required=True)
@@ -260,6 +318,7 @@ def main() -> None:
         lines.append("The agent left no out/northwind/schedule.csv.")
     (out / "hand_reeval.md").write_text("\n".join(lines) + "\n")
 
+    (out / "premortem.md").write_text(premortem(calls, changed, app, summary))
     (out / "summary.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")
     print(json.dumps({k: summary[k] for k in ("job", "model", "cost_usd", "tool_calls", "rewards", "exception", "unit_tests_exit")}, default=str))
 
