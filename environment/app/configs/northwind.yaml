@@ -14,3 +14,4 @@ sla:                                  # SOW §1.2
 min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
 split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
 break_placement: max_surplus          # SOW §2.3 — window slot with the largest gross coverage surplus
+efficiency_pass: drop_shrink          # SOW §1.6 — shed hours that buy no attainment

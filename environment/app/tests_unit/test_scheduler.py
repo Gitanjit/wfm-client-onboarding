@@ -55,3 +55,11 @@ def test_rest_rule_spans_days_when_configured():
     agents = [Agent("A-001", "FT", frozenset({"priority"}))]
     shifts = schedule_week(_req({mon: [(16, 24, 1)], tue: [(6, 14, 1)]}), {**CFG, "min_rest_hours": 11}, agents, WEEK)
     assert sorted((s.template.id, s.day) for s in shifts) == [("L8", tue), ("N8", mon)]
+
+
+def test_efficiency_pass_sheds_unneeded_hours():
+    # one agent needed 10:00-14:00: the greedy takes the first 8 h template that covers it; the pass shortens it to P4
+    agents = [Agent("A-001", "FT", frozenset({"priority"}))]
+    req = _req({DAYS[0]: [(10, 14, 1)]})
+    assert [s.template.id for s in schedule_week(req, CFG, agents, WEEK)] == ["E8"]
+    assert [s.template.id for s in schedule_week(req, {**CFG, "efficiency_pass": "drop_shrink"}, agents, WEEK)] == ["P4"]

@@ -17,7 +17,7 @@ import pandas as pd
 from wfm import constraints
 from wfm.ingest.loader import local_days
 from wfm.roster import Agent
-from wfm.scheduler import rules
+from wfm.scheduler import improve, rules
 from wfm.scheduler.templates import Template, eligible, templates_for
 
 
@@ -103,6 +103,16 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                 for other in a.skills & set(queues) - {q}:
                     cross[other][t] += 1
 
+    if cfg.get("efficiency_pass") == "drop_shrink":   # SOW §1.6: shed hours that buy no attainment
+        live = {q: set(g.loc[g["volume"] > 0, "interval_start_utc"]) for q, g in req.groupby("queue")}
+        day_grids = {d: [t for t in grid if t.astimezone(z).date() == d] for d in local_days(week, tz)}
+        shifts = improve.drop_or_shrink(shifts, required, live, cfg, agents, templates, day_grids,
+                                        lambda sh, surplus: break_start_for(sh, cfg, surplus))
+        cover = {q: defaultdict(int) for q in queues}
+        for sh in shifts:
+            for t in sh.intervals:
+                cover[sh.queue][t] += 1
+
     place_breaks(shifts, cfg, required, cover)
     return shifts
 
@@ -117,30 +127,33 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
     return run >= max_run
 
 
+def break_start_for(sh: Shift, cfg: dict, surplus) -> datetime | None:
+    """Where the configured rule puts this shift's break (None: no break). `surplus(t)` is the gross
+    coverage surplus on the shift's queue, used by `max_surplus`."""
+    rule = cfg["break"]
+    if sh.hours < rule["min_shift_hours"]:
+        return None
+    length = timedelta(minutes=rule["minutes"])
+    fits = [t for t in sh.intervals if any(s <= t and t + length <= e for s, e in sh.segments)]
+    start = sh.segments[0][0]
+    if cfg.get("break_placement", "midpoint") == "max_surplus":
+        lo, hi = (timedelta(hours=h) for h in rule["window_hours"])
+        window = [t for t in fits if lo <= t - start <= hi]
+        return rules.break_slot(window, surplus) if window else None
+    if not fits:
+        return None
+    mid = start + timedelta(hours=sh.hours / 2)
+    return min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
+
+
 def place_breaks(shifts: list[Shift], cfg: dict, required: dict, cover: dict) -> None:
     """One break per long shift. Placement per config: `midpoint` (service default) or
     `max_surplus` (the window slot with the largest gross coverage surplus on the shift's queue)."""
-    rule = cfg["break"]
-    length = timedelta(minutes=rule["minutes"])
-    lo, hi = (timedelta(hours=h) for h in rule["window_hours"])
-    placement = cfg.get("break_placement", "midpoint")
     for sh in shifts:
-        if sh.hours < rule["min_shift_hours"]:
-            continue
-        fits = [t for t in sh.intervals if any(s <= t and t + length <= e for s, e in sh.segments)]
-        start = sh.segments[0][0]
-        if placement == "max_surplus":
-            window = [t for t in fits if lo <= t - start <= hi]
-            if not window:
-                continue
-            q = sh.queue
-            sh.break_start = rules.break_slot(window, lambda t: cover[q][t] - required[q][t])
-        else:
-            if not fits:
-                continue
-            mid = start + timedelta(hours=sh.hours / 2)
-            sh.break_start = min(fits, key=lambda t: (abs((t - mid).total_seconds()), t))
-        sh.break_minutes = rule["minutes"]
+        q = sh.queue
+        sh.break_start = break_start_for(sh, cfg, lambda t: cover[q][t] - required[q][t])
+        if sh.break_start is not None:
+            sh.break_minutes = cfg["break"]["minutes"]
 
 
 def to_frame(shifts: list[Shift]) -> pd.DataFrame:
