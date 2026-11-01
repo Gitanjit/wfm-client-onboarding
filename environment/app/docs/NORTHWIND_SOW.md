@@ -1,6 +1,6 @@
 # Statement of Work — Northwind Customer Care (WFM onboarding)
 
-Effective: ISO week 2026-W44 onward. Prepared for the WFM service team.
+Effective from ISO week 2026-W44. For the WFM service team.
 
 ## 1. Service levels and operating parameters
 
@@ -11,42 +11,44 @@ Effective: ISO week 2026-W44 onward. Prepared for the WFM service team.
      - standard: 80% of contacts answered within 20 seconds (80/20)
 
      An interval meets its target when the agents scheduled on that queue, net of breaks, are at
-     least the number required by the Erlang C model at that target with the interval's own
-     volume and average handle time.
+     least the number the Erlang C model requires at that target, using the interval's own volume
+     and the interval's own average handle time.
+     <!-- G: your call — this sentence is the one that decides D1; keep "the interval's own" twice -->
 
 1.3  Agent occupancy shall not exceed 0.85 in any interval's required-staffing calculation.
 
-1.4  Operating hours: 06:00–24:00 local time (America/Chicago), seven days. Intervals outside
-     operating hours carry zero volume and require no staff.
+1.4  Operating hours: 06:00–24:00 local time (America/Chicago), seven days a week. Intervals outside
+     operating hours carry zero volume and need no staff.
 
-1.5  Planning interval: 30 minutes. Northwind's demand export is delivered in local time with an
-     explicit UTC offset per row; see `data/northwind/README.txt`.
+1.5  Planning interval: 30 minutes. Northwind's demand export is in local time with an explicit UTC
+     offset on every row. See `data/northwind/README.txt`.
 
 ## 2. Scheduling rules
 
-2.1  Rest. Between the end of an agent's shift and the start of their next shift there shall be at
-     least 11 hours of elapsed time. This applies across consecutive days within the planning week.
+2.1  Rest. At least 11 hours of elapsed time between the end of one shift and the start of the agent's
+     next shift. This holds across consecutive days within the planning week.
 
-2.2  Split shifts. A split shift (two segments on one local day) may be assigned only to agents on
-     part-time (PT) contracts.
+2.2  Split shifts. A split shift (two segments on one local day) goes only to agents on part-time (PT)
+     contracts.
 
-2.3  Breaks. Every shift of six hours or longer includes exactly one 20-minute paid break. The break
-     starts between two and five hours after the shift start, and is placed in the 30-minute planning
-     interval, within that window, where the queue's gross coverage surplus (agents scheduled on the
-     queue, ignoring breaks, minus agents required) is greatest. If several intervals tie, any of them
-     is acceptable.
+2.3  Breaks. Every shift of six hours or more has exactly one 20-minute paid break. The break starts
+     between two and five hours after the shift starts. Within that window it goes in the 30-minute
+     planning interval where the queue's gross coverage surplus is largest. Gross coverage surplus is
+     agents scheduled on the queue, ignoring breaks, minus agents required. Ties: any tied interval.
+     <!-- G: your call — "Ties: any tied interval" vs the longer original wording -->
 
-2.4  Standard rules (unchanged from the service defaults): full-time agents are scheduled at most 40
-     elapsed hours per ISO week and part-time agents at most 24; no agent works more than five
-     consecutive local days; an agent is scheduled only on queues for which they hold the skill; an
-     agent is never scheduled on overlapping segments.
+2.4  Standard rules (unchanged from the service defaults): full-time agents work at most 40 elapsed
+     hours per ISO week and part-time agents at most 24; nobody works more than five consecutive local
+     days; an agent is scheduled only on queues they hold the skill for; an agent is never scheduled on
+     overlapping segments.
 
-2.5  Shift templates are expressed in local wall-clock time and do not cross local midnight.
+2.5  Shift templates are in local wall-clock time and do not cross local midnight.
 
 ## 3. Weekly reconciliation report
 
-For each planning week the service produces `RUNBOOK.md` containing a two-column table with exactly
-these keys, followed by a short description of the changes made and their rationale:
+For each planning week the service produces `RUNBOOK.md`: a two-column table with exactly these keys,
+then a short description of the changes made and why.
+<!-- G: your call — example row under the table? -->
 
 | key | definition |
 |---|---|
