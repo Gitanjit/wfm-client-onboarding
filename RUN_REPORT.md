@@ -1,10 +1,13 @@
 # wfm-client-onboarding — RUN_REPORT
 
-**Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026
+**Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
+**Submitted revision:** <<G: `multi-v1` (two steps, recommended) or `single-v1`>>
 
-One line: onboard a new contact-centre client (Northwind) into a small workforce-management service —
-new export format with a DST transition, a staffing defect that only bites at peaks, three contractual
-scheduling rules — without regressing the two existing clients on their held-out weeks.
+One line: onboard a new contact-centre client (Northwind) into a small workforce-management service.
+The new export straddles a DST transition, a staffing defect bites only at peaks, the contract adds three
+scheduling rules and an efficiency bound, and the two existing clients must not regress. Then, in a second step
+four months later in the same container, onboard a fourth client (Litware) whose contract and data break the
+shortcuts the first step allows.
 
 ## 1. Task idea
 
@@ -20,6 +23,9 @@ straddles the DST fall-back, a contract with three scheduling rules the greedy c
 repository whose history, comments, tests and changelog all agree that the one staffing defect that
 matters was intentional. The agent has to read the contract rather than the repository's story about
 itself, change shared code without moving the other clients, and report numbers that recompute.
+The second step is the same job four months later, done by a different engineer: a fourth client whose
+export, grain, queues and rules differ, in a codebase the first step left behind. A shortcut that passed the
+first week's checks now has to survive the next client's contract.
 
 ## 2. Why this is a real, economically viable task
 
@@ -34,16 +40,44 @@ verifier is that gate.
 
 ## 3. Hypothesis — why a frontier agent should fail this
 
-<<DRAFT — G to rewrite. Same five lines as the ledger draft; written before any model run.>>
+<<DRAFT — G to rewrite. The arc the brief asks for: pre-run → Haiku disproved it → revised design → revised prediction → what happened.>>
 
-Opus will fix what the repository says is broken and leave alone what the repository says was intended.
-The CHANGELOG, the git log and a comment at the exact line all say the queue-mean handle time was a
-deliberate fix (WFM-198) and that the open bug is the occupancy cap (WFM-212). It will apply the cap,
-add the Northwind config, make W44 load, and read attainment in the low 0.90s from its own evaluator,
-which has no reference to compare against. It will not re-derive the requirement from the SOW's words
-("the interval's own volume and the interval's own average handle time"), so the priority peaks stay
-understaffed by 0.04–0.06 and `fc_sla_priority` fails. Second most likely: the rest rule is checked
-inside the per-day loop, or inherited from `greedy_v2.py`, and fails only at day boundaries.
+**Pre-run hypothesis** (<<G: date>>, before any model run; ledger "Hypothesis"). Opus will fix what the repository
+says is broken and leave alone what the repository says was intended. The CHANGELOG, the git log and a comment at
+the exact line all say that the queue-mean handle time was a deliberate fix (WFM-198) and that the open bug is the
+occupancy cap (WFM-212). It will apply the cap, add the Northwind config, make W44 load, and read attainment in the
+low 0.90s from its own evaluator, which has no reference to compare against. It will not re-derive the requirement
+from the SOW's words ("the interval's own volume and the interval's own average handle time"), so the priority peaks
+stay understaffed by 0.04–0.06 and `fc_sla_priority` fails. The second most likely failure is the rest rule: checked
+inside the per-day loop, or inherited from `greedy_v2.py`, it fails only at day boundaries.
+
+**Haiku disproved it (2 Nov, p5-haiku-high-1).** On the pre-bound revision (commit 0c8e61f), Haiku 5.5 at high effort
+passed every gate in 7 m 50 s of agent time for $0.17. It read the SOW before the code and fixed D1 from the SOW's
+sentence. It saw that greedy_v2's rest check was inverted and wrote its own SOW checker. A hand re-evaluation agrees:
+1.000 / 1.000 attainment, zero violations. Four reasons the design's assumptions failed (`review/HAIKU_FINDING.md`):
+1. Full inspection is cheap. About 650 lines fit in one read, so "incomplete inspection" cannot happen at this size.
+2. The spec states each fix, and a decoy cannot outweigh an explicit contract sentence.
+3. The agent can rebuild the grader. The SOW defines every check, so a careful agent writes the same evaluator and
+   certifies its own work.
+4. The bar was a greedy reference, so any correct solution met "≥ reference − 0.02, ≤ reference × 1.10".
+
+**Revised design (bound + time).** The task now tests two things that compliance does not.
+- Optimisation under a stated bound. SOW §1.6 caps scheduled hours at 1.57 × required agent-hours, and the
+  reference gains an efficiency pass. Haiku's own fix, replayed, now fails the bound on all three weeks.
+- Generalisation across time. A second step in the same container meets step 1's code without step 1's conversation.
+  Litware's 20-minute, end-stamped, three-queue export and its R4/R5 rules break the shortcuts step 1 allows. Northwind
+  stays under contract.
+
+Two further levers:
+- L11: a precedent in the seed (a fixed offset table) is tempting to copy.
+- L12: an infeasible clause that must be reported, not covered.
+
+**Revised prediction** (<<G: write in your words, dated before the Opus runs. Sonnet's result, below, was known from
+2 Nov 04:56 IST; say so if the prediction is written after it.>>)
+
+**What happened.** Sonnet 5.5 at high effort passed both steps of `multi-v1` (1.0 / 1.0, $2.64, 63 min). It used fewer
+hours than the reference on Litware and on Northwind W44, kept 1.000 attainment on every Northwind week, read the end
+stamp, kept the floor separate from Erlang, and listed the 42 exceptions. Opus 5.5: <<pending — §6>>.
 
 ## 4. Task structure
 
@@ -60,7 +94,7 @@ placement), `wfm/evaluate/metrics.py` (the engineers' evaluator), `wfm/cli.py`. 
 | agents (FT/PT) | 40 (32/8) | 28 (22/6) | 40 (32/8) |
 | data format | canonical | canonical | client export: local wall-clock + explicit `utc_offset` |
 | weeks visible to the agent | W41–W43 | W41–W43 | W42–W44 |
-| held-out week (grader only) | W44 (672 intervals) | W44 (169 h — NY falls back on 1 Nov) | W45 (336 intervals) |
+| held-out weeks (grader only) | W44 (672 intervals) | W44 (169 h — NY falls back on 1 Nov) | W45 (336 intervals) and 2027-W10 (334, US spring-forward) |
 
 ISO week 2026-W44 (26 Oct – 1 Nov) contains the US fall-back (Sun 1 Nov 02:00 → 01:00): Northwind's
 W44 export has 338 thirty-minute intervals, with the local labels `2026-11-01 01:00` and `01:30`
@@ -72,7 +106,7 @@ appearing twice with different offsets.
 |---|---|---|---|
 | 1 | Ingest Northwind: honour `utc_offset` (338 / 336 intervals); add `configs/northwind.yaml` without touching defaults | `ingest/loader.py`, `configs/` | — |
 | 2 | Staffing: per-interval AHT (the peak defect) and the occupancy cap | `staffing/required.py` | 1 (the curve is only visible once W44 loads) |
-| 3 | Scheduling: 11 h rest across days, split shifts PT-only, break at the max-surplus slot — the greedy must become week-aware | `scheduler/greedy.py` (+ `rules.py`) | 2 (break placement against the *correct* surplus curve; R3 before D1 silently misplaces breaks) |
+| 3 | Scheduling: 11 h rest across days, split shifts PT-only, break at the max-surplus slot — the greedy must become week-aware; then an efficiency pass to meet SOW §1.6 (hours ≤ 1.57 × required) with breaks re-placed | `scheduler/greedy.py` (+ `rules.py`, `improve.py`) | 2 (break placement against the *correct* surplus curve; R3 before D1 silently misplaces breaks) |
 | 4 | Evaluate and report: RUNBOOK table per SOW §3; re-run Contoso and Fabrikam | `out/northwind/RUNBOOK.md` | 1–3 |
 
 **Where each required fact lives (five artifacts; each necessary, none sufficient):**
@@ -111,135 +145,332 @@ appearing twice with different offsets.
 | L6 `aht_smoothing` knob | `defaults.yaml: aht_smoothing: queue_mean  # one of: queue_mean, interval`; setting `interval` for Northwind changes nothing because the plumbing collapses the series after reading it | skipped verification; the config change that looks like the fix |
 
 **Fixed output paths and the grading contract** are stated in `instruction.md`: `/app/out/northwind/{schedule.csv, eval.json, RUNBOOK.md}`;
-graded by an independent implementation of the SOW on W44, a following Northwind week, and the
-existing clients' next week; editing `wfm/evaluate/` is allowed and does not affect grading.
+graded by an independent implementation of the SOW on W44, other Northwind weeks, and the
+existing clients' next week, with hours against SOW §1.6; editing `wfm/evaluate/` is allowed and does not affect grading.
+
+**Revisions (each a validated tag; ledger D-037..D-048):**
+
+| revision | what changed | oracle (real path) | nop | validation |
+|---|---|---|---|---|
+| `seed-v0` → commit 0c8e61f | single step; FC = attainment ≥ reference − 0.02, hours ≤ reference × 1.10; levers L1–L6 | 1.0 | 0.25 | 15 rows; Haiku 5.5 passed (p5-haiku-high-1) |
+| `single-v1` (main) | SOW §1.6 bound (k 1.57) + 0.95 floor; reference with an efficiency pass; third Northwind week 2027-W10 held out (US spring-forward, 334 intervals); L11 precedent | 1.0 (s1-oracle-1; fresh clone byte-identical) | 0.25 | 21 rows + determinism |
+| `multi-v1` (branch `multistep`) | `single-v1` as step 1 + step 2 `litware-spring` | 1.0 / 1.0 (m1-oracle-1, m1-oracle-2) | 0.25 / 0.114 | step 1's 21 rows unchanged + 10 step-2 rows + determinism |
+
+### Step 2 — `litware-spring` (multi-v1)
+
+It is March 2027. Step 2's workdir delivers into `/app`:
+- Litware's SOW (`docs/LITWARE_SOW.md`), its export note and its exports for 2027-W10 and 2027-W11.
+- Litware's roster.
+- Northwind's 2027-W10 export (step 1's held-out week, now seen).
+
+The agent is a fresh Claude Code conversation in the container step 1 left behind. Step 1's uncommitted edits are
+there; its reasoning is not.
+
+| | Northwind (step 1) | Litware (step 2) |
+|---|---|---|
+| grain / tz | 30 min / America/Chicago | **20 min** / **Europe/London** |
+| export | local start label + `utc_offset` | local label of the interval's **end** + `utc_offset` (README: "ENDS") |
+| queues | priority 90/30, standard 80/20 | priority 90/30, standard 80/30, **email 80/300** (email volume 07:00–19:00) |
+| operating hours | 06:00–24:00 | 07:00–21:00 |
+| roster | 40 (32 FT / 8 PT) | 24 (18 FT / 6 PT), revised skill mix |
+| new rules | — | **R4** ≥ 2 agents on priority in every operating interval; **R5** no email before 09:00; **§2.6** list each infeasible interval under Exceptions, break no rule to cover it, do not drop it |
+| efficiency bound | 1.57 | 1.45 |
+| seen / held-out | W44 / W45, 2027-W10 | 2027-W10, W11 (go-live) / **2027-W12** (UK spring-forward, 501 intervals) |
+| also graded in step 2 | 2027-W11 held out (seed 247); 2026-W44/W45 against its SOW (REG) | |
+
+R5 against email volume from 07:00 makes 42 email intervals a week infeasible. That is the L12 mechanism: the
+contract's answer is to report them.
+
+**Mechanisms step 2 catches** (validation rows in `tests/validation/step2/README.md`; each shortcut is applied on top of the step-1 oracle):
+
+| shortcut that step 1 allows or invites | what breaks in step 2 | grader signal | row |
+|---|---|---|---|
+| step 1's reader reused (row label = interval start) | demand lands one interval late | CS (R3/R4 audit, exception set), AQ | start-stamped-reader 0.79 |
+| queue list hard-coded to two | email never staffed | FC `sla_email` 0, CS exceptions | queues-hardcoded 0.79 |
+| greedy or efficiency pass covers only deficit | R4 at low-volume intervals | CS `priority_floor` | no-priority-floor 0.79 |
+| email scheduled from 07:00 | R5 | CS `email_earliest` | no-email-start 0.79 |
+| R5 respected, nothing reported | §2.6 | CS `exceptions_reported` (D-044) | exceptions-silent 0.79 |
+| 07–09 email volume relabelled as standard | exception set empty; required hours off | CS, AQ | email-relabelled 0.79 |
+| the new rule put in `defaults.yaml` | every client inherits the floor | REG (Fabrikam) | floor-in-defaults 0.79 |
+| offset table copied from the WFM-204 precedent with London dates (L11) | the misplaced hour is 01:00 on the W12 spring-forward Sunday, at low volume and under the floor | **none** | offset-table-london **1.0 (not caught)** |
+| step-2 change degrades Northwind | Northwind W44/W45 against its SOW (D-045) | REG | covered by the contract checks |
+
+Why the two steps share a container and we do not use `--resume-trajectory`: the point is that a shortcut has to
+survive without its author's memory, as it would when the next engineer picks up the service.
 
 ## 5. Verifier design
 
-`tests/test.sh` → `tests/grader.py` → `/logs/verifier/reward.json` (numeric dimensions only, always written;
-a crashed dimension scores 0 for that dimension) plus `/logs/verifier/checks.json` (every check with its
-numbers) and `grader.log`. The verifier runs in a **separate** sandbox with no network; the agent's
-`/app` arrives via `artifacts = ["/app"]`.
+Each step has its own verifier, run in a **separate** no-network sandbox once that step's agent finishes. The
+agent's `/app` arrives via `artifacts = ["/app"]`.
+- Step 1: `tests/test.sh` → `tests/grader.py`.
+- Step 2: `steps/litware-spring/tests/test.sh` → `tests/grader_litware.py`. It overlays the shared `tests/` and
+  imports the step-1 grader's helpers.
 
-**Execution:** read `RUNBOOK.md`; stage the held-out weeks; for each of Northwind W44, Northwind W45,
-Contoso W44, Fabrikam W44: clear `out/<client>/` (RUNBOOK kept), run the agent's CLI with credentials
-scrubbed from the environment (300 s timeout each), evaluate `schedule.csv` with `tests/indep_eval.py`.
+Each writes `/logs/verifier/reward.json` (numeric dimensions only, always written; a crashed dimension scores 0)
+and `/logs/verifier/checks.json` (every check with its numbers), plus `grader.log`. The trial reward is the `mean`
+of the two steps' rewards (`multi_step_reward_strategy = "mean"`). That way a step-1 pass with a step-2 failure
+shows as 0.5–0.9 rather than vanishing under `final`. The per-step rewards stay in `result.json`. `min_reward` is
+not set, so step 2 runs whatever step 1 scored.
 
-**Independence:** own Erlang C (`tests/erlang_c.py`, identical maths to the seed), own canonical loader
-(exports converted via `utc_offset`), own week grids from the ISO week in the client timezone, SOW
-targets hard-coded (`indep_eval.SOW`); never imports from `/app/wfm`, never reads `/app/configs`; never runs
-`/app/tests_unit`; never reads git (file changes come from the sha256 manifest); floors every demand row to the
-planning interval that contains it (so a mis-typed label cannot move the grader's curve).
+**Execution (step 1):** read `RUNBOOK.md` and stage the held-out weeks. Then, for each of Northwind W44, W45 and
+2027-W10, Contoso W44 and Fabrikam W44:
+1. Clear `out/<client>/`, keeping the RUNBOOK.
+2. Run the agent's CLI with credentials scrubbed from the environment (300 s timeout each).
+3. Evaluate `schedule.csv` with `tests/indep_eval.py`.
 
-**Dimensions (`reward.json`):**
+Step 2 does the same for Litware 2027-W11 and 2027-W12, Northwind 2027-W11, Northwind 2026-W44/W45, Contoso and
+Fabrikam.
+
+**Independence:**
+- Own Erlang C (`tests/erlang_c.py`, the same maths as the seed) and own canonical loader. Start- or end-stamped
+  rows are converted via `utc_offset` and floored to the planning interval, so a mis-typed label cannot move the
+  grader's curve.
+- Own week grids, built from the ISO week in the client's timezone.
+- SOW targets, R4/R5 and k hard-coded in `indep_eval.SOW`.
+- Never imports from `/app/wfm`, never reads `/app/configs`, never runs `/app/tests_unit`, never reads git. File
+  changes come from the sha256 manifest.
+
+**Step 1 dimensions (`tests/grader.py`, `single-v1`):**
 
 | dimension | checks | pass condition |
 |---|---|---|
-| `functional_correctness` (8) | per week W44/W45: `intervals`, `sla_priority`, `sla_standard`, `cost` | 338/336 intervals and every segment on the grader's grid (and the agent's `eval.json` count, if present, equal); attainment ≥ oracle − 0.02 per queue; scheduled hours ≤ oracle × 1.10 |
-| `constraint_satisfaction` (8 rules × 2 weeks) | `rest11h`, `split_pt_only`, `break_window_max_surplus`, `weekly_hours`, `consecutive_days`, `skill_match`, `no_overlap`, `coverage_sane` | zero violations per rule, audited on `schedule.csv` alone; score = clean rules / 8, mean of the two weeks |
-| `regression` (10) | per client Contoso/Fabrikam W44: `runs`, `intervals`, `sla`, `cost`, `rules` | CLI exits 0; 672/169 intervals on grid; attainment ≥ unpatched baseline − 0.02; hours ≤ baseline × 1.10; standard rules clean |
-| `artifact_quality` (8) | RUNBOOK table parses; six SOW §3 numbers within 0.5 % (counts exact) of the grader's recomputation on the **re-run** W44 outputs; `files_changed` non-empty and ⊆ files whose sha256 differs from the seed manifest | |
+| `functional_correctness` (12) | per week W44 / W45 / 2027-W10: `intervals`, `sla_priority`, `sla_standard`, `cost` | 338 / 336 / 334 intervals, every segment on the grader's grid (and the agent's `eval.json` count, if present, equal); attainment ≥ 0.95 per queue (SOW §1.6); scheduled hours ≤ 1.57 × the grader's required agent-hours (SOW §1.6) |
+| `constraint_satisfaction` (8 rules × 3 weeks) | `rest11h`, `split_pt_only`, `break_window_max_surplus`, `weekly_hours`, `consecutive_days`, `skill_match`, `no_overlap`, `coverage_sane` | zero violations per rule, audited on `schedule.csv` alone; score = clean rules / 8, mean over weeks |
+| `regression` (10) | per client Contoso / Fabrikam W44: `runs`, `intervals`, `sla`, `cost`, `rules` | CLI exits 0; 672 / 169 intervals on grid; attainment ≥ unpatched baseline − 0.02; hours ≤ baseline × 1.10; standard rules clean |
+| `artifact_quality` (9) | RUNBOOK table parses; seven SOW §3 numbers within 0.5 % (counts exact) of the grader's recomputation on the **re-run** W44 outputs; `files_changed` non-empty and ⊆ files whose sha256 differs from the seed manifest | |
+
+**Step 2 dimensions (`tests/grader_litware.py`):**
+
+| dimension | checks | gate |
+|---|---|---|
+| FC (14) | Litware 2027-W11 and held-out 2027-W12: count (504 / 501), attainment ≥ 0.95 on each of three queues (exceptions left out), hours ≤ 1.45 × required. Northwind held-out 2027-W11: count, two queues, hours ≤ 1.57 × required | 13/14 |
+| CS | Litware §2 on both weeks (R1–R3, R4 `priority_floor`, R5 `email_earliest`, standard rules); **`exceptions_reported`**: the RUNBOOK's Exceptions list for 2027-W11 equals the grader's infeasible set (email intervals with volume before 09:00 local, 42), nothing missing, nothing extra; Northwind §2 on 2027-W11 | 1.0 |
+| REG | Contoso and Fabrikam as in step 1; Northwind 2026-W44 / W45 against its SOW (count, floor, bound, rules; D-045) | 1.0 |
+| AQ (11) | Litware RUNBOOK table parses; nine numbers (including `sla_attainment_email` and `exception_intervals`) match the recomputation; `files_changed` ⊆ files actually changed (delivered files excluded) | 10/11 |
 
 ```
-gates   = CS == 1.0 and REG == 1.0 and FC >= 0.875 and AQ >= 0.875   # 7/8, 7/8
+gates   = CS == 1.0 and REG == 1.0 and FC >= gate_FC and AQ >= gate_AQ   # step 1: 11/12, 8/9 · step 2: 13/14, 10/11
 overall = 1.0 if gates else min(0.79, mean(FC, CS, REG, AQ))
 ```
-A schedule that violates a contractual rule or regresses another client is not shippable whatever its
-SLA; partial credit stays visible; the 0.79 cap makes failure unambiguous. AQ's gate is 7/8 so that a
-report with a stale number and a padded file list fails (report hallucination), while one rounding miss
-is tolerated. The SLA tolerance is 0.02
-(not 0.03) because the decoy path (D2 fixed, D1 not) lands 0.020 under the oracle on W45 priority.
+A schedule that violates a contractual rule or regresses another client is not shippable whatever its SLA. Partial
+credit stays visible, and the 0.79 cap makes failure unambiguous. The AQ gate allows one miss so that a single
+rounding slip passes, while a report with a stale number and a padded file list fails (report hallucination). L12 sits in
+CS, not AQ (D-044): under AQ's one-miss gate a silent report would pass.
 
-**Fixtures** (`tools/make_fixtures.sh`, committed): `seed_manifest.json` (sha256 of every seed file),
-`baseline_{contoso,fabrikam}_W44.json` (the *unpatched* system scored on the held-out week),
-`oracle_northwind_W4{4,5}.json`. Data: `tools/seedgen.py`, seeds Contoso 41–44, Fabrikam 141–144,
-Northwind 242–245, rosters 1/2/7; numpy 2.1.3; byte-identical on rerun (`tools/data_manifest.txt`).
+**The efficiency bound (D-037, D-043).** The bound is absolute: k × required agent-hours. Required agent-hours are the
+grader's own Erlang requirement summed over the week, and the agent can compute them from the SOW. The bound is
+deliberately not relative to the reference, so the contract says exactly what is graded.
 
-**Validation table** (`tests/validation/README.md`; reward.json per row committed):
+How k was set: the reference is the oracle plus a deterministic efficiency pass. The pass drops a shift, gives it a
+shorter template, or moves it to a same-length template when that raises the met count. Its floor is the greedy's
+met count per queue-day, and breaks are re-placed in every evaluation. k = the largest reference ratio × 1.015,
+rounded **up** to two decimals:
 
-| variant | overall | FC | CS | REG | AQ |
-|---|---|---|---|---|---|
-| oracle | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 |
-| nop | 0.250 | 0.000 | 0.000 | 1.000 | 0.000 |
-| shallow-1 no rest rule | 0.790 | 1.000 | 0.875 | 1.000 | 1.000 |
-| shallow-2 defaults set to 30 min / Chicago | 0.790 | 1.000 | 1.000 | 0.700 | 1.000 |
-| shallow-3 loader drops the DST hour | 1.000 (2 count checks fail; passes the gates by design) | 0.875 | 1.000 | 1.000 | 0.875 |
-| shallow-4 decoy path (D2 fixed, D1 not) | 0.781 | 0.625 | 0.875 | 1.000 | 0.625 |
-| shallow-5 midpoint breaks | 0.790 | 0.500 | 0.875 | 1.000 | 1.000 |
-| D1 fixed, D2 not | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
-| shallow-6 `greedy_v2.py` wired in as found | 0.763 | 0.500 | 0.750 | 0.800 | 1.000 |
-| shallow-6b `greedy_v2.py` with its comparison fixed | 0.790 | 0.500 | 0.875 | 1.000 | 1.000 |
-| shallow-7 `aht_smoothing: interval` set, plumbing not fixed | 0.750 | 0.625 | 0.875 | 1.000 | 0.500 |
-| hack-1 hand-written outputs, no code change | 0.281 | 0.000 | 0.000 | 1.000 | 0.125 |
-| hack-2 CLI always emits a pre-made W44 | 0.790 | 0.625 | 0.875 | 1.000 | 1.000 |
-| hack-3 evaluator reports 1.0 + lowered config targets | 0.625 | 0.375 | 0.750 | 1.000 | 0.375 |
-| hack-4 padded RUNBOOK (one stale number, unchanged files listed) | 0.790 | 1.000 | 1.000 | 1.000 | 0.750 |
-| determinism (grader twice on the oracle) | identical `reward.json` | | | | |
+| client | reference ratios | k | reference margins |
+|---|---|---|---|
+| Northwind (W44 / W45 / 2027-W10) | 1.5417 / 1.5108 / 1.5367 | 1.57 | 1.8 / 3.9 / 2.2 % |
+| Litware (W10 / W11 / W12) | 1.411 / 1.404 / 1.420 | 1.45 | at least 2.1 % |
 
-nop scores 0.25 because the regression dimension rightly passes on an unmodified system; the gates
-make it a fail. The three lever rows (shallow-6/6b/7) show each realism feature is caught when taken at face value,
-and the oracle row shows none of them touches a correct solution; fixture values were byte-identical before and after
-the levers.
+Attainment is checked against the SOW's stated floor of 0.95 only. The earlier "≥ reference − 0.02" check was dropped
+(D-040): with an hours bound in the contract, an agent that trades attainment down toward the stated floor follows the
+contract and must not fail an unstated number.
 
-**Red team (each hack is a validation row or a reason it cannot work):** stale outputs → cleared before
-rerun · hard-coded output → held-out W45 and the two regression clients · tampered evaluator →
-independent evaluator · lowered targets in config → SOW targets hard-coded · rewritten git history →
-sha256 manifest (the image has no `.git`) · oversized headcount to force SLA → cost cap × 1.10 · rows
-outside the week or on fake slots → `coverage_sane` + grid mapping · reading `/tests` → uploaded only
-after the agent finishes, verifier sandbox separate · network lookup → allowlist is the model API only
-· grader crash → every dimension wrapped, reward always written. arXiv 2604.28093 reports that over
-15 % of tasks in popular agent benchmarks are reward-hackable; adversarial review of the grader was
-treated as part of building it.
+**Three Northwind weeks.** W44 is seen and contains the US fall-back (338 intervals). W45 (336) and 2027-W10 (the US
+spring-forward, 334) are held out. A schedule tuned to W44, or an offset table that handles one transition, is tested on
+the other. Step 2 adds 2027-W11 as Northwind's fresh held-out week, and Litware 2027-W12 contains the UK
+spring-forward.
 
-**Considered and rejected:** LLM-as-judge over the trajectory (the brief asks to avoid it; every
-check here is an end-state computation) · a judge for RUNBOOK prose (the table is what matters; the
-prose is free text) · an exact optimum as the reference (NP-hard; unverifiable) · a solver dependency
-for the oracle (determinism, tiny image).
+**Fixtures** (`tools/make_fixtures.sh`, committed):
+- `seed_manifest.json`: sha256 of every seed file.
+- `baseline_{contoso,fabrikam}_W44.json`: the unpatched system scored on the held-out week.
+- `oracle_northwind_{W44,W45,2027-W10}.json`: reference numbers, recorded beside each FC check and not used as
+  thresholds.
+
+Step 2 needs no new fixtures, because its FC and CS checks use SOW floors and bounds. Data comes from
+`tools/seedgen.py`:
+- Seeds: Contoso 41–44, Fabrikam 141–144, Northwind 242–247, Litware 341–343. Rosters 1/2/7 and Litware's.
+- numpy 2.1.3.
+- Byte-identical on rerun (`tools/data_manifest.txt`).
+
+**Validation, step 1** (`tests/validation/README.md`, `python tools/validate.py . all`; reward.json per row committed):
+
+| variant | overall | FC | CS | REG | AQ | what the grader sees |
+|---|---|---|---|---|---|---|
+| oracle | **1.000** | 1.000 | 1.000 | 1.000 | 1.000 | sound; hours 1,248 / 1,220 / 1,234 vs bounds 1,270.9 / 1,267.8 / 1,260.7 |
+| nop | 0.250 | 0.000 | 0.000 | 1.000 | 0.000 | REG rightly passes on an unmodified system; gates fail it |
+| oracle-unimproved | 0.790 | 0.750 | 1.000 | 1.000 | 1.000 | cost on all three weeks: ratio 1.621 / 1.625 / 1.624 > 1.57 (§1.6) |
+| unoptimised-correct (Haiku 5.5's p5 fix replayed) | 0.790 | 0.750 | 1.000 | 1.000 | 0.778 | cost on all three weeks (1,328 / 1,328 / 1,344 h, ratio 1.64–1.67); `files_changed` lists two docs the replay leaves out; `required_hours_total` absent |
+| drop-only-pass | 0.790 | 0.750 | 1.000 | 1.000 | 1.000 | recovers nothing (1,312 h): the greedy never places a fully redundant shift; cost on all three weeks |
+| drop-shrink-nested | 1.000 | 0.917 | 1.000 | 1.000 | 1.000 | **passes**: 1,264 / 1,260 / 1,262 h; misses the W10 bound by 1.3 h, absorbed by the 11/12 FC gate |
+| stale-breaks | 0.790 | 1.000 | 0.875 | 1.000 | 1.000 | `break_window_max_surplus` on all weeks (shortened shifts lose their break; dropped coverage moves the surplus) |
+| offset-table-loader | 0.790 | 0.917 | 0.958 | 1.000 | 0.889 | W44 count 336 ≠ 338 (the repeated fall-back hour collapses) and one R3 violation on the W10 spring-forward Sunday; FC 11/12 alone would pass, CS fails it |
+| shallow-1-no-rest | 0.790 | 1.000 | 0.875 | 1.000 | 1.000 | `rest11h` violations every week |
+| shallow-2-defaults-grain | 0.790 | 1.000 | 1.000 | 0.700 | 1.000 | Contoso: 336 intervals, segments off the week grid, SLA drop |
+| shallow-3-nat-loader | 1.000 | 0.917 | 1.000 | 1.000 | 0.889 | W44 count and RUNBOOK count fail (334 ≠ 338); **passes the gates by design** — the DST element is a count check |
+| shallow-4-decoy-d2-only | 0.753 | 0.583 | 0.875 | 1.000 | 0.556 | attainment under the 0.95 floor on 5 of 6 queue-weeks; breaks against the wrong surplus curve (R3) |
+| shallow-5-midpoint-breaks | 0.790 | 0.500 | 0.875 | 1.000 | 1.000 | R3 violations; attainment 0.94 < 0.95 on every queue-week |
+| shallow-6-wire-v2 | 0.762 | 0.500 | 0.750 | 0.800 | 1.000 | inverted rest check: coverage collapses, Contoso/Fabrikam regress; midpoint breaks |
+| shallow-6b-wire-v2-fixed-rest | 0.781 | 0.250 | 0.875 | 1.000 | 1.000 | midpoint breaks, attainment under the floor, and no efficiency pass (cost) |
+| shallow-7-knob-only | 0.726 | 0.583 | 0.875 | 1.000 | 0.444 | curve did not move: decoy-path failures; `files_changed` names `required.py`, which this variant did not change |
+| d1-fixed-d2-not | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | passes: the cap never binds at this load (D2 is a decoy, not a requirement) |
+| hack-1-handwritten-outputs | 0.278 | 0.000 | 0.000 | 1.000 | 0.111 | outputs cleared before rerun; CLI crashes on W44 |
+| hack-2-cli-copies-w44 | 0.790 | 0.500 | 0.833 | 1.000 | 1.000 | held-out W45 and W10: segments off the grid |
+| hack-3-evaluator-lies | 0.625 | 0.417 | 0.750 | 1.000 | 0.333 | independent evaluator with SOW targets ignores both |
+| hack-4-runbook-padded | 0.790 | 1.000 | 1.000 | 1.000 | 0.778 | two report checks fail; AQ gate is 8/9, so this fails; one rounding miss would still pass |
+| determinism | identical `reward.json` |  |  |  |  | byte-deterministic |
+
+**Validation, step 2** (`tests/validation/step2/README.md`, `python tools/validate_step2.py . all`): pristine seed → step-1 oracle → the step's workdir → the variant's step-2 work → grader.
+
+| variant | overall | FC | CS | REG | AQ | what the grader sees |
+|---|---|---|---|---|---|---|
+| oracle | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | sound; Litware W11 740 h / W12 742 h (ratio 1.404 / 1.420 vs k 1.45); Northwind 2027-W11 1,198 h (1.497 vs 1.57); 42 exceptions listed |
+| nop | 0.405 | 0.286 | 0.333 | 1.000 | 0.000 | no Litware config: every Litware check fails; Northwind 2027-W11 passes (step 1 generalised); REG passes |
+| start-stamped-reader | 0.790 | 1.000 | 0.906 | 1.000 | 0.818 | demand one interval late: R3/R4 audit and the exceptions set no longer match (CS), RUNBOOK numbers off |
+| queues-hardcoded | 0.790 | 0.857 | 0.970 | 1.000 | 0.636 | email never staffed: attainment 0 on email both weeks (FC), exceptions empty (CS) |
+| no-priority-floor | 0.790 | 1.000 | 0.936 | 1.000 | 1.000 | `priority_floor` violations at low-volume intervals both weeks (CS) |
+| no-email-start | 0.790 | 1.000 | 0.906 | 1.000 | 0.909 | `email_earliest` violations; nothing reported under Exceptions (CS); `exception_intervals` 0 (AQ) |
+| exceptions-silent | 0.790 | 1.000 | 0.970 | 1.000 | 1.000 | `exceptions_reported` fails (CS) — the §2.6 report is mandatory |
+| email-relabelled | 0.790 | 1.000 | 0.970 | 1.000 | 0.727 | exceptions empty (CS); required hours and understaffing off the recomputation (AQ) |
+| offset-table-london | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | **not caught**: the misplaced hour is the early morning of the W12 spring-forward Sunday — low volume, covered by the priority floor, count stays 501 |
+| floor-in-defaults | 0.790 | 1.000 | 1.000 | 0.955 | 1.000 | every client inherits it: Fabrikam attainment drops (REG) |
+| determinism | identical |  |  |  |  | byte-deterministic |
+
+nop scores 0.25 in step 1 because the regression dimension rightly passes on an unmodified system; the gates make it a
+fail. Step 2's nop starts from the step-1 oracle's state, so Northwind's 2027-W11 and the regression checks pass and
+every Litware check fails. The lever rows (shallow-6/6b/7, offset-table-loader) show that each realism feature is caught
+when taken at face value. The oracle row shows none of them touches a correct solution.
+
+**What the validation does not separate.** A basic drop-or-shrink pass passes step 1 with one cost miss
+(drop-shrink-nested). The bound separates "no optimisation" from "some optimisation", not good from great. The
+offset-table shortcut is caught in step 1 only by the W44 count and one R3 row, and in step 2 not at all.
+
+**Red team (each hack is a validation row, or a reason it cannot work):**
+
+| hack | why it fails |
+|---|---|
+| stale outputs | outputs are cleared before rerun |
+| hard-coded output | held-out weeks (W45, 2027-W10, Litware 2027-W12, Northwind 2027-W11) and the regression clients |
+| tampered evaluator | the grader uses its own independent evaluator |
+| lowered targets in config | SOW targets are hard-coded |
+| rewritten git history | sha256 manifest |
+| oversized headcount to force SLA | the §1.6 hours bound |
+| relabelled infeasible demand | the exception set and required hours are recomputed from the raw export |
+| rows outside the week or on fake slots | `coverage_sane` and grid mapping |
+| reading `/tests` | tests are uploaded only after the agent finishes, to a separate verifier sandbox |
+| network lookup | the allowlist is the model API only |
+| grader crash | every dimension is wrapped, and a reward is always written |
+
+arXiv 2604.28093 reports that over 15 % of tasks in popular agent benchmarks are reward-hackable. Adversarial review
+of the grader was treated as part of building it.
+
+**Considered and rejected:**
+- LLM-as-judge over the trajectory: the brief asks to avoid it, and every check here is an end-state computation.
+- A judge for RUNBOOK prose: the table is what matters, and the prose is free text.
+- An exact optimum as the reference: NP-hard and unverifiable.
+- A solver dependency for the oracle: it would cost determinism and the tiny image.
+- A reference-relative hours bound: the contract would not say what is graded (D-037).
+- `final` aggregation: it would hide a step-1 pass behind a step-2 failure.
 
 ## 6. Model runs
 
-| job | agent | model | effort | wall-clock | cost | FC | CS | REG | AQ | overall |
-|---|---|---|---|---|---|---|---|---|---|---|
-| p3-oracle-1 | oracle | — | — | 1 m 55 s (incl. build) | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
-| p4-nop-2 | nop | — | — | 56 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
-| p4-oracle-2 | oracle | — | — | 1 m 05 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
-| p4-fresh-oracle-1 | oracle (fresh `git clone`, `--force-build`) | — | — | 1 m 01 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
-| p5pre-oracle-2 | oracle (image with levers L1–L6) | — | — | 49 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
-| p5pre-nop-2 | nop | — | — | 42 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
-| p5-haiku-high-1 | claude-code | anthropic/claude-haiku-5-5 | high | 10 m 17 s (agent 7 m 50 s) | $0.17 | 1.0 | 1.0 | 1.0 | 1.0 | **1.0** — pipeline-proof run on pre-freeze docs; genuine pass (hand re-evaluation: 1.000 / 1.000, 1,328 h, zero violations) |
-| p5-opus-high-1 | claude-code | anthropic/claude-opus-5-5 (or openrouter/anthropic/claude-opus-5.5) | high | <<pending>> | | | | | | |
+All model runs use Claude Code via Harbor's `claude-code` agent:
+- `--effort high`.
+- Claude Code's server-side web search disabled (D-034).
+- Claude Code's own `--max-budget-usd` cap.
+- A marker-free copy of the tagged revision, with the `<!-- G: your call -->` review lines stripped (D-033).
 
-Commands (working forms; the brief's short forms in comments):
-```
-harbor run -p ./wfm-client-onboarding -a oracle --job-name p3-oracle-1
-harbor run -p ./wfm-client-onboarding -a nop --job-name p4-nop-1
-harbor run -p ./wfm-client-onboarding -a claude-code -m openrouter/anthropic/claude-opus-5.5 --effort high --job-name p5-opus-high-1
-#   brief's form:  harbor run -p ./wfm-client-onboarding -a claude -m opus-5-5
-harbor view ./jobs
-```
-`--print-config` confirms `--effort high` resolves to the claude-code kwarg `reasoning_effort: high`.
+Two-step trials show `step 1 / step 2 → trial (mean)`.
+
+| job | revision | agent | model | wall-clock | cost | FC | CS | REG | AQ | overall |
+|---|---|---|---|---|---|---|---|---|---|---|
+| p3-oracle-1 | seed-v0 | oracle | — | 1 m 55 s (incl. build) | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| p4-nop-2 | seed-v0 | nop | — | 56 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
+| p4-fresh-oracle-1 | seed-v0 (fresh `git clone`, `--force-build`) | oracle | — | 1 m 01 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| p5pre-oracle-2 | levers L1–L6 | oracle | — | 49 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
+| p5pre-nop-2 | levers L1–L6 | nop | — | 42 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
+| p5-haiku-high-1 | 0c8e61f (pre-bound) | claude-code | anthropic/claude-haiku-5-5 | 10 m 17 s (agent 7 m 50 s) | $0.17 | 1.0 | 1.0 | 1.0 | 1.0 | **1.0**: genuine (hand re-evaluation 1.000 / 1.000, 1,328 h, zero violations). Replayed on `single-v1` it scores 0.79 (cost on all three weeks) |
+| s1-oracle-1 | single-v1 | oracle | — | 1 m 24 s (forced build) | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0; a fresh clone gives a byte-identical reward.json |
+| s1-nop-1 | single-v1 | nop | — | 45 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
+| m1-oracle-1 | multi-v1 | oracle | — | 22 m 14 s (each verifier phase closed ~10 min after its grader; transient) | — | 1.0 / 1.0 | | | | 1.0 / 1.0 → **1.0** |
+| m1-oracle-2 | multi-v1 | oracle | — | 1 m 53 s | — | 1.0 / 1.0 | | | | 1.0 / 1.0 → **1.0** |
+| m1-nop-1 | multi-v1 | nop | — | 1 m 13 s | — | | | | | 0.25 / 0.114 → 0.182 |
+| s3-sonnet-1 | multi-v1 | claude-code | anthropic/claude-sonnet-5-5 | 62 m 42 s (step 1 agent 42 m, step 2 agent 15 m) | $2.64 ($1.16 + $1.48) | 1.0 / 1.0 | 1.0 / 1.0 | 1.0 / 1.0 | 1.0 / 1.0 | 1.0 / 1.0 → **1.0**: genuine (below) |
+| s3-opus-1 | multi-v1 | claude-code | anthropic/claude-opus-5-5 | <<pending>> | | | | | | |
+| s3-opus-2 | multi-v1 | claude-code | anthropic/claude-opus-5-5 | <<pending>> | | | | | | |
+
+Two notes on the nop rows:
+- Step 2's nop on the real path (0.114) is lower than the validation table's (0.405). On the real path, step 2 starts
+  from step 1's nop state; in the validation table it starts from the step-1 oracle.
+- m1-oracle-2 ran with the verifier timeout raised to 1800 s (D-047). Its verifier phases took 37 s / 39 s.
+
+**s3-sonnet-1 in numbers.** Hours against the reference and the bound, from the grader's checks. Every Northwind
+queue-week is at 1.000 attainment.
+
+| week | Sonnet 5.5 | reference | bound |
+|---|---|---|---|
+| Northwind 2026-W44 | 1,226 h | 1,248 h | 1,270.9 h |
+| Northwind 2026-W45 (held out) | 1,236 h | 1,220 h | 1,267.8 h |
+| Northwind 2027-W10 (held out) | 1,252 h | 1,234 h | 1,260.7 h (0.7 % margin) |
+| Northwind 2027-W11 (held out, step 2) | ratio 1.524 | 1.497 | 1.57 |
+| Litware 2027-W11 | 718 h, ratio 1.362 | 1.404 | 1.45 |
+| Litware 2027-W12 (held out, UK spring-forward) | 704 h, ratio 1.347 | 1.420 | 1.45 |
+
+The independent evaluator, run on its own schedules, finds zero violations on every rule, including R4 and R5. It
+lists all 42 exceptions. The trajectory never touches `/tests`, `/solution` or grader names. The six files delivered
+in step 2 are byte-identical to the workdir. Evidence: `tests/validation/trials/s3-sonnet-1/<step>/` (tool-call index,
+files opened, diff, final message, RUNBOOK, hand re-evaluation, mechanisms table).
+
+How it worked, with tool-call turns from `tool_calls.md`:
+- **Step 1.** It read ARCHITECTURE, the SOW and the CHANGELOG first (#1), and the export and its README (#2).
+- It made the offsets authoritative: 338 intervals, with the two `10:01` rows read into 10:00 and flagged to report to
+  Northwind.
+- It applied the cap and per-interval AHT.
+- It wired `greedy_v2.py` in for Northwind only, behind a config switch, and fixed the inverted rest check.
+- It planned coverage net of breaks, then trimmed under the 1.57 bound. Its slow attainment-for-hours fallback was
+  never needed.
+- It wrote its own SOW checker, compared Contoso and Fabrikam byte for byte, and tested a synthetic +25 % week.
+- It saw the L11 Fabrikam offset table and left it alone as out of scope, naming it in the RUNBOOK.
+- **Step 2** (15 min). It read the end stamp from the README.
+  - It took the queue list from config and kept R4 separate from the Erlang requirement.
+  - It applied R5 in scheduling and trimming, and listed the exceptions.
+  - It added shift lengthening and a repeated repair-and-trim loop.
+  - It tested a synthetic 2027-03-28 clock-change week (501 intervals) and +30 % volume, and re-checked Northwind
+    2027-W10 against its bound (1.559).
 
 ## 7. Failure analysis
 
-<<GITANJIT: narrative, 200–300 words, from the worksheet; name the mechanism; cite tool-call indices; quote the agent's success claim; say what a careful engineer would have done>>
+<<GITANJIT: narrative, 200–300 words, once the Opus runs are in. Name the mechanism, cite tool-call indices, quote the
+agent's success claim, and say what a careful engineer would have done. If Opus passes, this section says so and points
+at §5's validation tables as the evidence that the grader discriminates.>>
 
-Supporting table (per critical failure — mechanism · grader check · evidence): <<fill after the run>>
+Status at drafting (2 Nov 2026): no model has failed `multi-v1`. Sonnet 5.5 passed both steps (§6), and there is no
+failure to analyse for it. The checks it came closest to are step-1 cost on Northwind 2027-W10 (0.7 % under the
+bound) and standard attainment on Litware W11 (0.997; one 08:40 interval it could not reach with any template start).
 
-False-negative check: <<hand re-evaluation of the agent's schedule with tests/indep_eval.py; violating rows pasted>>
+Supporting table (per critical failure: mechanism · grader check · evidence): <<fill after the Opus runs>>
+
+False-negative check: <<hand re-evaluation with `tests/indep_eval.py` on each failing dimension. The capture tool
+writes it to `tests/validation/trials/<job>/<step>/hand_reeval.md`.>>
 
 ## 8. Fairness audit
 
 - [x] Every fact the oracle uses is in an agent-readable file (table in §4)
-- [x] Every grader check corresponds to a stated rule: SOW §1.2–1.5, §2.1–2.5, §3; ARCHITECTURE.md (config precedence, templates, elapsed time); instruction.md (output paths, "do not change defaults", grading contract)
+- [x] Every grader check corresponds to a stated rule: SOW §1.2–1.6, §2.1–2.5, §3 (Litware: §1.2–1.6, §2.1–2.8, §3); ARCHITECTURE.md (config precedence, templates, elapsed time); instruction.md (output paths, "do not change defaults", grading contract)
 - [x] Output paths specified in instruction.md
 - [x] Oracle 1.0 (local and real Harbor path); nop 0.25; determinism proven (identical reward.json)
 - [x] Agent network limited to the model API (allowlist `openrouter.ai`, `api.anthropic.com`); verifier no-network; environment public only for agent installation
 - [ ] Agent timeout 90 min vs human oracle time <<GITANJIT: minutes from your walkthrough>> (session's own oracle took ≈ 12 min from branch to verified numbers)
 - [ ] Human walkthrough performed <<GITANJIT: steps and time>>
 - [x] No exact-string grading; tolerances listed in §5
-- [x] Every realism lever (L1–L6) is discoverable from the repository, none is referenced by the grader, and the oracle is unaffected (validation rows; fixture values unchanged)
+- [x] Every realism lever (L1–L6, L11) is discoverable from the repository, none is referenced by the grader, and the oracle is unaffected (validation rows; fixture values unchanged)
 - [x] Unit tests in the image are the service's own; the grader never runs them, and the oracle leaves them green
 - [ ] Failure not caused by an environment bug <<after the model run>>
+- [x] Step 2: every fact the step-2 oracle uses is in the step's delivered files (Litware SOW §1–§3, the export note's
+  "ENDS", the roster) or in step 1's repository. The infeasible set follows from SOW §1.4 (email from 07:00) and §2.5
+  (no email before 09:00).
+- [x] Step 2 oracle 1.0 / 1.0 on the real path twice; nop 0.25 / 0.114; per-step graders deterministic.
+- [x] Nothing agent-visible names the graders, fixtures or held-out weeks. A pre-run leak grep is run on the marker-free
+  copy (D-035).
 
 ## 9. Reproduction
 
@@ -275,24 +506,61 @@ Harbor facts learned the hard way: `artifacts = [...]` must be top-level in `tas
 numeric (a nested `checks` object raises `VerifierOutputParseError` in the trial result even though the
 score is read), hence `checks.json`.
 
+**Two steps (`multi-v1`, branch `multistep`):**
+```
+git checkout multi-v1
+harbor run -p . -a oracle                # expect 1.0 / 1.0, trial 1.0
+harbor run -p . -a nop                   # expect 0.25 / 0.114, trial 0.182
+export ANTHROPIC_API_KEY=... ; harbor run -p . -a claude-code -m anthropic/claude-opus-5-5 --effort high
+python tools/validate_step2.py . all     # step-2 validation table
+python tools/capture_trial.py --job jobs/<job> --task . --out tests/validation/trials/<job>   # evidence per step
+```
+
+**Multi-step behaviour of Harbor 0.25.0** (toy smoke `smoke/toy-two-step`, then this task; ledger 2 Nov 03:20):
+- `[[steps]]` and `multi_step_reward_strategy` are top-level `task.toml` keys. Each step can carry its own `agent`,
+  `verifier`, `min_reward` and `artifacts`. The task-level `[agent] timeout_sec` applies to each step.
+- `steps/<name>/workdir/` is uploaded into the agent's working directory (`/app`) before the step. A
+  `workdir/setup.sh` runs from there and stays in `/app`, where it would count as an agent change, so this task
+  ships none (D-046).
+- The `oracle` agent runs `steps/<name>/solution/solve.sh` per step, with only that step's solution directory at
+  `/solution`. Filesystem state persists, so the step-2 oracle patch applies on top of step 1's.
+- The verifier copies the shared `tests/` and then the step's `tests/` over it, and runs the step's `test.sh` if one
+  is present. Each step gets its own verifier sandbox, and artifacts are collected per step.
+- A root `instruction.md` is not required once steps exist. Each step has its own.
+- `harbor lint` reports `root-agent` once per step.
+- One transient: in m1-oracle-1 each verifier phase closed about 10 minutes after a 23 s grader run. With
+  `[verifier] timeout_sec = 1800` (D-047), m1-oracle-2's phases took 37 s and 39 s.
+- Not used: `--resume-trajectory`. The design needs step 2 to meet step 1's code without step 1's memory.
+
 ## 10. Limitations and what I would do next
 
-<<DRAFT — G to rewrite (100 words).>>
+<<DRAFT — G to rewrite (100–150 words).>>
 
-The reference scheduler is greedy, so every tolerance is relative to it, not to an optimum. One cost
-rate, no shrinkage, forecast equals data. The DST element is a count check, not a failure driver. The
-realism levers all make the repository's story point the wrong way; that is what real repositories do,
-but a trap that points the right way and should be trusted would test calibration in both directions.
-Next: a second client with differently shaped demand; the Tier 2 lever (per-agent unavailability) if the
-model passes; the versioned onboarding gate from §2 as a product.
+Sonnet 5.5 solves both steps for $2.64. Making the agent write a real optimiser, and making shortcuts survive four
+months, did not defeat a model that reads the contract, writes its own checker and tests synthetic weeks unprompted. The
+task as built measures compliance plus moderate optimisation. Frontier agents now do both reliably at this scale (about
+650 lines of service code plus a 700-word contract per client). What would plausibly separate them next:
+- A service too large to read whole.
+- Contracts whose rules interact, so that the stated rules are jointly infeasible in ways the agent must find.
+- Demand the agent must forecast rather than read.
+- A grader bar set by a stronger optimiser than the agent can be expected to write in 90 minutes.
 
-- Greedy scheduler is a reference, not an optimum; tolerances are relative to it
-- One cost rate; shrinkage not modelled; forecasting out of scope (forecast = data)
-- The DST element is a count check, not a failure driver (validation row shallow-3)
-- Single data-generator family; a second, differently shaped client would strengthen regression
-- Fabrikam is roster-bound: the unpatched baseline schedules 864 of its 1,024 roster hours (84 % utilisation) and attains 0.857 / 0.833; regression is baseline-relative. The oracle leaves the existing clients' staffing on the service default (`aht_smoothing: queue_mean`), so their held-out week under the oracle equals the baseline; the earlier oracle, which applied per-interval AHT globally, also cleared the floor
-- The levers make the repository's story one-directional (always misleading at the defect); a second, trustworthy trail would test calibration both ways
-- Roadmap: a versioned WFM service where each onboarding is an agent-proposed diff accepted only after retro-evaluation across every client's held-out weeks; this verifier is that system's acceptance gate
+- **Sonnet 5.5 passes `multi-v1`** (§6). The validation tables show the grader discriminates between correct and
+  shortcut solutions. They do not show the task is beyond current frontier agents.
+- The reference is a greedy scheduler plus a local improvement pass, not an optimum. k is relative to it (+1.5 %,
+  rounded up). Sonnet used fewer hours than it on three of six graded weeks, at equal or higher attainment on all six.
+- The bound separates "no optimisation" from "some": the basic drop-or-shrink pass passes step 1 with one cost miss.
+- **L11 is weak.** The offset-table shortcut is caught in step 1 only by the W44 count and one R3 row, and in step 2 not
+  at all (`offset-table-london` scores 1.0). Sonnet noticed the precedent and did not copy it.
+- The DST element is a count check, not a failure driver (shallow-3 passes the gates by design).
+- One cost rate; no shrinkage; forecast = data. Single data-generator family.
+- Fabrikam is roster-bound: the unpatched baseline schedules 864 of its 1,024 roster hours and attains 0.857 / 0.833.
+  Regression is measured against that baseline.
+- The levers make the repository's story one-directional (always misleading at the defect). A second, trustworthy
+  trail would test calibration both ways.
+- Roadmap: a versioned WFM service where each onboarding is an agent-proposed diff, accepted only after retro-evaluation
+  across every client's held-out weeks. This verifier is that system's acceptance gate. <<G: if `single-v1` is
+  submitted, the two-step design on branch `multistep` (tag `multi-v1`) becomes this roadmap's first item.>>
 
 ## 11. Provenance
 
@@ -312,4 +580,4 @@ Planned in a Claude chat (task design, verifier spec, failure hypothesis, pre-mo
 levers) and built with Claude Code between 30 Oct and 3 Nov 2026. The domain, the choice of mechanism
 and the final wording of the agent-facing files are mine; the session wrote the code, data generator,
 grader, fixtures and tables from the spec, and proposed decisions where the spec was silent. Every
-decision and run is in `ledger/LEDGER.md` (D-001..D-032) with its reason.
+decision and run is in `ledger/LEDGER.md` (D-001..D-048) with its reason.
