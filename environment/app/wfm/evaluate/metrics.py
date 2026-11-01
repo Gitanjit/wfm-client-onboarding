@@ -43,7 +43,9 @@ def coverage(sched: pd.DataFrame, grid, grain_min: int, skills: dict | None = No
     return gross, on_break, cross
 
 
-def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) -> dict:
+def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Agent], week: str,
+             exclude: set = frozenset()) -> dict:
+    """`exclude`: (queue, interval) pairs reported as infeasible (SOW §2.6); left out of attainment."""
     sched = _parse(sched)
     grain = cfg["interval_minutes"]
     grid = sorted(set(req["interval_start_utc"]))
@@ -55,7 +57,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
     for q, g in req.groupby("queue"):
         met = tot = 0
         for r in g.itertuples(index=False):
-            if r.volume <= 0:
+            if r.volume <= 0 or (q, r.interval_start_utc) in exclude:
                 continue
             tot += 1
             scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]

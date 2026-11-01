@@ -11,7 +11,8 @@ that keeps the floor is taken:
   3. move it to another template of the same length if that raises the met count (this frees
      coverage for later drops).
 Breaks are re-placed by the configured rule inside every evaluation; no move may leave more intervals
-below a `min_cover` floor (whole agents on the queue) than the greedy did. Sweeps repeat until one changes
+below a `min_cover` floor (whole agents on the queue) than the greedy did, and templates a queue may not
+start are never used (R5). Sweeps repeat until one changes
 nothing: drops and shrinks lower hours, relocations raise the met count, both are bounded. Same
 agent, queue and day throughout, so weekly-hours, consecutive-day and skill rules cannot get worse.
 """
@@ -49,6 +50,7 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
         groups[(sh.queue, sh.day)].append(sh)
         by_agent[sh.agent_id][sh.day] = sh
 
+    earliest = cfg.get("queue_earliest_hour", {})
     floor_at = {t: {q: constraints.floor(q, t, cfg) for q in {s.queue for s in shifts}} for g in day_grids.values() for t in g}
 
     def met(q: str, day: date, group: list) -> tuple[int, int]:
@@ -73,7 +75,8 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
 
     def allowed(sh) -> list[Template]:
         c = contract.get(sh.agent_id, "FT")
-        return [t for t in templates if t.id != sh.template.id and eligible(t, c) and rules.split_allowed(t, c, split_policy)]
+        return [t for t in templates if t.id != sh.template.id and eligible(t, c) and rules.split_allowed(t, c, split_policy)
+                and rules.queue_allows(t, sh.queue, earliest)]
 
     def rest_ok(new) -> bool:
         """The reshaped shift keeps the rest rule against the agent's previous and next shifts."""

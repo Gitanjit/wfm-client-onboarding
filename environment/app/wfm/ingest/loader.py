@@ -51,8 +51,14 @@ def _fixed_offsets(local: pd.Series, table: dict[str, str]) -> pd.Series:
 
 def _read_export(path, cfg: dict) -> pd.DataFrame:
     df = pd.read_csv(path)
-    local = pd.to_datetime(df["interval_start_local"])
-    if "utc_offset" in df:
+    local = pd.to_datetime(df["interval_start_local"]) if "interval_start_local" in df else None
+    if "interval_end_local" in df:
+        # Some exports stamp each row with the interval's END (data/<client>/README.txt); the offset is the
+        # one in effect at that moment. The start is one export interval earlier, in elapsed time.
+        stamp = df["interval_end_local"].str.strip() + df["utc_offset"].str.strip()
+        end = pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)
+        df["interval_start_utc"] = end - pd.Timedelta(minutes=cfg.get("export_interval_minutes", cfg["interval_minutes"]))
+    elif "utc_offset" in df:
         # The export's utc_offset is authoritative (data/<client>/README.txt): build UTC from it rather
         # than localising the wall-clock label, which repeats during a DST fall-back.
         stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()

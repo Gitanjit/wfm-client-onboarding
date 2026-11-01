@@ -1,0 +1,24 @@
+# Litware — 20-minute local-time export stamped with the interval END (data/litware/README.txt).
+# Targets and rules per docs/LITWARE_SOW.md.
+name: Litware
+interval_minutes: 20
+export_interval_minutes: 20           # README: one row per queue per 20-minute interval, stamped at its end
+tz: Europe/London
+operating_hours: [7, 21]
+queues: [priority, standard, email]
+
+aht_smoothing: interval               # SOW §1.2: each interval at its own handle time
+
+sla:                                  # SOW §1.2
+  priority: {target: 0.90, seconds: 30}
+  standard: {target: 0.80, seconds: 30}
+  email: {target: 0.80, seconds: 300}
+
+min_rest_hours: 11                    # SOW §2.1
+split_shifts: PT                      # SOW §2.2
+break_placement: max_surplus          # SOW §2.3
+min_cover:                            # SOW §2.4 (R4) — agents on the queue in every operating interval
+  priority: {agents: 2, hours: [7, 21]}
+cross_skill_weight: 0                 # whole persons on the queue (SOW §1); the 0.5 service default (PR #31) does not apply
+queue_earliest_hour: {email: 9}       # SOW §2.5 (R5) — nobody on email before 09:00; infeasible intervals reported (§2.6)
+efficiency_pass: drop_shrink          # SOW §1.6

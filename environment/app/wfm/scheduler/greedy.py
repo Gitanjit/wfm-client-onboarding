@@ -58,6 +58,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
 
     min_rest = float(cfg.get("min_rest_hours", 0))
     split_policy = str(cfg.get("split_shifts", "all"))
+    earliest = cfg.get("queue_earliest_hour", {})
 
     hours_used: dict[str, float] = defaultdict(float)
     days_worked: dict[str, list[date]] = defaultdict(list)
@@ -90,7 +91,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                 segs = tpl.segments_utc(day, tz)
                 ivs = _covered(segs, day_grid)
                 for q in queues:
-                    if (tpl.id, q) in dead:
+                    if (tpl.id, q) in dead or not rules.queue_allows(tpl, q, earliest):
                         continue
                     if not floor_first and (q, day) in quota and placed[(q, day)] + tpl.hours > quota[(q, day)] + 4:
                         continue
