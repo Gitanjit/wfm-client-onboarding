@@ -1,0 +1,94 @@
+{
+  "job": "s3-sonnet-1",
+  "trial": "wfm-client-onboarding__KADCHjU",
+  "step": "litware-spring",
+  "model": "anthropic/claude-sonnet-5-5",
+  "kwargs": {
+    "max_budget_usd": 6,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.316",
+  "cost_usd": 1.4777750000000003,
+  "tokens": {
+    "n_input_tokens": 4769696,
+    "n_cache_tokens": 4638765,
+    "n_output_tokens": 68662
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 927.1,
+    "verifier": 119.2
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 51,
+  "final_metrics": {
+    "total_prompt_tokens": 4769696,
+    "total_completion_tokens": 68662,
+    "total_cached_tokens": 4638765,
+    "total_cost_usd": 1.4777750000000003,
+    "total_steps": 50,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 130833,
+      "total_cache_read_input_tokens": 4638765
+    }
+  },
+  "delivered_unchanged": [
+    "data/agents/litware.csv",
+    "data/litware/README.txt",
+    "data/litware/export_2027-W10.csv",
+    "data/litware/export_2027-W11.csv",
+    "data/northwind/export_2027-W10.csv",
+    "docs/LITWARE_SOW.md"
+  ],
+  "changed_files": [
+    "configs/litware.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/litware_runbook_notes.md",
+    "tests_unit/test_litware.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/runbook.py",
+    "wfm/scheduler/greedy_v2.py",
+    "wfm/scheduler/templates.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2027-W11",
+    "sla": {
+      "priority": 1.0,
+      "standard": 0.9965986394557823,
+      "email": 1.0
+    },
+    "hours": 718.0,
+    "required": 527.0,
+    "intervals": 504,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "priority_floor": 0,
+      "email_earliest": 0
+    }
+  }
+}

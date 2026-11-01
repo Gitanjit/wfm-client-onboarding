@@ -291,6 +291,11 @@ def capture(t: Path, out: Path, r: dict, base_app: Path, manifest: dict, a, step
             rel = f.relative_to(app).as_posix()
             if f.is_file() and not rel.startswith(("out/", ".git/", ".pytest_cache/")) and "__pycache__" not in rel and base.get(rel) != f.read_bytes():
                 changed.append(rel)
+        # files the step's workdir delivered into /app are not agent changes (the grader drops them too, D-046)
+        workdir = a.task / "steps" / (step or "") / "workdir"
+        delivered = [rel for rel in changed if (workdir / rel).is_file() and (workdir / rel).read_bytes() == (app / rel).read_bytes()]
+        changed = [rel for rel in changed if rel not in delivered]
+        summary["delivered_unchanged"] = delivered
     (out / "changed_files.txt").write_text("\n".join(changed) + "\n")
     patch = []
     for rel in changed:

@@ -1,0 +1,16 @@
+== wfm-client-onboarding verifier ==
+== summary ==
+  functional_correctness   1.0000  (gate 0.9166666666666666)
+  constraint_satisfaction  1.0000  (gate 1.0)
+  regression               1.0000  (gate 1.0)
+  artifact_quality         1.0000  (gate 0.8888888888888888)
+  overall                  1.0000
+  failed checks: none
+== reward ==
+{
+  "artifact_quality": 1.0,
+  "constraint_satisfaction": 1.0,
+  "functional_correctness": 1.0,
+  "overall": 1.0,
+  "regression": 1.0
+}

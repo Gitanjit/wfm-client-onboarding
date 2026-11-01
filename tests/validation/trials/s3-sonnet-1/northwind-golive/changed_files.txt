@@ -1,0 +1,11 @@
+configs/northwind.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+docs/northwind_runbook_notes.md
+tests_unit/test_northwind.py
+wfm/cli.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/runbook.py
+wfm/scheduler/greedy_v2.py
+wfm/staffing/required.py

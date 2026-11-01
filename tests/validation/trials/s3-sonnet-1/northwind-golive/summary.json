@@ -1,0 +1,83 @@
+{
+  "job": "s3-sonnet-1",
+  "trial": "wfm-client-onboarding__KADCHjU",
+  "step": "northwind-golive",
+  "model": "anthropic/claude-sonnet-5-5",
+  "kwargs": {
+    "max_budget_usd": 6,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.316",
+  "cost_usd": 1.1605610999999998,
+  "tokens": {
+    "n_input_tokens": 1810038,
+    "n_cache_tokens": 1589811,
+    "n_output_tokens": 43813
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 2531.7,
+    "verifier": 84.0
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 29,
+  "final_metrics": {
+    "total_prompt_tokens": 1810038,
+    "total_completion_tokens": 43813,
+    "total_cached_tokens": 1589811,
+    "total_cost_usd": 1.1605610999999998,
+    "total_steps": 32,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 220167,
+      "total_cache_read_input_tokens": 1589811
+    }
+  },
+  "changed_files": [
+    "configs/northwind.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/northwind_runbook_notes.md",
+    "tests_unit/test_northwind.py",
+    "wfm/cli.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/runbook.py",
+    "wfm/scheduler/greedy_v2.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2026-W44",
+    "sla": {
+      "priority": 1.0,
+      "standard": 1.0
+    },
+    "hours": 1226.0,
+    "required": 809.5,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0
+    }
+  }
+}
