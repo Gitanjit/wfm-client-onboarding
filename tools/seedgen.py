@@ -104,6 +104,54 @@ def write_export(path: Path, tz: ZoneInfo, rows, client: str, week: int) -> None
     path.write_text("\n".join(lines) + "\n")
 
 
+# Litware (step 2): 20-minute grain, Europe/London, three queues, an export stamped with the interval END.
+LITWARE = dict(prefix="LW", grain=20, tz="Europe/London", scale=0.035, n_agents=24, n_pt=6, hours=(7, 21),
+               queue_hours={"priority": (7, 21), "standard": (7, 21), "email": (7, 19)}, roster_seed=11,
+               weeks={(2027, 10): 341, (2027, 11): 342, (2027, 12): 343}, heldout=[(2027, 12)])
+BASE_DAILY_L = {"priority": 1400.0, "standard": 3200.0, "email": 900.0}
+AHT_BASE_L = {"priority": 420.0, "standard": 300.0, "email": 360.0}
+STEP2_NORTHWIND = {(2027, 10): 246, (2027, 11): 247}   # W10 is seen in step 2; W11 is step 2's held-out week
+
+
+def generate_multi(intervals_utc, tz: ZoneInfo, grain_min: int, scale: float, seed: int, queue_hours: dict):
+    """As generate(), with per-queue operating hours (rows outside a queue's hours carry volume 0)."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    norms = {q: sum(hour_profile(h) for h in np.arange(a, b, grain_min / 60)) for q, (a, b) in queue_hours.items()}
+    for t in intervals_utc:
+        loc = t.astimezone(tz)
+        h = loc.hour + loc.minute / 60
+        for q, (a, b) in queue_hours.items():
+            if a <= h < b:
+                vol = BASE_DAILY_L[q] * scale * WEEKDAY[loc.weekday()] * hour_profile(h) / norms[q] * rng.lognormal(0, 0.12)
+                near_peak = min(abs(h - 10), abs(h - 15))
+                aht = AHT_BASE_L[q] * (1 + PEAK_INFLATION * max(0.0, 1 - near_peak / 1.0)) * rng.lognormal(0, 0.05)
+            else:
+                vol, aht = 0.0, AHT_BASE_L[q]
+            rows.append((t, q, vol, aht))
+    return rows
+
+
+def write_export_end(path: Path, tz: ZoneInfo, rows, grain: int) -> None:
+    """Litware's format: the local wall-clock time at which the interval ENDS, with the offset in effect then."""
+    lines = ["interval_end_local,utc_offset,queue,volume,aht_sec"]
+    for t, q, vol, aht in rows:
+        loc = (t + timedelta(minutes=grain)).astimezone(tz)
+        z = loc.strftime("%z")
+        lines.append(f"{loc.strftime('%Y-%m-%d %H:%M')},{z[:3]}:{z[3:]},{q},{vol:.3f},{aht:.3f}")
+    path.write_text("\n".join(lines) + "\n")
+
+
+def make_roster_litware(n_agents: int, n_pt: int, seed: int) -> list[tuple[str, str, str]]:
+    rnd = random.Random(seed)
+    mix = [(0.35, "priority;standard"), (0.55, "priority"), (0.70, "standard"), (0.85, "standard;email"), (1.0, "email")]
+    out = []
+    for i in range(n_agents):
+        r = rnd.random()
+        out.append((f"LW-{i + 1:03d}", "PT" if i < n_pt else "FT", next(s for c, s in mix if r < c)))
+    return out
+
+
 def make_roster(prefix: str, n_agents: int, n_pt: int, seed: int) -> list[tuple[str, str, str]]:
     """agent_id, contract, skills. 30% dual-skill, 28% priority-only, 42% standard-only; PT = first n_pt ids."""
     rnd = random.Random(seed)
@@ -125,6 +173,7 @@ def main() -> None:
     ap.add_argument("--app", type=Path, required=True, help="environment/app/data")
     ap.add_argument("--heldout", type=Path, required=True, help="tests/heldout")
     ap.add_argument("--manifest", type=Path, required=True, help="tools/data_manifest.txt")
+    ap.add_argument("--step2", type=Path, default=None, help="steps/litware-spring/workdir/data (multi-step only)")
     args = ap.parse_args()
 
     written: list[Path] = []
@@ -149,6 +198,34 @@ def main() -> None:
         rpath.parent.mkdir(parents=True, exist_ok=True)
         write_roster(rpath, make_roster(c["prefix"], c["n_agents"], c["n_pt"], c["roster_seed"]))
         written.append(rpath)
+
+    if args.step2:   # step 2 ("litware-spring"): seen files go to the step's workdir, held-out files to tests/heldout
+        c = LITWARE
+        tz = ZoneInfo(c["tz"])
+        for (year, week), seed in c["weeks"].items():
+            grid = week_intervals_utc(year, week, tz, c["grain"])
+            rows = generate_multi(grid, tz, c["grain"], c["scale"], seed, c["queue_hours"])
+            root = args.heldout if (year, week) in c["heldout"] else args.step2
+            path = root / "litware" / f"export_{year}-W{week:02d}.csv"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            write_export_end(path, tz, rows, c["grain"])
+            written.append(path)
+            print(f"{path}  intervals={len(grid)}  seed={seed}")
+        rpath = args.step2 / "agents" / "litware.csv"
+        rpath.parent.mkdir(parents=True, exist_ok=True)
+        write_roster(rpath, make_roster_litware(c["n_agents"], c["n_pt"], c["roster_seed"]))
+        written.append(rpath)
+        nw = CLIENTS["northwind"]
+        tz = ZoneInfo(nw["tz"])
+        for (year, week), seed in STEP2_NORTHWIND.items():
+            grid = week_intervals_utc(year, week, tz, nw["grain"])
+            rows = generate(grid, tz, nw["grain"], nw["scale"], seed, nw["hours"])
+            root = args.step2 if week == 10 else args.heldout
+            path = root / "northwind" / f"export_{year}-W{week:02d}.csv"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            write_export(path, tz, rows, "northwind", week)
+            written.append(path)
+            print(f"{path}  intervals={len(grid)}  seed={seed}")
 
     args.manifest.parent.mkdir(parents=True, exist_ok=True)
     lines = []

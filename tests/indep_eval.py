@@ -28,6 +28,13 @@ SOW = {
     "fabrikam": {"tz": "America/New_York", "grain": 60, "hours": (6, 24), "cap": 0.85,
                  "sla": {"priority": (0.80, 20), "standard": (0.80, 20)},
                  "rules": ["weekly_hours", "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
+    # step 2: Litware SOW (20-minute grain, export stamped with the interval end, three queues, R4 floor, R5 earliest start)
+    "litware": {"tz": "Europe/London", "grain": 20, "hours": (7, 21), "cap": 0.85,
+                "queues": ("priority", "standard", "email"),
+                "sla": {"priority": (0.90, 30), "standard": (0.80, 30), "email": (0.80, 300)},
+                "min_agents": {"priority": 2}, "earliest": {"email": 9},
+                "rules": ["rest11h", "split_pt_only", "break_window_max_surplus", "weekly_hours", "consecutive_days",
+                          "skill_match", "no_overlap", "coverage_sane", "priority_floor", "email_earliest"]},
 }
 WEEKLY_HOURS = {"FT": 40.0, "PT": 24.0}
 MAX_CONSECUTIVE_DAYS = 5
@@ -56,14 +63,20 @@ def _parse_utc(s: str) -> datetime:
     return datetime.strptime(s.strip(), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
 
 
+def queues_of(client: str) -> tuple[str, ...]:
+    return SOW[client].get("queues", QUEUES)
+
+
 def load_demand(client: str, data_path: Path, grid: list[datetime]) -> dict[str, dict[datetime, tuple[float, float]]]:
     """{queue: {slot: (volume, aht)}} on the grader's grid. Slots absent from the file carry zero volume."""
-    demand = {q: {t: (0.0, 0.0) for t in grid} for q in QUEUES}
+    demand = {q: {t: (0.0, 0.0) for t in grid} for q in queues_of(client)}
     step = grid[1] - grid[0]
     with data_path.open() as f:
         for r in csv.DictReader(f):
             if "interval_start_utc" in r:
                 t = _parse_utc(r["interval_start_utc"])
+            elif "interval_end_local" in r:  # Litware export: local END of the interval + the offset in effect then
+                t = datetime.fromisoformat(f"{r['interval_end_local'].strip()}{r['utc_offset'].strip()}").astimezone(UTC) - step
             else:  # Northwind export: local wall-clock + explicit offset (authoritative)
                 t = datetime.fromisoformat(f"{r['interval_start_local'].strip()}{r['utc_offset'].strip()}").astimezone(UTC)
             t = grid[0] + ((t - grid[0]) // step) * step   # a row belongs to the planning interval that contains it
@@ -76,7 +89,14 @@ def load_demand(client: str, data_path: Path, grid: list[datetime]) -> dict[str,
 def required_curve(demand, sow) -> dict[str, dict[datetime, int]]:
     sec = sow["grain"] * 60
     return {q: {t: required_agents(v, sec, a, sow["sla"][q][0], sow["sla"][q][1], sow["cap"])
-                for t, (v, a) in demand[q].items()} for q in QUEUES}
+                for t, (v, a) in demand[q].items()} for q in sow.get("queues", QUEUES)}
+
+
+def infeasible(demand, sow, grid) -> set[tuple[str, datetime]]:
+    """SOW §2.6 (Litware): intervals with volume on a queue before that queue's earliest local hour (R5)."""
+    z = ZoneInfo(sow["tz"])
+    return {(q, t) for q, h in sow.get("earliest", {}).items() for t in grid
+            if demand[q][t][0] > 0 and t.astimezone(z).hour + t.astimezone(z).minute / 60 < h}
 
 
 # ----------------------------------------------------------------------------- schedule
@@ -115,10 +135,10 @@ def load_agents(path: Path) -> dict[str, tuple[str, frozenset[str]]]:
                 for r in csv.DictReader(f)}
 
 
-def coverage(segments: list[Segment], grid: list[datetime], grain: int):
+def coverage(segments: list[Segment], grid: list[datetime], grain: int, queues=QUEUES):
     """gross[q][t] = agents on queue whose segment covers t (ignoring breaks); on_break[q][t] likewise."""
-    gross = {q: defaultdict(int) for q in QUEUES}
-    on_break = {q: defaultdict(int) for q in QUEUES}
+    gross = {q: defaultdict(int) for q in queues}
+    on_break = {q: defaultdict(int) for q in queues}
     step = timedelta(minutes=grain)
     index = {t: i for i, t in enumerate(grid)}
     for s in segments:
@@ -155,14 +175,16 @@ def evaluate(client: str, week: str, schedule_path: Path, data_path: Path, agent
     required = required_curve(demand, sow)
     segments = load_schedule(schedule_path)
     agents = load_agents(agents_path)
-    gross, on_break = coverage(segments, grid, sow["grain"])
+    queues = sow.get("queues", QUEUES)
+    gross, on_break = coverage(segments, grid, sow["grain"], queues)
     h = sow["grain"] / 60.0
+    excluded = infeasible(demand, sow, grid)
 
     sla, under, over = {}, 0.0, 0.0
-    for q in QUEUES:
+    for q in queues:
         met = tot = 0
         for t in grid:
-            if demand[q][t][0] <= 0:
+            if demand[q][t][0] <= 0 or (q, t) in excluded:
                 continue
             tot += 1
             sched = gross[q][t] - on_break[q][t]
@@ -177,7 +199,8 @@ def evaluate(client: str, week: str, schedule_path: Path, data_path: Path, agent
         "client": client, "week": week, "intervals": len(grid),
         "sla": sla,
         "scheduled_hours": sum(s.hours for s in segments),
-        "required_hours": sum(sum(required[q].values()) for q in QUEUES) * h,   # SOW §1.6
+        "required_hours": sum(sum(required[q].values()) for q in queues) * h,   # SOW §1.6
+        "exceptions": sorted((q, t.strftime("%Y-%m-%dT%H:%M:%SZ")) for q, t in excluded),
         "understaffed_interval_hours": under, "overstaffed_interval_hours": over,
         "agents_scheduled": len({s.agent for s in segments}),
         "segments": len(segments),
@@ -203,7 +226,7 @@ def audit(client, week, segments, agents, required, gross, grid) -> dict[str, li
     for s in segments:
         if s.agent not in agents:
             v["coverage_sane"].append(f"row {s.row}: unknown agent {s.agent}")
-        if s.queue not in QUEUES:
+        if s.queue not in sow.get("queues", QUEUES):
             v["coverage_sane"].append(f"row {s.row}: unknown queue {s.queue}")
         if s.end <= s.start:
             v["coverage_sane"].append(f"row {s.row}: empty or reversed segment")
@@ -277,6 +300,18 @@ def audit(client, week, segments, agents, required, gross, grid) -> dict[str, li
             gap = (b[0].start - a[-1].end).total_seconds() / 3600.0
             if gap < REST_HOURS - 1e-9:
                 v["rest11h"].append(f"{aid}: {a[-1].end:%a %H:%MZ} -> {b[0].start:%a %H:%MZ} = {gap:.1f} h")
+    # priority_floor (Litware R4): agents scheduled on the queue (breaks aside) in every operating interval
+    for q, n in sow.get("min_agents", {}).items():
+        for t in grid:
+            loc = t.astimezone(z)
+            if open_h <= loc.hour + loc.minute / 60 < close_h and gross[q][t] < n:
+                v["priority_floor"].append(f"{q} {t:%Y-%m-%dT%H:%MZ}: {gross[q][t]} < {n}")
+    # email_earliest (Litware R5): no segment on the queue starts before its earliest local hour
+    for q, hr in sow.get("earliest", {}).items():
+        for s in segments:
+            loc = s.start.astimezone(z)
+            if s.queue == q and loc.hour + loc.minute / 60 < hr:
+                v["email_earliest"].append(f"row {s.row}: {q} segment starts {loc:%H:%M} local < {hr:02d}:00")
     return dict(v)
 
 

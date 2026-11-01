@@ -75,7 +75,7 @@ done
 
 # 3. oracle: patched system on northwind seen + held-out weeks
 stage "$WORK/oracle"
-(cd "$WORK/oracle" && git apply --whitespace=nowarn "$ROOT/solution/oracle.patch")
+(cd "$WORK/oracle" && git apply --whitespace=nowarn "$ROOT/steps/northwind-golive/solution/oracle.patch")
 for w in 2026-W44 2026-W45 2027-W10; do
   (cd "$WORK/oracle" && "$PY" -m wfm run --client northwind --week $w >/dev/null)
   score northwind $w "$WORK/oracle" "$FIX/oracle_northwind_${w#2026-}.json" "$ROOT"

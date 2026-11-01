@@ -32,7 +32,7 @@ def fresh_app(work: Path) -> Path:
 
 
 def apply_patch(app: Path):
-    sh(["git", "apply", "--whitespace=nowarn", str(REPO / "solution/oracle.patch")], app)
+    sh(["git", "apply", "--whitespace=nowarn", str(REPO / "steps/northwind-golive/solution/oracle.patch")], app)
 
 
 def solve(app: Path, runbook=True):
@@ -40,9 +40,9 @@ def solve(app: Path, runbook=True):
     sh([PY, "-m", "wfm", "run", "--client", "contoso", "--week", "2026-W43"], app)
     sh([PY, "-m", "wfm", "run", "--client", "fabrikam", "--week", "2026-W43"], app)
     if runbook:
-        sh([PY, str(REPO / "solution/write_runbook.py"), "--schedule", str(app / "out/northwind/schedule.csv"),
+        sh([PY, str(REPO / "steps/northwind-golive/solution/write_runbook.py"), "--schedule", str(app / "out/northwind/schedule.csv"),
             "--eval", str(app / "out/northwind/eval.json"), "--out", str(app / "out/northwind/RUNBOOK.md"),
-            "--patch", str(REPO / "solution/oracle.patch")], app)
+            "--patch", str(REPO / "steps/northwind-golive/solution/oracle.patch")], app)
 
 
 def edit(app: Path, rel: str, old: str, new: str):

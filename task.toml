@@ -2,10 +2,13 @@ schema_version = "1.3"
 
 # The agent's /app (its modified system) is copied into the separate verifier sandbox at the same path.
 artifacts = ["/app"]
+# Two steps share one container: step 2's agent meets step 1's code without step 1's conversation.
+# "mean" so a step-1 pass and a step-2 failure both show in the trial reward (per-step rewards are kept too).
+multi_step_reward_strategy = "mean"
 
 [task]
 name = "collinear-candidate/wfm-client-onboarding"
-description = "Onboard a new contact-centre client into a small workforce-management service (new export format with a DST transition, a peak-only staffing defect, three contractual scheduling rules) without regressing two existing clients on held-out weeks."
+description = "Two steps in one container. Step 1: onboard a new contact-centre client into a small workforce-management service (export with a DST transition, a peak-only staffing defect, three scheduling rules, an efficiency bound) without regressing two existing clients. Step 2, months later: onboard a fourth client whose contract and data break step-1 shortcuts (20-minute grain, end-stamped export, a third queue, a staffing floor, an infeasible rule to report), and keep the first three clients whole."
 keywords = ["long-horizon", "workforce-management", "scheduling", "data-forensics", "regression", "erlang-c"]
 authors = [{ name = "Gitanjit Medhi", email = "gitanjit6@gmail.com" }]
 
@@ -34,3 +37,12 @@ network_mode = "public"
 cpus = 2
 memory_mb = 4096
 workdir = "/app"
+
+# Step 1: tests/test.sh (tests/grader.py). Step 2: steps/litware-spring/tests/test.sh (tests/grader_litware.py),
+# its workdir/ delivers Litware's SOW, data and roster plus Northwind's 2027-W10 export into /app.
+# No min_reward: step 2 runs whatever step 1 scored.
+[[steps]]
+name = "northwind-golive"
+
+[[steps]]
+name = "litware-spring"
