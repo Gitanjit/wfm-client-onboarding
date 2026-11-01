@@ -1,0 +1,8 @@
+configs/northwind.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+tests_unit/test_northwind.py
+wfm/evaluate/sow_northwind.py
+wfm/ingest/loader.py
+wfm/scheduler/greedy.py
+wfm/staffing/required.py

@@ -1,0 +1,77 @@
+{
+  "job": "p5-haiku-high-1",
+  "trial": "wfm-client-onboarding__PcuWbaF",
+  "model": "anthropic/claude-haiku-5-5",
+  "kwargs": {
+    "max_budget_usd": 3,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.316",
+  "cost_usd": 0.16688041500000003,
+  "tokens": {
+    "n_input_tokens": 2492020,
+    "n_cache_tokens": 2379294,
+    "n_output_tokens": 76964
+  },
+  "wall_clock_s": {
+    "total": 617.3,
+    "environment_setup": 6.4,
+    "agent_setup": 100.5,
+    "agent_execution": 469.8,
+    "verifier": 28.2
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 33,
+  "final_metrics": {
+    "total_prompt_tokens": 2492020,
+    "total_completion_tokens": 76964,
+    "total_cached_tokens": 2379294,
+    "total_cost_usd": 0.16688041500000003,
+    "total_steps": 31,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 112666,
+      "total_cache_read_input_tokens": 2379294
+    }
+  },
+  "changed_files": [
+    "configs/northwind.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "tests_unit/test_northwind.py",
+    "wfm/evaluate/sow_northwind.py",
+    "wfm/ingest/loader.py",
+    "wfm/scheduler/greedy.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval_w44": {
+    "sla": {
+      "priority": 1.0,
+      "standard": 1.0
+    },
+    "hours": 1328.0,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0
+    }
+  }
+}

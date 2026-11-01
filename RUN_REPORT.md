@@ -206,6 +206,7 @@ for the oracle (determinism, tiny image).
 | p4-fresh-oracle-1 | oracle (fresh `git clone`, `--force-build`) | — | — | 1 m 01 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
 | p5pre-oracle-2 | oracle (image with levers L1–L6) | — | — | 49 s | — | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 |
 | p5pre-nop-2 | nop | — | — | 42 s | — | 0.0 | 0.0 | 1.0 | 0.0 | 0.25 |
+| p5-haiku-high-1 | claude-code | anthropic/claude-haiku-5-5 | high | 10 m 17 s (agent 7 m 50 s) | $0.17 | 1.0 | 1.0 | 1.0 | 1.0 | **1.0** — pipeline-proof run on pre-freeze docs; genuine pass (hand re-evaluation: 1.000 / 1.000, 1,328 h, zero violations) |
 | p5-opus-high-1 | claude-code | anthropic/claude-opus-5-5 (or openrouter/anthropic/claude-opus-5.5) | high | <<pending>> | | | | | | |
 
 Commands (working forms; the brief's short forms in comments):

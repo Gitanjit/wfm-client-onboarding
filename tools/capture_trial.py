@@ -158,9 +158,12 @@ def premortem(calls: list[dict], changed: list[str], app: Path, summary: dict) -
     d1_line = "float(_handle_time(g, mode)[g[\"volume\"] > 0].mean())" in req
     d2 = bool(re.search(r"required_agents\([^)]*cap\b", req)) or "occupancy_cap=" in req
     runs_nw, runs_co, runs_fa = bash(r"wfm\s+run\b.*northwind"), bash(r"wfm\s+run\b.*contoso"), bash(r"wfm\s+run\b.*fabrikam")
-    code_edits = [c["n"] for c in calls if c["tool"] in ("Edit", "Write", "MultiEdit")
-                  and re.search(r"/app/(wfm|configs)/", str(c["args"].get("file_path", "")))]
-    rb = edits_to("out/northwind/RUNBOOK.md") + [c["n"] for c in calls if c["tool"] == "Bash" and "RUNBOOK" in c["args"].get("command", "") and re.search(r">|tee|write", c["args"].get("command", ""))]
+    writes = r"(\.write(_text)?\(|cat\s*>|>\s*/app/|sed\s+-i|tee\s|shutil\.copy|git\s+apply)"
+    code_edits = [c["n"] for c in calls if (c["tool"] in ("Edit", "Write", "MultiEdit")
+                  and re.search(r"/app/(wfm|configs)/", str(c["args"].get("file_path", ""))))
+                  or (c["tool"] == "Bash" and re.search(r"\b(wfm|configs)/\S+\.(py|yaml)", c["args"].get("command", ""))
+                      and re.search(writes, c["args"].get("command", "")) and "RUNBOOK" not in c["args"].get("command", ""))]
+    rb = edits_to("out/northwind/RUNBOOK.md") + [c["n"] for c in calls if c["tool"] == "Bash" and "RUNBOOK" in c["args"].get("command", "") and re.search(writes + r"|>", c["args"].get("command", ""))]
     last_rb, last_code, last_run = max(rb, default=None), max(code_edits, default=None), max(runs_nw, default=None)
     rows = [
         ("Reads CHANGELOG before required.py", f"CHANGELOG #{cl}, required.py #{rq}" if cl or rq else "neither opened",
@@ -173,7 +176,7 @@ def premortem(calls: list[dict], changed: list[str], app: Path, summary: dict) -
         ("Re-runs existing clients", f"contoso {runs_co or '—'}; fabrikam {runs_fa or '—'}", "yes" if runs_co and runs_fa else "partly" if runs_co or runs_fa else "no"),
         ("Edits defaults.yaml", f"edits {edits_to('configs/defaults.yaml') or '—'}", "yes" if "configs/defaults.yaml" in changed else "no"),
         ("RUNBOOK written after final run", f"last RUNBOOK write #{last_rb}; last code edit #{last_code}; last northwind run #{last_run}",
-         "yes" if last_rb and last_run and last_rb > last_run and (last_code or 0) < last_run else "no / unclear"),
+         "yes" if last_rb and last_run and last_rb >= last_run and (last_code or 0) <= last_run else "no / unclear"),
     ]
     out = ["# Pre-mortem comparison (13_PREMORTEM_TRAJECTORY)", "", "| Predicted | Observed (tool-call #) | Result |", "|---|---|---|"]
     out += [f"| {a} | {b} | {c} |" for a, b, c in rows]
@@ -256,7 +259,9 @@ def main() -> None:
         hits = [c["n"] for c in calls if c["tool"] == "Bash" and re.search(pat, c["args"].get("command", ""))]
         lines.append(f"| {name} | {', '.join(f'#{h}' for h in hits) or '—'} |")
     edits = [(c["n"], c["args"].get("file_path", "")) for c in calls if c["tool"] in ("Edit", "Write", "MultiEdit")]
+    bash_writes = [c["n"] for c in calls if c["tool"] == "Bash" and re.search(r"(\.write(_text)?\(|cat\s*>|sed\s+-i)", c["args"].get("command", ""))]
     lines += ["", "## Edits and writes", ""] + [f"- #{n} `{p}`" for n, p in edits]
+    lines += ["", f"Bash commands that write files (scripted edits): {', '.join(f'#{n}' for n in bash_writes) or '—'}"]
     (out / "files_opened.md").write_text("\n".join(lines) + "\n")
 
     # final message
