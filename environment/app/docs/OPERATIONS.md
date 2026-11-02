@@ -20,7 +20,8 @@ The rota (Dana Vexley, Tomas Okafor, Mei Lindqvist) changes on Mondays. Account 
 
 `python -m wfm clients --status live` lists this week's clients. Paused and retired clients get no
 weekly run (`docs/adr/0008-client-lifecycle.md`). `python -m wfm clients --check` once a week; it
-should report nothing.
+should report nothing. `python -m wfm clients --board --week <week>` shows, per client, the next open
+step for the week (data, run, archive, export, digest); by Monday 17:00 every row should say `done`.
 
 ## Per client
 

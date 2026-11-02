@@ -74,6 +74,10 @@ def test_change_is_against_the_previous_file_listed(tmp_path):
     assert [r.week for r in volume.volume_report(CFG, first=WEEK, data_dir=tmp_path)] == [WEEK]
     text = volume.render(CFG, rows, days=True, shape=True)
     assert "-20.0 %" in text and "All files pass." in text and "## Contacts per local day" in text
+    lines = volume.to_csv(rows).splitlines()
+    assert lines[0] == ("week,intervals,expected,contacts_priority,contacts_standard,total,change,prev_week,"
+                        "aht_priority,aht_standard,peak_local,zero_runs,zero_run_minutes,issues")
+    assert lines[2] == "2025-W26,168,168,1008.0,1008.0,2016.0,-0.2,2025-W24,300.0,300.0,2025-06-23 06:00,0,0,"
 
 
 def test_profile_shares_add_up(tmp_path):

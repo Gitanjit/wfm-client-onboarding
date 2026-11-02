@@ -8,6 +8,8 @@ client's feed). Queues are reported as the file delivers them.
 """
 from __future__ import annotations
 
+import csv
+import io
 import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -199,6 +201,23 @@ def profile(rows: list[WeekVolume]) -> tuple[list[float], list[float]]:
         return [0.0] * 7, [0.0] * 24
     return ([sum(r.daily[i] for r in rows) / total for i in range(7)],
             [sum(r.hourly[h] for r in rows) / total for h in range(24)])
+
+
+def to_csv(rows: list[WeekVolume]) -> str:
+    """The per-week rows for a spreadsheet: unrounded contacts and handle time per queue, the change
+    against the previous file, the busiest interval (local), zero-volume runs and file checks."""
+    queues = sorted({q for r in rows for q in r.contacts})
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["week", "intervals", "expected", *[f"contacts_{q}" for q in queues], "total", "change", "prev_week",
+                *[f"aht_{q}" for q in queues], "peak_local", "zero_runs", "zero_run_minutes", "issues"])
+    for r in rows:
+        w.writerow([r.week, r.intervals, r.expected, *[round(r.contacts.get(q, 0.0), 3) for q in queues],
+                    round(r.total, 3), "" if r.change is None else round(r.change, 4), r.prev_week or "",
+                    *["" if r.aht.get(q) is None else round(r.aht[q], 1) for q in queues],
+                    r.peak_local.strftime("%Y-%m-%d %H:%M") if r.peak_local else "", len(r.zero_runs),
+                    sum(z.minutes for z in r.zero_runs), "; ".join(r.issues)])
+    return buf.getvalue()
 
 
 def _peak(r: WeekVolume) -> str:

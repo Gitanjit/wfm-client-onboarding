@@ -299,7 +299,8 @@ DOC_EVENTS = [
      ["docs/adr/0006-schedule-export-layouts.md"]),
     ("2025-08-20T15:55:00+00:00", MEI, 39, "Schedule exports in the clients' layouts (WFM-093)",
      ["wfm/export/__init__.py", "wfm/export/base.py", "wfm/export/activity_csv.py", "wfm/export/roster_grid.py",
-      "wfm/export/segments_json.py", "tests_unit/test_export.py", "docs/prs/039-schedule-export.md"]),
+      "wfm/export/segments_json.py", "wfm/export/agent_ics.py", "tests_unit/test_export.py",
+      "docs/prs/039-schedule-export.md"]),
     ("2025-09-03T14:30:00+00:00", TOMAS, None, "Client notes for Contoso", ["docs/clients/contoso.md"]),
     ("2025-09-24T14:05:00+00:00", MEI, None,
      "Report compare: an archived run against a re-run or another week (WFM-104)\n\n"
@@ -334,24 +335,24 @@ DOC_EVENTS = [
     ("2026-08-21T11:15:00+00:00", TOMAS, None, "Client notes for Proseware, paused from 2026-08-14",
      ["docs/clients/proseware.md"]),
     ("2026-10-14T16:30:00+00:00", TOMAS, 60, "Client registry and `wfm clients` (WFM-219)",
-     ["wfm/registry.py", "clients/registry.yaml", "clients/README.md", "docs/adr/0008-client-lifecycle.md",
-      "docs/OPERATIONS.md", "tests_unit/test_registry.py", "tests_unit/test_cli_subcommands.py",
-      "docs/prs/060-client-registry.md"]),
+     ["wfm/registry.py", "wfm/board.py", "clients/registry.yaml", "clients/README.md",
+      "docs/adr/0008-client-lifecycle.md", "docs/OPERATIONS.md", "tests_unit/test_registry.py",
+      "tests_unit/test_board.py", "tests_unit/test_cli_subcommands.py", "docs/prs/060-client-registry.md"]),
     ("2026-10-15T10:40:00+00:00", DANA, None, "Unit tests pinning notable data weeks: DST interval counts, outage runs",
      ["tests_unit/test_data_weeks.py"]),
 ]
 
 # Edits to files that already exist on the branch (placed by the core history, not added here).
 CORE_EDITS = [
-    {"date": "2025-07-03", "pr": 24, "file": "wfm/cli.py", "what": "add `report volume`"},
+    {"date": "2025-07-03", "pr": 24, "file": "wfm/cli.py", "what": "add `report volume` (with --csv)"},
     {"date": "2025-07-11", "pr": 28, "file": "wfm/cli.py", "what": "add `report archive`, `report backfill` and `report summary`"},
-    {"date": "2025-08-20", "pr": 39, "file": "wfm/cli.py", "what": "add `export` (--layout required until PR #60)"},
+    {"date": "2025-08-20", "pr": 39, "file": "wfm/cli.py", "what": "add `export`, incl. --layout all (--layout required until PR #60)"},
     {"date": "2025-09-24", "pr": None, "file": "wfm/cli.py", "what": "add `report compare`"},
     {"date": "2025-11-13", "pr": 50, "file": "wfm/config.py",
      "what": "add V2_SECTIONS and _flatten_v2 (only keys that existed then; later keys join their section when added)"},
     {"date": "2026-06-12", "pr": 55, "file": "wfm/cli.py", "what": "add `notify`"},
     {"date": "2026-10-14", "pr": 60, "file": "wfm/cli.py",
-     "what": "add `clients` and `report accounts`; export layout and notify account manager default from clients/registry.yaml"},
+     "what": "add `clients` (incl. --check, --board, --timeline) and `report accounts`; export layout and notify account manager default from clients/registry.yaml"},
 ]
 
 

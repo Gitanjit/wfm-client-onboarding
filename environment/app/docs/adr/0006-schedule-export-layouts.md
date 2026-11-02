@@ -16,8 +16,9 @@ row per agent with a column per day; and a JSON document for tools that import t
   the planning code, so an exporter cannot change a schedule.
 - Local times are computed per row from the client's timezone. A layout that has room for it carries
   the UTC offset of each row.
-- Layouts: `activity_csv`, `roster_grid_csv`, `segments_json`. Output goes to `out/<client>/export/`,
-  sorted, so two exports of the same schedule are identical.
+- Layouts: `activity_csv`, `roster_grid_csv`, `segments_json`, and `agent_ics` (one calendar file
+  per agent, for agents who keep their shifts in their own calendars). Output goes to
+  `out/<client>/export/`, sorted, so two exports of the same schedule are identical.
 - The layout a client uses is agreed at onboarding and recorded in its client notes.
 
 ## Consequences

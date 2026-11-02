@@ -423,8 +423,9 @@ row per agent with a column per day; and a JSON document for tools that import t
   the planning code, so an exporter cannot change a schedule.
 - Local times are computed per row from the client's timezone. A layout that has room for it carries
   the UTC offset of each row.
-- Layouts: `activity_csv`, `roster_grid_csv`, `segments_json`. Output goes to `out/<client>/export/`,
-  sorted, so two exports of the same schedule are identical.
+- Layouts: `activity_csv`, `roster_grid_csv`, `segments_json`, and `agent_ics` (one calendar file
+  per agent, for agents who keep their shifts in their own calendars). Output goes to
+  `out/<client>/export/`, sorted, so two exports of the same schedule are identical.
 - The layout a client uses is agreed at onboarding and recorded in its client notes.
 
 ## Consequences
@@ -1008,13 +1009,14 @@ PR_NOTES = {
         "  `out/<client>/export/` (ADR 0006).\n"
         "- `wfm/export/`: `activity_csv` (one row per work or break activity, local times and offset),\n"
         "  `roster_grid_csv` (one row per agent, a column per local day), `segments_json` (agents and\n"
-        "  segments for tools that import through an API).\n"
+        "  segments for tools that import through an API), `agent_ics` (one iCalendar file per agent).\n"
         "- Exports read `schedule.csv` and the client config only, and refuse a week whose `eval.json` is\n"
         "  for another week. Each export has a small manifest beside it (row count, agents, paid hours,\n"
         "  sha256) for the client to check the import against.",
         "Dana Vexley and Tomas Okafor (review).",
         "From 2025-W34, Contoso, Adatum, Woodgrove and Fabrikam get `activity_csv`, Tailspin\n"
-        "`roster_grid_csv`. The first exports matched the hand-made files for 2025-W33 apart from row order."),
+        "`roster_grid_csv` plus `agent_ics` for its agents' calendars. The first exports matched the\n"
+        "hand-made files for 2025-W33 apart from row order."),
     "docs/prs/050-config-schema-v2.md": _pr(
         50, "Client config schema 2", "2025-11-13", "Tomas Okafor", "WFM-121",
         "Proseware's onboarding sheet comes in sections that map onto the flat config badly, and a\n"
@@ -1070,6 +1072,9 @@ PR_NOTES = {
         "- `wfm/registry.py` and `python -m wfm clients [--status <s>] [--markdown] [--check]`.\n"
         "- `python -m wfm report accounts`: the latest archived week of every live and paused client, by\n"
         "  account manager, for the Monday account call.\n"
+        "- `python -m wfm clients --board --week <week>`: one row per client served that week with the\n"
+        "  next open step of the weekly cycle (data, run, archive, export, digest).\n"
+        "  `python -m wfm clients --timeline`: every client's lifecycle month by month.\n"
         "- `export` takes the client's layout from the registry when `--layout` is not given; `notify`\n"
         "  takes the account manager from it.\n"
         "- `docs/OPERATIONS.md`: the weekly runbook, written down with the new commands.",
@@ -1106,7 +1111,8 @@ The rota (Dana Vexley, Tomas Okafor, Mei Lindqvist) changes on Mondays. Account 
 
 `python -m wfm clients --status live` lists this week's clients. Paused and retired clients get no
 weekly run (`docs/adr/0008-client-lifecycle.md`). `python -m wfm clients --check` once a week; it
-should report nothing.
+should report nothing. `python -m wfm clients --board --week <week>` shows, per client, the next open
+step for the week (data, run, archive, export, digest); by Monday 17:00 every row should say `done`.
 
 ## Per client
 

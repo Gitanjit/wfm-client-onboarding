@@ -88,7 +88,7 @@ EVENTS = [
     {'date': '2025-08-19T11:21:00+00:00', 'author': 'Tomas Okafor', 'message': 'Woodgrove 2025-W33 interval data', 'add': ['data/woodgrove/week_2025-W33.csv'], 'pr': None},
     {'date': '2025-08-19T12:28:00+00:00', 'author': 'Tomas Okafor', 'message': 'Adatum 2025-W33 data', 'add': ['data/adatum/week_2025-W33.csv'], 'pr': None},
     {'date': '2025-08-20T14:53:00+00:00', 'author': 'Tomas Okafor', 'message': 'Contoso 2025-W33 interval data (with chat rows)', 'add': ['data/contoso/week_2025-W33.csv'], 'pr': None},
-    {'date': '2025-08-20T15:55:00+00:00', 'author': 'Mei Lindqvist', 'message': "Schedule exports in the clients' layouts (WFM-093)", 'add': ['wfm/export/__init__.py', 'wfm/export/base.py', 'wfm/export/activity_csv.py', 'wfm/export/roster_grid.py', 'wfm/export/segments_json.py', 'tests_unit/test_export.py', 'docs/prs/039-schedule-export.md'], 'pr': 39},
+    {'date': '2025-08-20T15:55:00+00:00', 'author': 'Mei Lindqvist', 'message': "Schedule exports in the clients' layouts (WFM-093)", 'add': ['wfm/export/__init__.py', 'wfm/export/base.py', 'wfm/export/activity_csv.py', 'wfm/export/roster_grid.py', 'wfm/export/segments_json.py', 'wfm/export/agent_ics.py', 'tests_unit/test_export.py', 'docs/prs/039-schedule-export.md'], 'pr': 39},
     {'date': '2025-08-25T09:44:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Fabrikam 2025-W34 data', 'add': ['data/fabrikam/week_2025-W34.csv'], 'pr': None},
     {'date': '2025-08-26T13:27:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Woodgrove 2025-W34 drop', 'add': ['data/woodgrove/week_2025-W34.csv'], 'pr': None},
     {'date': '2025-08-26T15:45:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Contoso 2025-W34 interval data (with chat rows)', 'add': ['data/contoso/week_2025-W34.csv'], 'pr': None},
@@ -262,17 +262,17 @@ EVENTS = [
     {'date': '2026-09-30T10:05:00+00:00', 'author': 'Tomas Okafor', 'message': 'Wingtip 2026-W39 interval data', 'add': ['data/wingtip/week_2026-W39.csv'], 'pr': None},
     {'date': '2026-10-05T11:32:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Wingtip 2026-W40 data', 'add': ['data/wingtip/week_2026-W40.csv'], 'pr': None},
     {'date': '2026-10-12T12:24:00+00:00', 'author': 'Dana Vexley', 'message': 'Wingtip 2026-W41 data', 'add': ['data/wingtip/week_2026-W41.csv'], 'pr': None},
-    {'date': '2026-10-14T16:30:00+00:00', 'author': 'Tomas Okafor', 'message': 'Client registry and `wfm clients` (WFM-219)', 'add': ['wfm/registry.py', 'clients/registry.yaml', 'clients/README.md', 'docs/adr/0008-client-lifecycle.md', 'docs/OPERATIONS.md', 'tests_unit/test_registry.py', 'tests_unit/test_cli_subcommands.py', 'docs/prs/060-client-registry.md'], 'pr': 60},
+    {'date': '2026-10-14T16:30:00+00:00', 'author': 'Tomas Okafor', 'message': 'Client registry and `wfm clients` (WFM-219)', 'add': ['wfm/registry.py', 'wfm/board.py', 'clients/registry.yaml', 'clients/README.md', 'docs/adr/0008-client-lifecycle.md', 'docs/OPERATIONS.md', 'tests_unit/test_registry.py', 'tests_unit/test_board.py', 'tests_unit/test_cli_subcommands.py', 'docs/prs/060-client-registry.md'], 'pr': 60},
     {'date': '2026-10-15T10:40:00+00:00', 'author': 'Dana Vexley', 'message': 'Unit tests pinning notable data weeks: DST interval counts, outage runs', 'add': ['tests_unit/test_data_weeks.py'], 'pr': None},
     {'date': '2026-10-20T13:16:00+00:00', 'author': 'Tomas Okafor', 'message': 'Wingtip 2026-W42 data', 'add': ['data/wingtip/week_2026-W42.csv'], 'pr': None},
 ]
 
 CORE_EDITS = [
-    {'date': '2025-07-03', 'pr': 24, 'file': 'wfm/cli.py', 'what': 'add `report volume`'},
+    {'date': '2025-07-03', 'pr': 24, 'file': 'wfm/cli.py', 'what': 'add `report volume` (with --csv)'},
     {'date': '2025-07-11', 'pr': 28, 'file': 'wfm/cli.py', 'what': 'add `report archive`, `report backfill` and `report summary`'},
-    {'date': '2025-08-20', 'pr': 39, 'file': 'wfm/cli.py', 'what': 'add `export` (--layout required until PR #60)'},
+    {'date': '2025-08-20', 'pr': 39, 'file': 'wfm/cli.py', 'what': 'add `export`, incl. --layout all (--layout required until PR #60)'},
     {'date': '2025-09-24', 'pr': None, 'file': 'wfm/cli.py', 'what': 'add `report compare`'},
     {'date': '2025-11-13', 'pr': 50, 'file': 'wfm/config.py', 'what': 'add V2_SECTIONS and _flatten_v2 (only keys that existed then; later keys join their section when added)'},
     {'date': '2026-06-12', 'pr': 55, 'file': 'wfm/cli.py', 'what': 'add `notify`'},
-    {'date': '2026-10-14', 'pr': 60, 'file': 'wfm/cli.py', 'what': 'add `clients` and `report accounts`; export layout and notify account manager default from clients/registry.yaml'},
+    {'date': '2026-10-14', 'pr': 60, 'file': 'wfm/cli.py', 'what': 'add `clients` (incl. --check, --board, --timeline) and `report accounts`; export layout and notify account manager default from clients/registry.yaml'},
 ]

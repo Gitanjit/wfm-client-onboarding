@@ -87,3 +87,24 @@ def test_export_refuses_another_week_unknown_agents_and_layouts(sched, tmp_path)
         export_schedule(sched, CFG, WEEK, "activity_csv", tmp_path, [a for a in AGENTS if a.agent_id != "A-003"])
     with pytest.raises(SystemExit, match="unknown export layout"):
         export_schedule(sched, CFG, WEEK, "fixed_width", tmp_path)
+
+
+def test_agent_ics_writes_one_calendar_per_agent(sched, tmp_path):
+    out = tmp_path / "out"
+    stale = out / "test" / "export" / f"agent_ics_{WEEK}" / "A-099.ics"
+    stale.parent.mkdir(parents=True)
+    stale.write_text("old")
+    folder = export_schedule(sched, CFG, WEEK, "agent_ics", out, AGENTS)
+    assert sorted(p.name for p in folder.iterdir()) == ["A-001.ics", "A-002.ics", "A-003.ics"]
+    raw = (folder / "A-001.ics").read_bytes()
+    assert raw.startswith(b"BEGIN:VCALENDAR\r\n") and raw.endswith(b"END:VCALENDAR\r\n")
+    assert all(len(line) <= 75 for line in raw.split(b"\r\n"))
+    text = raw.decode().replace("\r\n ", "")          # unfold
+    assert "UID:test-2025-W44-A-001-1@wfm-service.example" in text
+    assert "DTSTART:20251102T140000Z" in text and "DTEND:20251102T220000Z" in text   # Sunday, after the change
+    assert "Break 13:00-13:20 local (20 min)." in text and "\\, template D8\\," in text
+    assert "Segment 2 of 2 of the shift." in (folder / "A-002.ics").read_text().replace("\r\n ", "")
+    m = json.loads(folder.with_name(f"agent_ics_{WEEK}.manifest.json").read_text())
+    assert sorted(m["files"]) == ["A-001.ics", "A-002.ics", "A-003.ics"]
+    assert m["files"]["A-001.ics"] == hashlib.sha256(raw).hexdigest()
+    assert export_schedule(sched, CFG, WEEK, "agent_ics", out, AGENTS) == folder and (folder / "A-001.ics").read_bytes() == raw

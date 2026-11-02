@@ -304,3 +304,56 @@ def accounts_table(records: list[ClientRecord], out_dir: Path) -> str:
     return md.document(md.heading("Accounts - latest archived week per client", 1),
                        md.table(["account manager", "client", "status", "week", "weakest queue", "meets target",
                                  "hours", "agents"], body, align="llllllrr"))
+
+
+# Timeline marks, one per client per month.
+MARKS = {"onboarded": "+", "served": "#", "paused": "|", "paused since": "-", "retired": "x", "go-live": ">"}
+
+
+def _months(first: date, last: date) -> list[date]:
+    out, m = [], first.replace(day=1)
+    while m <= last:
+        out.append(m)
+        m = date(m.year + (m.month == 12), m.month % 12 + 1, 1)
+    return out
+
+
+def month_mark(r: ClientRecord, month: date, until: date) -> str:
+    """The client's lifecycle in the calendar month starting `month`, as known on `until`."""
+    end = date(month.year + (month.month == 12), month.month % 12 + 1, 1) - timedelta(days=1)
+    within = lambda d: d is not None and month <= d <= min(end, until)   # noqa: E731
+    if r.status == "onboarding":
+        return MARKS["go-live"] if within(weeks.monday(r.golive_week)) else ""
+    if month > until or end < r.onboarded:
+        return ""
+    stop = r.ended if r.status == "retired" else r.paused_from
+    if stop is not None and stop <= until:
+        if within(stop):
+            return MARKS["retired"] if r.status == "retired" else MARKS["paused"]
+        if month > stop:
+            return "" if r.status == "retired" else MARKS["paused since"]
+    return MARKS["onboarded"] if within(r.onboarded) else MARKS["served"]
+
+
+def timeline(records: list[ClientRecord], until: date) -> str:
+    """Month-by-month lifecycle of every client up to `until`: one row per month, one column per client."""
+    starts = [r.onboarded for r in records if r.onboarded] + \
+             [weeks.monday(r.golive_week) for r in records if r.golive_week]
+    rows = [[f"{m:%Y-%m}", *[month_mark(r, m, until) for r in records]] for m in _months(min(starts), until)]
+    legend = "  ".join(f"{mark} {name}" for name, mark in MARKS.items())
+    return md.text_table(["month", *[r.key for r in records]], rows, align="l" * (len(records) + 1), indent=0) \
+        + f"\n\n{legend}\n\n" + data_on_file(records, until)
+
+
+def data_on_file(records: list[ClientRecord], until: date) -> str:
+    """Weeks served up to `until` against the client's data files: how many of those weeks have a
+    file, the first and last of them, and files outside the served weeks (onboarding: files on hand)."""
+    rows = []
+    for r in records:
+        files = sorted(set(sum(_data_weeks(r).values(), [])), key=weeks.key)
+        served = set(r.weeks_served(until))
+        inside = [w for w in files if w in served]
+        rows.append([r.key, r.status, len(served) or md.DASH, len(inside), inside[0] if inside else md.DASH,
+                     inside[-1] if inside else md.DASH, len(files) - len(inside)])
+    return md.text_table(["client", "status", "weeks served", "weeks with data", "first", "last", "other files"],
+                         rows, align="llrrllr", indent=0)

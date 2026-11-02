@@ -38,13 +38,14 @@ def test_weekly_cycle_run_archive_export_notify_summary(out, capsys):
     cli.main(["run", "--client", "fabrikam", "--week", "2026-W39"])
     cli.main(["report", "archive", "--client", "fabrikam", "--week", "2026-W39"])
     cli.main(["export", "--client", "fabrikam", "--week", "2026-W39"])               # registry layout
-    cli.main(["export", "--client", "fabrikam", "--week", "2026-W39", "--layout", "segments_json"])
+    cli.main(["export", "--client", "fabrikam", "--week", "2026-W39", "--layout", "all"])
     cli.main(["notify", "--client", "fabrikam", "--week", "2026-W39"])
     cli.main(["report", "summary", "--client", "fabrikam", "--csv"])
     capsys.readouterr()
     assert (out / "fabrikam" / "history" / "2026-W39" / "schedule.csv").exists()
     assert (out / "fabrikam" / "export" / "activity_csv_2026-W39.csv").exists()
     assert json.loads((out / "fabrikam" / "export" / "segments_json_2026-W39.json").read_text())["tz"] == "America/New_York"
+    assert len(list((out / "fabrikam" / "export").glob("*_2026-W39.manifest.json"))) == 4
     digest = (out / "fabrikam" / "notify" / "2026-W39" / "digest.txt").read_text()
     assert digest.startswith("To: Ruth Abara (account manager); WFM team")
     assert len(list((out / "fabrikam" / "notify" / "2026-W39" / "agents").glob("FA-*.txt"))) == 28

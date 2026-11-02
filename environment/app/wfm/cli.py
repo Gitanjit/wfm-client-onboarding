@@ -7,7 +7,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from wfm import registry, weeks
+from wfm import board, registry, weeks
 from wfm.config import OUT_DIR, load_config
 from wfm.evaluate.metrics import evaluate
 from wfm.export import LAYOUTS, export_schedule
@@ -85,6 +85,20 @@ def clients_cmd(args) -> int:
     recs = list(reg.values()) if args.status is None else registry.by_status(reg, args.status)
     if args.active_on:
         recs = [r for r in registry.active_on(reg, args.active_on) if r in recs]
+    if args.board:
+        out = _out(args)
+        if args.week:
+            _write_report(out / "reports" / f"board_{args.week}.md",
+                          board.render(board.board(recs, args.week, out), args.week))
+        elif args.first and args.last:
+            _write_report(out / "reports" / f"board_{args.first}_{args.last}.md",
+                          board.grid(recs, args.first, args.last, out))
+        else:
+            raise SystemExit("--board needs --week, or --from and --to")
+        return 0
+    if args.timeline:
+        print(registry.timeline(recs, args.until or date.today()))
+        return 0
     if args.check:
         problems = [p for r in recs for p in registry.check(r, layouts=LAYOUTS, data=args.data)]
         for p in problems:
@@ -107,6 +121,11 @@ def volume_cmd(args) -> int:
     cfg = load_config(args.client)
     rows = volume.volume_report(cfg, args.first, args.last, min_run=args.min_run)
     print(volume.render(cfg, rows, days=args.days, shape=args.profile), end="")
+    if args.csv and rows:
+        path = _out(args) / args.client / "reports" / f"volume_{args.first or rows[0].week}_{args.last or rows[-1].week}.csv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(volume.to_csv(rows))
+        print(f"wrote {path}", file=sys.stderr)
     return 0
 
 
@@ -119,10 +138,10 @@ def archive_cmd(args) -> int:
 def backfill_cmd(args) -> int:
     """Run and archive every week with a canonical file in the range (always under out/, where
     `run` writes)."""
-    todo = [w for w in volume.week_files(args.client) if _in_range(w, args.first, args.last)]
-    if not todo:
+    wanted = [w for w in volume.week_files(args.client) if _in_range(w, args.first, args.last)]
+    if not wanted:
         raise SystemExit(f"no canonical week files for {args.client} in the range")
-    for w in todo:
+    for w in wanted:
         res = run(args.client, w)
         history.archive(args.client, w, OUT_DIR)
         print(f"{w}  sla {json.dumps(res['sla'])}  meets_target {res['meets_target']}  hours {res['scheduled_hours']}")
@@ -170,7 +189,9 @@ def export_cmd(args) -> int:
     if name is None:
         raise SystemExit(f"no export_layout for {args.client!r} in clients/registry.yaml: pass --layout")
     cfg, _ev, _segments = _run_outputs(args.client, args.week, out)
-    print(export_schedule(out / args.client / "schedule.csv", cfg, args.week, name, out, load_agents(args.client)))
+    agents = load_agents(args.client)
+    for n in sorted(LAYOUTS) if name == "all" else [name]:
+        print(export_schedule(out / args.client / "schedule.csv", cfg, args.week, n, out, agents))
     return 0
 
 
@@ -202,6 +223,13 @@ def _add_subcommands(sub) -> None:
     c.add_argument("--markdown", action="store_true", help="print the client table as markdown")
     c.add_argument("--check", action="store_true", help="compare the registry with configs, rosters and data")
     c.add_argument("--data", action="store_true", help="with --check: also run the file checks on every week file")
+    c.add_argument("--board", action="store_true", help="weekly ops board for --week (data, run, archive, export, digest)")
+    c.add_argument("--week", type=_week, help="the week for --board")
+    c.add_argument("--from", dest="first", type=_week, help="with --to: --board over a range of weeks")
+    c.add_argument("--to", dest="last", type=_week)
+    c.add_argument("--timeline", action="store_true", help="month-by-month lifecycle of each client")
+    c.add_argument("--until", type=_date, metavar="YYYY-MM-DD", help="last day shown by --timeline (default today)")
+    c.add_argument("--out", help="output root for --board (default out/)")
 
     rep = sub.add_parser("report", help="weekly volume, evaluation archive, summaries and comparisons")
     rs = rep.add_subparsers(dest="report", required=True)
@@ -218,11 +246,12 @@ def _add_subcommands(sub) -> None:
         p.add_argument("--to", dest="last", type=_week)
     for p in (a, cm):
         p.add_argument("--week", required=True, type=_week)
-    for p in (a, s, cm, acc):
+    for p in (v, a, s, cm, acc):
         p.add_argument("--out", help=out_help)
     v.add_argument("--min-run", type=int, default=2, help="zero-volume intervals in a row to report (default 2)")
     v.add_argument("--days", action="store_true", help="add contacts per local day")
     v.add_argument("--profile", action="store_true", help="add the weekday and intraday profile over the range")
+    v.add_argument("--csv", action="store_true", help="also write the per-week rows to out/<client>/reports/")
     s.add_argument("--csv", action="store_true", help="also write the per-week rows as CSV")
     cm.add_argument("--against", type=_week, help="an archived week to compare with instead of the current run")
     cm.add_argument("--fail-on-change", action="store_true", help="exit 1 if the schedule or the eval differs")
@@ -231,9 +260,9 @@ def _add_subcommands(sub) -> None:
     e = sub.add_parser("export", help="write the last run's schedule in an ACD layout")
     e.add_argument("--client", required=True)
     e.add_argument("--week", required=True, type=_week)
-    e.add_argument("--layout", choices=sorted(LAYOUTS),
+    e.add_argument("--layout", choices=[*sorted(LAYOUTS), "all"],
                    help="; ".join(f"{n}: {lay.summary}" for n, lay in sorted(LAYOUTS.items()))
-                   + ". Default: the client's export_layout in the registry")
+                   + "; all: every layout. Default: the client's export_layout in the registry")
     e.add_argument("--out", help=out_help)
 
     n = sub.add_parser("notify", help="write the weekly digest, agent notices and day sheets under out/<client>/notify/")

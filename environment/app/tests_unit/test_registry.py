@@ -92,6 +92,22 @@ def test_check_reports_disagreements(tmp_path, monkeypatch):
         ("error", "unknown export_layout 'fixed_width'")]
 
 
+def test_timeline_marks_each_clients_months():
+    reg = registry.load_registry()
+    lines = registry.timeline(list(reg.values()), until=date(2026, 11, 2)).splitlines()
+    rows = {line.split()[0]: line for line in lines[2:] if line[:4].isdigit()}
+    cols = {k: lines[0].index(k) for k in reg}
+    mark = lambda month, client: rows[month][cols[client]:cols[client] + 1].strip()   # noqa: E731
+    assert list(rows)[0] == "2024-12" and list(rows)[-1] == "2026-11"
+    assert (mark("2024-12", "contoso"), mark("2025-01", "tailspin"), mark("2025-10", "tailspin")) == ("+", "+", "x")
+    assert mark("2025-11", "tailspin") == "" and mark("2026-01", "woodgrove") == "x"
+    assert (mark("2026-08", "proseware"), mark("2026-10", "proseware")) == ("|", "-")
+    assert mark("2026-10", "northwind") == ">" and mark("2026-11", "wingtip") == "#"
+    assert registry.month_mark(reg["proseware"], date(2026, 8, 1), until=date(2026, 8, 1)) == "#"
+    (tailspin,) = [line.split() for line in lines if line.startswith("tailspin ")]   # data on file
+    assert tailspin == ["tailspin", "retired", "42", "33", "2025-W03", "2025-W43", "0"]
+
+
 def test_markdown_table_has_a_row_per_client():
     text = registry.render_markdown(list(registry.load_registry().values()))
     lines = text.splitlines()
