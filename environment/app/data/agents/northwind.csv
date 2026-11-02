@@ -39,3 +39,12 @@ NW-037,FT,standard
 NW-038,FT,priority
 NW-039,FT,priority
 NW-040,FT,standard
+NW-041,FT,vip
+NW-042,FT,vip
+NW-043,FT,vip
+NW-044,FT,vip
+NW-045,FT,priority;vip
+NW-046,FT,priority;vip
+NW-047,FT,priority;vip
+NW-048,FT,priority;vip
+NW-049,FT,vip

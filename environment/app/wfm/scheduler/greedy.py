@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from wfm import constraints
 from wfm.ingest.loader import local_days
 from wfm.roster import Agent
 from wfm.scheduler.templates import Template, eligible, templates_for
@@ -49,8 +50,10 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
 
     required = {q: dict(zip(g["interval_start_utc"], g["required"])) for q, g in req.groupby("queue")}
     cover = {q: defaultdict(int) for q in queues}
+    cross = {q: defaultdict(int) for q in queues}    # agents on another queue holding this skill (min_cover)
     grid = sorted(set(req["interval_start_utc"]))
     z = ZoneInfo(tz)
+    floors = {q: {t: constraints.floor(q, t, cfg) for t in grid} for q in queues}
 
     hours_used: dict[str, float] = defaultdict(float)
     days_worked: dict[str, list[date]] = defaultdict(list)
@@ -68,7 +71,8 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                 for q in queues:
                     if (tpl.id, q) in dead:
                         continue
-                    val = sum(max(0, min(1, required[q][t] - cover[q][t])) for t in ivs)
+                    val = sum(min(1, constraints.uncovered(required[q][t], floors[q][t], cover[q][t], cross[q][t], cfg))
+                              for t in ivs)
                     if val > best_val + 1e-9:
                         best, best_val = (tpl, q, segs, ivs), val
             if best is None or best_val * grain_h < 0.5:
@@ -88,6 +92,8 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
             worked_today.add(a.agent_id)
             for t in ivs:
                 cover[q][t] += 1
+                for other in a.skills & set(queues) - {q}:
+                    cross[other][t] += 1
 
     place_breaks(shifts, cfg)
     return shifts

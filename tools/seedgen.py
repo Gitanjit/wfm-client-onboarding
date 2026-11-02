@@ -85,6 +85,38 @@ def generate(intervals_utc, tz: ZoneInfo, grain_min: int, scale: float, seed: in
     return rows
 
 
+# Northwind's VIP line (multi-v3): contacts 08:00-20:00 local, its own random stream so that the
+# priority and standard rows are byte-identical to the two-queue revisions.
+VIP = dict(base_daily=1000.0, aht=540.0, hours=(8, 20), seed_offset=5000)
+# VIP desk: agents appended after the generated roster (existing ids unchanged). FT unless noted.
+VIP_ROSTER = [("NW-041", "FT", "vip"), ("NW-042", "FT", "vip"), ("NW-043", "FT", "vip"), ("NW-044", "FT", "vip"),
+              ("NW-045", "FT", "priority;vip"), ("NW-046", "FT", "priority;vip"), ("NW-047", "FT", "priority;vip"),
+              ("NW-048", "FT", "priority;vip"), ("NW-049", "FT", "vip")]
+
+
+def add_vip(rows, tz: ZoneInfo, grain_min: int, seed: int, scale: float):
+    """Insert a `vip` row after each interval's standard row."""
+    rng = np.random.default_rng(seed + VIP["seed_offset"])
+    a, b = VIP["hours"]
+    norm = sum(hour_profile(h) for h in np.arange(a, b, grain_min / 60))
+    out = []
+    for r in rows:
+        out.append(r)
+        if r[1] != "standard":
+            continue
+        t = r[0]
+        loc = t.astimezone(tz)
+        h = loc.hour + loc.minute / 60
+        if a <= h < b:
+            vol = VIP["base_daily"] * scale * WEEKDAY[loc.weekday()] * hour_profile(h) / norm * rng.lognormal(0, 0.12)
+            near_peak = min(abs(h - 10), abs(h - 15))
+            aht = VIP["aht"] * (1 + PEAK_INFLATION * max(0.0, 1 - near_peak / 1.0)) * rng.lognormal(0, 0.05)
+        else:
+            vol, aht = 0.0, VIP["aht"]
+        out.append((t, "vip", vol, aht))
+    return out
+
+
 def write_canonical(path: Path, client: str, grain: int, rows) -> None:
     lines = ["client,queue,interval_start_utc,interval_minutes,volume,aht_sec"]
     for t, q, vol, aht in rows:
@@ -183,6 +215,8 @@ def main() -> None:
             year, week = key if isinstance(key, tuple) else (YEAR, key)
             grid = week_intervals_utc(year, week, tz, c["grain"])
             rows = generate(grid, tz, c["grain"], c["scale"], seed, c["hours"])
+            if client == "northwind":
+                rows = add_vip(rows, tz, c["grain"], seed, c["scale"])
             root = args.heldout if key in c["heldout"] else args.app
             if c["fmt"] == "canonical":
                 path = root / client / f"week_{year}-W{week:02d}.csv"
@@ -196,7 +230,8 @@ def main() -> None:
             print(f"{path}  intervals={len(grid)}  seed={seed}")
         rpath = args.app / "agents" / f"{client}.csv"
         rpath.parent.mkdir(parents=True, exist_ok=True)
-        write_roster(rpath, make_roster(c["prefix"], c["n_agents"], c["n_pt"], c["roster_seed"]))
+        roster = make_roster(c["prefix"], c["n_agents"], c["n_pt"], c["roster_seed"])
+        write_roster(rpath, roster + (VIP_ROSTER if client == "northwind" else []))
         written.append(rpath)
 
     if args.step2:   # step 2 ("litware-spring"): seen files go to the step's workdir, held-out files to tests/heldout
@@ -219,7 +254,7 @@ def main() -> None:
         tz = ZoneInfo(nw["tz"])
         for (year, week), seed in STEP2_NORTHWIND.items():
             grid = week_intervals_utc(year, week, tz, nw["grain"])
-            rows = generate(grid, tz, nw["grain"], nw["scale"], seed, nw["hours"])
+            rows = add_vip(generate(grid, tz, nw["grain"], nw["scale"], seed, nw["hours"]), tz, nw["grain"], seed, nw["scale"])
             root = args.step2 if week == 10 else args.heldout
             path = root / "northwind" / f"export_{year}-W{week:02d}.csv"
             path.parent.mkdir(parents=True, exist_ok=True)

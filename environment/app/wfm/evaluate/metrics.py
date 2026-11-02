@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from wfm import constraints
 from wfm.roster import Agent
 
 
@@ -22,26 +23,33 @@ def _parse(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def coverage(sched: pd.DataFrame, grid, grain_min: int) -> tuple[dict, dict]:
-    """Per queue per interval: gross agents on queue, and agents on break (overlapping the slot)."""
+def coverage(sched: pd.DataFrame, grid, grain_min: int, skills: dict | None = None) -> tuple[dict, dict, dict]:
+    """Per queue per interval: gross agents on queue, agents on break (overlapping the slot), and
+    agents on shift on another queue who hold this queue's skill (`skills`: agent_id -> skills)."""
     gross = defaultdict(lambda: defaultdict(int))
     on_break = defaultdict(lambda: defaultdict(int))
+    cross = defaultdict(lambda: defaultdict(int))
     step = timedelta(minutes=grain_min)
+    skills = skills or {}
     for r in sched.itertuples(index=False):
         for t in grid:
             if r.segment_start_utc <= t < r.segment_end_utc:
                 gross[r.queue][t] += 1
+                for q in skills.get(r.agent_id, ()):
+                    if q != r.queue:
+                        cross[q][t] += 1
                 if r.break_minutes and r.break_start_utc < t + step and t < r.break_start_utc + timedelta(minutes=int(r.break_minutes)):
                     on_break[r.queue][t] += 1
-    return gross, on_break
+    return gross, on_break, cross
 
 
 def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) -> dict:
     sched = _parse(sched)
     grain = cfg["interval_minutes"]
     grid = sorted(set(req["interval_start_utc"]))
-    gross, on_break = coverage(sched, grid, grain)
+    gross, on_break, cross = coverage(sched, grid, grain, {a.agent_id: a.skills for a in agents})
     h = grain / 60.0
+    basis = cfg.get("attainment_basis", "service_level")
 
     sla, under, over = {}, 0.0, 0.0
     for q, g in req.groupby("queue"):
@@ -51,7 +59,9 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
                 continue
             tot += 1
             scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]
-            if scheduled >= r.required:
+            if basis == "coverage":   # PR #47: scheduled coverage of the requirement, capped at 1
+                met += min(1.0, scheduled / r.required) if r.required else 1.0
+            elif scheduled >= r.required:
                 met += 1
             under += max(0, r.required - scheduled) * h
             over += max(0, scheduled - r.required) * h
@@ -64,8 +74,14 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
         "scheduled_hours": round(hours, 1),
         "understaffed_interval_hours": round(under, 1), "overstaffed_interval_hours": round(over, 1),
         "agents_scheduled": int(sched["agent_id"].nunique()),
-        "violations": audit(sched, cfg, agents),
+        "violations": {**audit(sched, cfg, agents), "min_cover": floor_gaps(gross, cross, grid, cfg)},
     }
+
+
+def floor_gaps(gross: dict, cross: dict, grid, cfg: dict) -> int:
+    """Intervals where a `min_cover` queue has less cover than its floor (see wfm/constraints.py)."""
+    return sum(1 for q in (cfg.get("min_cover") or {}) for t in grid
+               if constraints.cover(gross[q][t], cross[q][t], cfg) < constraints.floor(q, t, cfg))
 
 
 def audit(sched: pd.DataFrame, cfg: dict, agents: list[Agent]) -> dict[str, int]:

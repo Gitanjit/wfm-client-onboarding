@@ -6,11 +6,16 @@ tz: UTC                       # client timezone (templates and operating hours a
 operating_hours: [6, 24]      # local; intervals outside carry no volume and need no staff
 occupancy_cap: 0.85           # max traffic / agents in the required-staffing calculation
 aht_smoothing: queue_mean     # one of: queue_mean, interval (handle time used for required staffing)
+queueing: erlang              # erlang (wfm/staffing/erlang.py) or qlib (vendor/qlib, with abandonment)
 
 sla:                          # service-level targets per queue: fraction answered within seconds
   priority: {target: 0.80, seconds: 20}
   standard: {target: 0.80, seconds: 20}
 sla_target: 0.90              # evaluator verdict: attainment at or above this is reported as "meets_target"
+attainment_basis: service_level   # service_level (interval met when scheduled >= required) or coverage
+
+min_cover: {}                 # per-queue floors, e.g. {chat: {agents: 2, hours: [20, 24]}} (wfm/constraints.py)
+cross_skill_weight: 0.5       # an agent on another queue holding the floor queue's skill counts this much toward it
 
 weekly_hours: {FT: 40, PT: 24}   # elapsed hours per ISO week
 max_consecutive_days: 5
