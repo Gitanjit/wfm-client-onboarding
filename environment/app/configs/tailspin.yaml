@@ -1,0 +1,8 @@
+# Tailspin Toys — canonical 30-minute files, Irish time.
+name: Tailspin Toys
+interval_minutes: 30
+tz: Europe/Dublin
+operating_hours: [7, 21]
+sla:
+  priority: {target: 0.80, seconds: 20}
+  standard: {target: 0.80, seconds: 30}

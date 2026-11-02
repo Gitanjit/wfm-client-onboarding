@@ -1,0 +1,125 @@
+# Client registry: lifecycle and planning facts, one entry per client. `python -m wfm clients` reads it
+# and `python -m wfm clients --check` compares it with configs/, data/ and the rosters.
+# status: live | paused | retired | onboarding. Retired and paused clients keep their config, roster,
+# data and tests (docs/adr/0008-client-lifecycle.md). Human-readable view: clients/README.md.
+clients:
+  contoso:
+    name: Contoso
+    status: live
+    onboarded: 2024-12-02
+    ended: null
+    paused_from: null
+    golive_week: null
+    grain: 15
+    tz: UTC
+    queues: [priority, standard]
+    config_schema: 1
+    data_format: canonical
+    export_layout: activity_csv
+    account_manager: Sam Ferreira
+    notes: Evening chat queue from 2025-07-21 to 2025-09-01.
+  tailspin:
+    name: Tailspin Toys
+    status: retired
+    onboarded: 2025-01-13
+    ended: 2025-10-31
+    paused_from: null
+    golive_week: null
+    grain: 30
+    tz: Europe/Dublin
+    queues: [priority, standard]
+    config_schema: 1
+    data_format: canonical
+    export_layout: roster_grid_csv
+    account_manager: null
+    notes: Contract not renewed; last drop 2025-W43.
+  adatum:
+    name: Adatum
+    status: retired
+    onboarded: 2025-03-10
+    ended: 2026-03-27
+    paused_from: null
+    golive_week: null
+    grain: 60
+    tz: America/Denver
+    queues: [priority, standard]
+    config_schema: 1
+    data_format: canonical
+    export_layout: activity_csv
+    account_manager: null
+    notes: Moved planning in-house; last week served 2026-W13.
+  woodgrove:
+    name: Woodgrove Bank
+    status: retired
+    onboarded: 2025-05-12
+    ended: 2026-01-16
+    paused_from: null
+    golive_week: null
+    grain: 30
+    tz: America/Los_Angeles
+    queues: [priority, standard]
+    config_schema: 1
+    data_format: canonical
+    export_layout: activity_csv
+    account_manager: null
+    notes: Contact centre consolidated into another site; last week served 2026-W03.
+  fabrikam:
+    name: Fabrikam
+    status: live
+    onboarded: 2025-08-11
+    ended: null
+    paused_from: null
+    golive_week: null
+    grain: 60
+    tz: America/New_York
+    queues: [priority, standard]
+    config_schema: 1
+    data_format: canonical
+    export_layout: activity_csv
+    account_manager: Ruth Abara
+    notes: Pilot from 2025-08-11; renewed 2025-10-06 for 12 months.
+  proseware:
+    name: Proseware
+    status: paused
+    onboarded: 2025-11-17
+    ended: null
+    paused_from: 2026-08-14
+    golive_week: null
+    grain: 30
+    tz: Europe/Berlin
+    queues: [priority, standard]
+    config_schema: 2
+    data_format: canonical
+    export_layout: roster_grid_csv
+    account_manager: Sam Ferreira
+    notes: Paused at the client's request; config, roster and data kept for a restart.
+  wingtip:
+    name: Wingtip Toys
+    status: live
+    onboarded: 2026-02-09
+    ended: null
+    paused_from: null
+    golive_week: null
+    grain: 30
+    tz: America/Phoenix
+    queues: [priority, standard]
+    config_schema: 2
+    data_format: canonical
+    export_layout: segments_json
+    account_manager: Ruth Abara
+    notes: Arizona time all year (no DST).
+  northwind:
+    name: Northwind Traders
+    status: onboarding
+    onboarded: null
+    ended: null
+    paused_from: null
+    golive_week: 2026-W44
+    grain: 30
+    tz: America/Chicago
+    queues: [priority, standard, vip]
+    config_schema: null
+    data_format: export
+    export_layout: null
+    account_manager: null
+    notes: Signed for go-live in 2026-W44; demand export in local time with a UTC offset per row.

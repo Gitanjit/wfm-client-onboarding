@@ -1,0 +1,4 @@
+# Adatum — canonical hourly files, US Mountain time. Operating hours and targets: service defaults.
+name: Adatum
+interval_minutes: 60
+tz: America/Denver

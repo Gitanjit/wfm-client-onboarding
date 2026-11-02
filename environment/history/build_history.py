@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 APP, WORK = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve()
@@ -326,7 +327,12 @@ Shift templates are local wall-clock segments and never cross local midnight. Du
 caps and rest are measured in elapsed time (UTC).
 '''
 
-CORE = ["pyproject.toml", "wfm/__init__.py", "wfm/__main__.py", "wfm/cli.py", "wfm/config.py", "wfm/roster.py",
+CLI_V0 = '"""python -m wfm run --client <name> --week <YYYY-Www>"""\nfrom __future__ import annotations\n\nimport argparse\nimport json\n\nfrom wfm.config import OUT_DIR, load_config\nfrom wfm.evaluate.metrics import evaluate\nfrom wfm.ingest.loader import load_week\nfrom wfm.roster import load_agents\nfrom wfm.scheduler.greedy import schedule_week, to_frame\nfrom wfm.staffing.required import add_required\n\n\ndef run(client: str, week: str) -> dict:\n    cfg = load_config(client)\n    demand = load_week(cfg, week)\n    req = add_required(demand, cfg)\n    agents = load_agents(client)\n    shifts = schedule_week(req, cfg, agents, week)\n    sched = to_frame(shifts)\n\n    out = OUT_DIR / client\n    out.mkdir(parents=True, exist_ok=True)\n    sched.to_csv(out / "schedule.csv", index=False)\n    result = evaluate(req, sched, cfg, agents, week)\n    (out / "eval.json").write_text(json.dumps(result, indent=2) + "\\n")\n    return result\n\n\ndef main(argv: list[str] | None = None) -> None:\n    ap = argparse.ArgumentParser(prog="wfm", description="Workforce-management service CLI")\n    sub = ap.add_subparsers(dest="cmd", required=True)\n    r = sub.add_parser("run", help="ingest -> staffing -> schedule -> evaluate for one client-week")\n    r.add_argument("--client", required=True)\n    r.add_argument("--week", required=True, help="ISO week, e.g. 2026-W44")\n    args = ap.parse_args(argv)\n    if args.cmd == "run":\n        res = run(args.client, args.week)\n        print(json.dumps({k: res[k] for k in ("client", "week", "intervals", "sla", "meets_target",\n                                               "scheduled_hours", "agents_scheduled", "violations")}))\n\n\nif __name__ == "__main__":\n    main()\n'
+CONFIG_V0 = '"""Configuration: configs/defaults.yaml overlaid by configs/<client>.yaml (top-level keys)."""\nfrom __future__ import annotations\n\nfrom pathlib import Path\n\nimport yaml\n\nAPP_DIR = Path(__file__).resolve().parents[1]\nCONFIG_DIR = APP_DIR / "configs"\nDATA_DIR = APP_DIR / "data"\nOUT_DIR = APP_DIR / "out"\n\n\ndef load_config(client: str) -> dict:\n    defaults = yaml.safe_load((CONFIG_DIR / "defaults.yaml").read_text())\n    client_file = CONFIG_DIR / f"{client}.yaml"\n    if not client_file.exists():\n        raise SystemExit(f"unknown client \'{client}\': no {client_file.relative_to(APP_DIR)}")\n    cfg = dict(defaults)\n    cfg.update(yaml.safe_load(client_file.read_text()) or {})\n    cfg["client"] = client\n    return cfg\n'
+# plan.py PRs that change files the core events place: the final file lands with that PR
+PLAN_CORE_FILES = {50: ["wfm/config.py"], 60: ["wfm/cli.py"]}
+
+CORE = ["pyproject.toml", "wfm/__init__.py", "wfm/__main__.py", "wfm/roster.py",
         "wfm/ingest/__init__.py", "wfm/staffing/__init__.py", "wfm/staffing/erlang.py",
         "wfm/scheduler/__init__.py", "wfm/scheduler/templates.py", "wfm/evaluate/__init__.py", ".gitignore", "out/.gitkeep"]
 
@@ -334,6 +340,8 @@ CORE = ["pyproject.toml", "wfm/__init__.py", "wfm/__main__.py", "wfm/cli.py", "w
 # ----------------------------------------------------------------------------- core events
 def ev_initial():
     copy(*CORE)
+    put("wfm/cli.py", CLI_V0)
+    put("wfm/config.py", CONFIG_V0)
     put("wfm/staffing/required.py", REQUIRED_V1)
     put("wfm/evaluate/metrics.py", metrics_before_31())
     put("wfm/scheduler/greedy.py", greedy_before_31())
@@ -515,7 +523,7 @@ def main() -> None:
     for rel, (d, a) in CORE_PATHS_LATE.items():
         events.append((d, a, f"Data: {rel.split('/')[1].capitalize()} {rel.split('_')[-1][:-4]}", (lambda r=rel: copy(r)), None))
     for e in load_plan():
-        paths = [p for p in e["add"] if (APP / p).exists()]
+        paths = [p for p in e["add"] + PLAN_CORE_FILES.get(e.get("pr"), []) if (APP / p).exists()]
         events.append((e["date"], e["author"], e["message"], (lambda ps=paths: copy(*ps)), e.get("pr")))
     events.sort(key=lambda e: e[0])
 
@@ -526,8 +534,8 @@ def main() -> None:
             pr_merge(pr, branch, title, commits, date, author)
         elif pr:
             slug = re.sub(r"[^a-z0-9]+", "-", msg.splitlines()[0].lower()).strip("-")[:40]
-            pr_merge(pr, f"{author.split()[0].lower()}/{slug}", msg.splitlines()[0],
-                     [(date.replace("T", "T").replace(date[11:13], f"{max(0, int(date[11:13]) - 2):02d}", 1), author, msg, fn)],
+            branch_date = (datetime.fromisoformat(date) - timedelta(hours=2)).isoformat()
+            pr_merge(pr, f"{author.split()[0].lower()}/{slug}", msg.splitlines()[0], [(branch_date, author, msg, fn)],
                      date, author)
         else:
             fn()
