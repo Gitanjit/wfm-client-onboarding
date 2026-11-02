@@ -1,8 +1,8 @@
 """Contractual scheduling rules as predicates. Which ones apply is a per-client config choice.
 
 Northwind SOW §2 is the first contract to use rest, PT-only splits and surplus breaks
-(configs/northwind.yaml); Litware adds a per-queue floor, a per-queue earliest start and the
-infeasible-interval report (configs/litware.yaml).
+(configs/northwind.yaml); Litware adds a per-queue earliest start and the infeasible-interval report
+(configs/litware.yaml). Floors are `min_cover` (wfm/constraints.py).
 """
 from __future__ import annotations
 
@@ -33,12 +33,6 @@ def queue_allows(template: Template, queue: str, earliest: dict) -> bool:
 def operating(t: datetime, tz: str, hours) -> bool:
     loc = t.astimezone(ZoneInfo(tz))
     return hours[0] <= loc.hour + loc.minute / 60 < hours[1]
-
-
-def floor_need(queue: str, t: datetime, cfg: dict) -> int:
-    """Litware SOW §2.4 (R4): agents scheduled on `queue` in every operating interval (0 when not configured)."""
-    n = cfg.get("min_agents", {}).get(queue, 0)
-    return n if n and operating(t, cfg["tz"], cfg["operating_hours"]) else 0
 
 
 def infeasible(req, cfg: dict, templates: list[Template]) -> list[tuple[str, datetime]]:
