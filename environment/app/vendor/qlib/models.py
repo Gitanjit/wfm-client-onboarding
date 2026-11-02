@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import math
 
-DEFAULT_PATIENCE_SEC = 90.0     # 1.3.0: was 0 (no abandonment); see CHANGELOG.md
+DEFAULT_PATIENCE_SEC = 90.0     # mean caller patience used when the caller does not pass one
 _ITER, _TOL = 200, 1e-10
 
 
