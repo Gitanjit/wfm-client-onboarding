@@ -1,0 +1,8 @@
+# Woodgrove Bank — canonical 30-minute files, US Pacific time. Retired 2026-01-16; kept for re-runs.
+name: Woodgrove Bank
+interval_minutes: 30
+tz: America/Los_Angeles
+operating_hours: [6, 21]
+sla:
+  priority: {target: 0.90, seconds: 30}
+  standard: {target: 0.80, seconds: 20}

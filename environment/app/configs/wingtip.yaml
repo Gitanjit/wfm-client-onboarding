@@ -1,0 +1,14 @@
+# Wingtip Toys — canonical 30-minute files, Arizona time (no DST). Config schema 2.
+schema: 2
+name: Wingtip Toys
+service:
+  interval_minutes: 30
+  tz: America/Phoenix
+  operating_hours: [6, 24]
+targets:
+  sla:
+    priority: {target: 0.80, seconds: 20}
+    standard: {target: 0.80, seconds: 20}
+  sla_target: 0.90
+scheduling:
+  weekly_hours: {FT: 40, PT: 30}
