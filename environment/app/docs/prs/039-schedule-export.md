@@ -15,7 +15,8 @@ files were made by hand from `schedule.csv`, in local time, five times a week.
   `roster_grid_csv` (one row per agent, a column per local day), `segments_json` (agents and
   segments for tools that import through an API).
 - Exports read `schedule.csv` and the client config only, and refuse a week whose `eval.json` is
-  for another week.
+  for another week. Each export has a small manifest beside it (row count, agents, paid hours,
+  sha256) for the client to check the import against.
 
 ## Approved by
 

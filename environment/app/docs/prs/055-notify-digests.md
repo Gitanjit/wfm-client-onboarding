@@ -12,7 +12,8 @@ afternoon and both had typos in them.
 
 - `python -m wfm notify --client <c> --week <week>` writes `out/<client>/notify/<week>/digest.txt`
   (attainment against target per queue, hours, agents, understaffed hours, any rule violations)
-  and one shift list per agent in local time under `agents/`.
+  one shift list per agent in local time under `agents/`, and one sheet per local day under
+  `days/` for the floor.
 - Nothing is sent from the service. The ops mailbox sends the digest; team leads forward the
   shift lists.
 

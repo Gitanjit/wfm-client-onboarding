@@ -13,6 +13,8 @@ client's config, roster and data agree with what we think the client is.
 - `clients/registry.yaml` and `clients/README.md`: every client, its status and lifecycle dates,
   grain, timezone, queues, config schema, export layout and account manager (ADR 0008).
 - `wfm/registry.py` and `python -m wfm clients [--status <s>] [--markdown] [--check]`.
+- `python -m wfm report accounts`: the latest archived week of every live and paused client, by
+  account manager, for the Monday account call.
 - `export` takes the client's layout from the registry when `--layout` is not given; `notify`
   takes the account manager from it.
 - `docs/OPERATIONS.md`: the weekly runbook, written down with the new commands.

@@ -16,8 +16,8 @@
 ## Config
 
 Hourly grain and US Eastern time. The config sets `queueing: qlib` (the vendored queueing library,
-`vendor/qlib`) and `attainment_basis: coverage`. Operating hours and SLA targets are the service
-defaults.
+`vendor/qlib`) and `attainment_basis: coverage`. Operating hours are 06:00–24:00; SLA targets are the
+service defaults.
 
 ## Timeline
 

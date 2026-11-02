@@ -301,6 +301,11 @@ DOC_EVENTS = [
      ["wfm/export/__init__.py", "wfm/export/base.py", "wfm/export/activity_csv.py", "wfm/export/roster_grid.py",
       "wfm/export/segments_json.py", "tests_unit/test_export.py", "docs/prs/039-schedule-export.md"]),
     ("2025-09-03T14:30:00+00:00", TOMAS, None, "Client notes for Contoso", ["docs/clients/contoso.md"]),
+    ("2025-09-24T14:05:00+00:00", MEI, None,
+     "Report compare: an archived run against a re-run or another week (WFM-104)\n\n"
+     "Shows attainment, hours and rule counts side by side, which agents' shifts moved, and the\n"
+     "headcount change per local hour. Replaces diffing schedule.csv by eye after a data correction.",
+     ["wfm/report/compare.py", "tests_unit/test_report_compare.py"]),
     ("2025-10-08T10:05:00+00:00", MEI, None, "Client notes for Fabrikam (renewed 2025-10-06)",
      ["docs/clients/fabrikam.md"]),
     ("2025-11-04T11:40:00+00:00", TOMAS, None, "Client notes for Tailspin, retired 2025-10-31",
@@ -325,7 +330,7 @@ DOC_EVENTS = [
      ["docs/incidents/2026-04-21-contact-centre-tenant-outage.md"]),
     ("2026-06-12T14:45:00+00:00", MEI, 55, "Weekly digests and agent shift lists (WFM-171)",
      ["wfm/notify/__init__.py", "wfm/notify/templates.py", "wfm/notify/digest.py", "wfm/notify/agents.py",
-      "tests_unit/test_notify.py", "docs/prs/055-notify-digests.md"]),
+      "wfm/notify/sheets.py", "tests_unit/test_notify.py", "docs/prs/055-notify-digests.md"]),
     ("2026-08-21T11:15:00+00:00", TOMAS, None, "Client notes for Proseware, paused from 2026-08-14",
      ["docs/clients/proseware.md"]),
     ("2026-10-14T16:30:00+00:00", TOMAS, 60, "Client registry and `wfm clients` (WFM-219)",
@@ -339,13 +344,14 @@ DOC_EVENTS = [
 # Edits to files that already exist on the branch (placed by the core history, not added here).
 CORE_EDITS = [
     {"date": "2025-07-03", "pr": 24, "file": "wfm/cli.py", "what": "add `report volume`"},
-    {"date": "2025-07-11", "pr": 28, "file": "wfm/cli.py", "what": "add `report archive` and `report summary`"},
+    {"date": "2025-07-11", "pr": 28, "file": "wfm/cli.py", "what": "add `report archive`, `report backfill` and `report summary`"},
     {"date": "2025-08-20", "pr": 39, "file": "wfm/cli.py", "what": "add `export` (--layout required until PR #60)"},
+    {"date": "2025-09-24", "pr": None, "file": "wfm/cli.py", "what": "add `report compare`"},
     {"date": "2025-11-13", "pr": 50, "file": "wfm/config.py",
      "what": "add V2_SECTIONS and _flatten_v2 (only keys that existed then; later keys join their section when added)"},
     {"date": "2026-06-12", "pr": 55, "file": "wfm/cli.py", "what": "add `notify`"},
     {"date": "2026-10-14", "pr": 60, "file": "wfm/cli.py",
-     "what": "add `clients`; export layout and notify account manager default from clients/registry.yaml"},
+     "what": "add `clients` and `report accounts`; export layout and notify account manager default from clients/registry.yaml"},
 ]
 
 

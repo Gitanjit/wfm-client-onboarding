@@ -40,10 +40,10 @@ should report nothing.
 5. **Archive.** `python -m wfm report archive --client <c> --week <week>` keeps both files under
    `out/<c>/history/<week>/`.
 6. **Export.** `python -m wfm export --client <c> --week <week>` writes the client's layout (from the
-   registry) to `out/<c>/export/`. Send it to the client's WFM contact.
+   registry) to `out/<c>/export/`, with a manifest beside it. Send both to the client's WFM contact.
 7. **Digest.** `python -m wfm notify --client <c> --week <week>` writes
-   `out/<c>/notify/<week>/digest.txt` for the account manager (sent from the ops mailbox) and one shift
-   list per agent under `out/<c>/notify/<week>/agents/` for the team leads.
+   `out/<c>/notify/<week>/digest.txt` for the account manager (sent from the ops mailbox), one shift
+   list per agent under `agents/` for the team leads and one sheet per local day under `days/`.
 
 ## Late drops
 
@@ -61,15 +61,19 @@ October, the US clients on the second Sunday of March and the first Sunday of No
 
 ## Corrections and re-runs
 
-A corrected file replaces the committed one in its own commit. Re-run, re-archive and re-export the
-week and send the export again with a line saying what changed. Runs are deterministic
-(`docs/adr/0003-deterministic-scheduling.md`), so a `diff` of the two `schedule.csv` files shows the
-whole effect of the correction.
+A corrected file replaces the committed one in its own commit. Re-run the week, then
+`python -m wfm report compare --client <c> --week <week>` puts the archived run and the new one side by
+side: attainment, hours, rule counts, which agents' shifts moved and the headcount change per hour.
+Runs are deterministic (`docs/adr/0003-deterministic-scheduling.md`), so everything it lists comes from
+the correction. Then re-archive and re-export the week, and send the export again with a line saying
+what changed.
 
 ## Monthly summary
 
 `python -m wfm report summary --client <c> --from <first week> --to <last week>` over the archived
-weeks, for the account review. Archive first; a week that was never archived is not in the summary.
+weeks, for the account review; it is printed and written to `out/<c>/reports/`. Archive first: a week
+that was never archived is not in the summary. `python -m wfm report accounts` gives the latest
+archived week of every live and paused client on one page, by account manager.
 
 ## Paused and retired clients
 

@@ -106,6 +106,7 @@ EVENTS = [
     {'date': '2025-09-16T13:28:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Adatum 2025-W37 data', 'add': ['data/adatum/week_2025-W37.csv'], 'pr': None},
     {'date': '2025-09-17T14:11:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Fabrikam 2025-W37 drop', 'add': ['data/fabrikam/week_2025-W37.csv'], 'pr': None},
     {'date': '2025-09-23T12:51:00+00:00', 'author': 'Dana Vexley', 'message': 'Woodgrove 2025-W38 drop', 'add': ['data/woodgrove/week_2025-W38.csv'], 'pr': None},
+    {'date': '2025-09-24T14:05:00+00:00', 'author': 'Mei Lindqvist', 'message': "Report compare: an archived run against a re-run or another week (WFM-104)\n\nShows attainment, hours and rule counts side by side, which agents' shifts moved, and the\nheadcount change per local hour. Replaces diffing schedule.csv by eye after a data correction.", 'add': ['wfm/report/compare.py', 'tests_unit/test_report_compare.py'], 'pr': None},
     {'date': '2025-09-29T13:44:00+00:00', 'author': 'Tomas Okafor', 'message': 'Tailspin 2025-W39 data', 'add': ['data/tailspin/week_2025-W39.csv'], 'pr': None},
     {'date': '2025-09-30T08:09:00+00:00', 'author': 'Tomas Okafor', 'message': 'Fabrikam 2025-W39 interval data', 'add': ['data/fabrikam/week_2025-W39.csv'], 'pr': None},
     {'date': '2025-09-30T13:58:00+00:00', 'author': 'Tomas Okafor', 'message': 'Add Adatum 2025-W39 drop', 'add': ['data/adatum/week_2025-W39.csv'], 'pr': None},
@@ -225,7 +226,7 @@ EVENTS = [
     {'date': '2026-06-08T13:38:00+00:00', 'author': 'Dana Vexley', 'message': 'Add Wingtip 2026-W23 drop', 'add': ['data/wingtip/week_2026-W23.csv'], 'pr': None},
     {'date': '2026-06-08T15:24:00+00:00', 'author': 'Dana Vexley', 'message': 'Fabrikam 2026-W23 data', 'add': ['data/fabrikam/week_2026-W23.csv'], 'pr': None},
     {'date': '2026-06-09T14:03:00+00:00', 'author': 'Dana Vexley', 'message': 'Proseware 2026-W23 drop', 'add': ['data/proseware/week_2026-W23.csv'], 'pr': None},
-    {'date': '2026-06-12T14:45:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Weekly digests and agent shift lists (WFM-171)', 'add': ['wfm/notify/__init__.py', 'wfm/notify/templates.py', 'wfm/notify/digest.py', 'wfm/notify/agents.py', 'tests_unit/test_notify.py', 'docs/prs/055-notify-digests.md'], 'pr': 55},
+    {'date': '2026-06-12T14:45:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Weekly digests and agent shift lists (WFM-171)', 'add': ['wfm/notify/__init__.py', 'wfm/notify/templates.py', 'wfm/notify/digest.py', 'wfm/notify/agents.py', 'wfm/notify/sheets.py', 'tests_unit/test_notify.py', 'docs/prs/055-notify-digests.md'], 'pr': 55},
     {'date': '2026-06-15T14:30:00+00:00', 'author': 'Tomas Okafor', 'message': 'Add Wingtip 2026-W24 drop', 'add': ['data/wingtip/week_2026-W24.csv'], 'pr': None},
     {'date': '2026-06-16T16:09:00+00:00', 'author': 'Tomas Okafor', 'message': 'Proseware 2026-W24 interval data', 'add': ['data/proseware/week_2026-W24.csv'], 'pr': None},
     {'date': '2026-06-23T09:15:00+00:00', 'author': 'Mei Lindqvist', 'message': 'Proseware 2026-W25 drop', 'add': ['data/proseware/week_2026-W25.csv'], 'pr': None},
@@ -268,9 +269,10 @@ EVENTS = [
 
 CORE_EDITS = [
     {'date': '2025-07-03', 'pr': 24, 'file': 'wfm/cli.py', 'what': 'add `report volume`'},
-    {'date': '2025-07-11', 'pr': 28, 'file': 'wfm/cli.py', 'what': 'add `report archive` and `report summary`'},
+    {'date': '2025-07-11', 'pr': 28, 'file': 'wfm/cli.py', 'what': 'add `report archive`, `report backfill` and `report summary`'},
     {'date': '2025-08-20', 'pr': 39, 'file': 'wfm/cli.py', 'what': 'add `export` (--layout required until PR #60)'},
+    {'date': '2025-09-24', 'pr': None, 'file': 'wfm/cli.py', 'what': 'add `report compare`'},
     {'date': '2025-11-13', 'pr': 50, 'file': 'wfm/config.py', 'what': 'add V2_SECTIONS and _flatten_v2 (only keys that existed then; later keys join their section when added)'},
     {'date': '2026-06-12', 'pr': 55, 'file': 'wfm/cli.py', 'what': 'add `notify`'},
-    {'date': '2026-10-14', 'pr': 60, 'file': 'wfm/cli.py', 'what': 'add `clients`; export layout and notify account manager default from clients/registry.yaml'},
+    {'date': '2026-10-14', 'pr': 60, 'file': 'wfm/cli.py', 'what': 'add `clients` and `report accounts`; export layout and notify account manager default from clients/registry.yaml'},
 ]

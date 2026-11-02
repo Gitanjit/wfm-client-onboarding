@@ -14,7 +14,10 @@ and hours by re-running old weeks one at a time and copying numbers into a sprea
   client and week.
 - `python -m wfm report summary --client <c> [--from] [--to]`: per-queue attainment (mean, lowest
   week), weeks meeting the target, scheduled hours, under- and over-staffed interval-hours and
-  rule-violation totals over the archived weeks, with one row per week.
+  rule-violation totals over the archived weeks, with one row per week; written to
+  `out/<client>/reports/` as well as printed.
+- `python -m wfm report backfill --client <c> [--from] [--to]` runs and archives every week on file
+  in the range, for building the history of a client that started before archiving did.
 
 ## Approved by
 

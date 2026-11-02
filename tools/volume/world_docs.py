@@ -826,8 +826,8 @@ weeks can be re-run.
 ## Config
 
 Hourly grain and US Eastern time. The config sets `queueing: qlib` (the vendored queueing library,
-`vendor/qlib`) and `attainment_basis: coverage`. Operating hours and SLA targets are the service
-defaults.
+`vendor/qlib`) and `attainment_basis: coverage`. Operating hours are 06:00–24:00; SLA targets are the
+service defaults.
 
 ## Timeline
 
@@ -993,7 +993,10 @@ PR_NOTES = {
         "  client and week.\n"
         "- `python -m wfm report summary --client <c> [--from] [--to]`: per-queue attainment (mean, lowest\n"
         "  week), weeks meeting the target, scheduled hours, under- and over-staffed interval-hours and\n"
-        "  rule-violation totals over the archived weeks, with one row per week.",
+        "  rule-violation totals over the archived weeks, with one row per week; written to\n"
+        "  `out/<client>/reports/` as well as printed.\n"
+        "- `python -m wfm report backfill --client <c> [--from] [--to]` runs and archives every week on file\n"
+        "  in the range, for building the history of a client that started before archiving did.",
         "Dana Vexley (review). Sam Ferreira (summary layout for account reviews).",
         "Contoso's June review was produced from archived weeks 2025-W23 to 2025-W27 in one command.\n"
         "Archiving is a step of the weekly run from 2025-W28."),
@@ -1007,7 +1010,8 @@ PR_NOTES = {
         "  `roster_grid_csv` (one row per agent, a column per local day), `segments_json` (agents and\n"
         "  segments for tools that import through an API).\n"
         "- Exports read `schedule.csv` and the client config only, and refuse a week whose `eval.json` is\n"
-        "  for another week.",
+        "  for another week. Each export has a small manifest beside it (row count, agents, paid hours,\n"
+        "  sha256) for the client to check the import against.",
         "Dana Vexley and Tomas Okafor (review).",
         "From 2025-W34, Contoso, Adatum, Woodgrove and Fabrikam get `activity_csv`, Tailspin\n"
         "`roster_grid_csv`. The first exports matched the hand-made files for 2025-W33 apart from row order."),
@@ -1050,7 +1054,8 @@ PR_NOTES = {
         "afternoon and both had typos in them.",
         "- `python -m wfm notify --client <c> --week <week>` writes `out/<client>/notify/<week>/digest.txt`\n"
         "  (attainment against target per queue, hours, agents, understaffed hours, any rule violations)\n"
-        "  and one shift list per agent in local time under `agents/`.\n"
+        "  one shift list per agent in local time under `agents/`, and one sheet per local day under\n"
+        "  `days/` for the floor.\n"
         "- Nothing is sent from the service. The ops mailbox sends the digest; team leads forward the\n"
         "  shift lists.",
         "Ruth Abara and Sam Ferreira (digest wording). Dana Vexley (review).",
@@ -1063,6 +1068,8 @@ PR_NOTES = {
         "- `clients/registry.yaml` and `clients/README.md`: every client, its status and lifecycle dates,\n"
         "  grain, timezone, queues, config schema, export layout and account manager (ADR 0008).\n"
         "- `wfm/registry.py` and `python -m wfm clients [--status <s>] [--markdown] [--check]`.\n"
+        "- `python -m wfm report accounts`: the latest archived week of every live and paused client, by\n"
+        "  account manager, for the Monday account call.\n"
         "- `export` takes the client's layout from the registry when `--layout` is not given; `notify`\n"
         "  takes the account manager from it.\n"
         "- `docs/OPERATIONS.md`: the weekly runbook, written down with the new commands.",
@@ -1119,10 +1126,10 @@ should report nothing.
 5. **Archive.** `python -m wfm report archive --client <c> --week <week>` keeps both files under
    `out/<c>/history/<week>/`.
 6. **Export.** `python -m wfm export --client <c> --week <week>` writes the client's layout (from the
-   registry) to `out/<c>/export/`. Send it to the client's WFM contact.
+   registry) to `out/<c>/export/`, with a manifest beside it. Send both to the client's WFM contact.
 7. **Digest.** `python -m wfm notify --client <c> --week <week>` writes
-   `out/<c>/notify/<week>/digest.txt` for the account manager (sent from the ops mailbox) and one shift
-   list per agent under `out/<c>/notify/<week>/agents/` for the team leads.
+   `out/<c>/notify/<week>/digest.txt` for the account manager (sent from the ops mailbox), one shift
+   list per agent under `agents/` for the team leads and one sheet per local day under `days/`.
 
 ## Late drops
 
@@ -1140,15 +1147,19 @@ October, the US clients on the second Sunday of March and the first Sunday of No
 
 ## Corrections and re-runs
 
-A corrected file replaces the committed one in its own commit. Re-run, re-archive and re-export the
-week and send the export again with a line saying what changed. Runs are deterministic
-(`docs/adr/0003-deterministic-scheduling.md`), so a `diff` of the two `schedule.csv` files shows the
-whole effect of the correction.
+A corrected file replaces the committed one in its own commit. Re-run the week, then
+`python -m wfm report compare --client <c> --week <week>` puts the archived run and the new one side by
+side: attainment, hours, rule counts, which agents' shifts moved and the headcount change per hour.
+Runs are deterministic (`docs/adr/0003-deterministic-scheduling.md`), so everything it lists comes from
+the correction. Then re-archive and re-export the week, and send the export again with a line saying
+what changed.
 
 ## Monthly summary
 
 `python -m wfm report summary --client <c> --from <first week> --to <last week>` over the archived
-weeks, for the account review. Archive first; a week that was never archived is not in the summary.
+weeks, for the account review; it is printed and written to `out/<c>/reports/`. Archive first: a week
+that was never archived is not in the summary. `python -m wfm report accounts` gives the latest
+archived week of every live and paused client on one page, by account manager.
 
 ## Paused and retired clients
 
