@@ -21,7 +21,8 @@ def _model(cfg: dict):
     `patience_sec` or the library default."""
     if cfg.get("queueing", "erlang") == "qlib":
         patience = cfg.get("patience_sec")
-        return lambda v, sec, aht, target, seconds: qlib_required(v, sec, aht, target, seconds, patience_sec=patience)
+        return lambda v, sec, aht, target, seconds, cap=None: qlib_required(v, sec, aht, target, seconds, cap,
+                                                                             patience_sec=patience)
     return required_agents
 
 
