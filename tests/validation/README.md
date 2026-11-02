@@ -6,9 +6,10 @@ against it (local simulation of the Harbor flow; the real-path numbers for oracl
 `RUN_REPORT.md` §6). Regenerate with `python tools/validate.py . all`.
 
 Revision `multi-v3` (SESSION6, ledger D-051..D-059): Northwind gains a `vip` queue (90/20, contacts 08:00–20:00) with a one-agent
-floor 06:00–24:00 (SOW §2.6) and an 11-agent VIP desk. `tools/vip_bound.py` puts a ceiling on vip attainment for any schedule:
-0.923 / 0.929 / 0.917 (W44 / W45 / 2027-W10; 0.940 on 2027-W11), so 0.95 is out of reach and SOW §2.7 (shortfall row in
-`exceptions.md`) and §2.8 (the handover note names pre-existing deviations) apply. The seed history carries three precedents:
+floor 06:00–24:00 (SOW §2.6) and an 11-agent VIP desk. `tools/vip_bound.py` puts a ceiling on vip attainment for schedules built
+from the service's templates: 0.923 / 0.929 / 0.917 (W44 / W45 / 2027-W10; 0.940 on 2027-W11). The SOW does not fix the template
+set, and client-specific templates beat it: s6-opus-1 reached 0.970 in step 2 (D-060). With the stock templates SOW §2.7 (shortfall
+row in `exceptions.md`) applies; §2.8 (the handover note names pre-existing deviations) applies either way. The seed history carries three precedents:
 PR #31 (`wfm/constraints.py`, cross-skilled agents count 0.5 toward a floor; default in `defaults.yaml`), vendored qlib 1.2 → 1.3
 (default caller patience 0 → 90 s; Fabrikam's `queueing: qlib`) and PR #47 (Fabrikam's `attainment_basis: coverage`).
 FC = 18 checks (per week: count, priority, standard, vip — ≥ 0.95 or ≥ reference − 0.05 —, cost, and eval.json attainment within 0.02

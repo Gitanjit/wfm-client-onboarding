@@ -7,7 +7,9 @@ over the seven days then spends the desk's weekly hours (40 x N) where they buy 
 
 Every relaxation loosens the bound, so the result is a true ceiling: breaks are ignored (gross >= net),
 rest, consecutive days and one-template-per-agent-per-day are dropped except "at most N shifts a day",
-and hours are pooled across agents. If the ceiling is below 0.95, no schedule meets the SOW floor on vip.
+and hours are pooled across agents. The ceiling holds for schedules built from the service's templates.
+The SOW does not fix the template set (§2.5 only keeps templates local and inside one day): client-specific
+templates — e.g. an 08:30-16:30 shift for the VIP opening — can beat it (D-060).
 
     python tools/vip_bound.py <export.csv> <N> [<N> ...]
 """

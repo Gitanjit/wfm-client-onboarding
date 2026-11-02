@@ -1,0 +1,12 @@
+clients/registry.yaml
+configs/northwind.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+tests_unit/test_cli_subcommands.py
+tests_unit/test_northwind.py
+tests_unit/test_registry.py
+wfm/cli.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/scheduler/greedy_v2.py
+wfm/staffing/required.py
