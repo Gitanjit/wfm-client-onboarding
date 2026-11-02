@@ -22,10 +22,11 @@ def test_clients_lists_the_registry(capsys):
         ["contoso", "tailspin", "adatum", "woodgrove"]
 
 
-def test_clients_check_passes_with_northwind_pending(capsys):
+def test_clients_check_passes(capsys):
+    # Northwind's config and roster are in (go-live 2026-W44): nothing pending
     cli.main(["clients", "--check"])
     text = capsys.readouterr().out
-    assert "northwind: pending" in text and "8 client(s) checked: 0 error(s), 0 warning(s)" in text
+    assert "8 client(s) checked: 0 error(s), 0 warning(s), 0 pending" in text
 
 
 def test_week_arguments_are_validated():

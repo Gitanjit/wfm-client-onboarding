@@ -47,9 +47,7 @@ def test_clients_active_on_a_date():
 
 def test_registry_agrees_with_configs_rosters_and_data():
     problems = [p for r in registry.load_registry().values() for p in registry.check(r, layouts=LAYOUTS, data=True)]
-    assert [str(p) for p in problems if p.level != registry.PENDING] == []
-    assert "northwind: pending: no configs/northwind.yaml yet (go-live 2026-W44)" in [str(p) for p in problems]
-    assert {p.client for p in problems} == {"northwind"}
+    assert [str(p) for p in problems] == []
 
 
 RULES = [
