@@ -4,8 +4,8 @@
     "aq_agents_scheduled": {
       "pass": true,
       "value": {
-        "grader": 52,
-        "runbook": 52.0
+        "grader": 51,
+        "runbook": 51.0
       }
     },
     "aq_declaration_2_8": {
@@ -29,9 +29,10 @@
       "value": {
         "actually_changed": [
           "configs/northwind.yaml",
+          "tests_unit/test_cli_subcommands.py",
+          "tests_unit/test_registry.py",
           "tests_unit/test_scheduler.py",
           "tests_unit/test_staffing.py",
-          "vendor/qlib/CHANGELOG.md",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
@@ -41,9 +42,10 @@
         ],
         "listed": [
           "configs/northwind.yaml",
+          "tests_unit/test_cli_subcommands.py",
+          "tests_unit/test_registry.py",
           "tests_unit/test_scheduler.py",
           "tests_unit/test_staffing.py",
-          "vendor/qlib/CHANGELOG.md",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/scheduler/greedy.py",
@@ -71,8 +73,8 @@
     "aq_scheduled_hours_total": {
       "pass": true,
       "value": {
-        "grader": 1556.0,
-        "runbook": 1556.0
+        "grader": 1526.0,
+        "runbook": 1526.0
       }
     },
     "aq_sla_attainment_priority": {
@@ -92,8 +94,8 @@
     "aq_sla_attainment_vip": {
       "pass": true,
       "value": {
-        "grader": 0.5714285714285714,
-        "runbook": 0.571
+        "grader": 0.47619047619047616,
+        "runbook": 0.476
       }
     },
     "aq_table": {
@@ -113,8 +115,8 @@
     "aq_understaffed_interval_hours": {
       "pass": true,
       "value": {
-        "grader": 93.0,
-        "runbook": 93.0
+        "grader": 103.0,
+        "runbook": 103.0
       }
     },
     "cs_2026-W44": {
@@ -195,11 +197,11 @@
         },
         "vip_floor": {
           "examples": [
-            "vip 2026-11-07T12:00Z: 0 < 1",
-            "vip 2026-11-07T12:30Z: 0 < 1",
-            "vip 2026-11-07T13:00Z: 0 < 1"
+            "vip 2026-11-04T03:00Z: 0 < 1",
+            "vip 2026-11-04T03:30Z: 0 < 1",
+            "vip 2026-11-04T04:00Z: 0 < 1"
           ],
-          "violations": 72
+          "violations": 78
         },
         "weekly_hours": {
           "examples": [],
@@ -242,9 +244,9 @@
           "examples": [
             "vip 2027-03-08T12:00Z: 0 < 1",
             "vip 2027-03-08T12:30Z: 0 < 1",
-            "vip 2027-03-13T12:00Z: 0 < 1"
+            "vip 2027-03-08T13:00Z: 0 < 1"
           ],
-          "violations": 74
+          "violations": 96
         },
         "weekly_hours": {
           "examples": [],
@@ -256,10 +258,10 @@
       "pass": true,
       "value": {
         "file_present": true,
-        "recomputed_vip": 0.5714,
+        "recomputed_vip": 0.4762,
         "row": [
-          0.571,
-          0.379
+          0.476,
+          0.474
         ],
         "tol": 0.03
       }
@@ -268,10 +270,10 @@
     "fc_2026-W44_cost": {
       "pass": true,
       "value": {
-        "agent": 1556.0,
+        "agent": 1526.0,
         "bound": 1751.3,
-        "ratio": 1.3949,
-        "reference": 1704.0,
+        "ratio": 1.368,
+        "reference": 1656.0,
         "required": 1115.5
       }
     },
@@ -289,12 +291,12 @@
         "recomputed": {
           "priority": 0.9722,
           "standard": 1.0,
-          "vip": 0.5714
+          "vip": 0.4762
         },
         "reported": {
           "priority": 0.972,
           "standard": 1.0,
-          "vip": 0.571
+          "vip": 0.476
         },
         "tol": 0.02
       }
@@ -318,19 +320,19 @@
     "fc_2026-W44_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.5714,
+        "agent": 0.4762,
         "floor": 0.95,
-        "min_if_short": 0.8429,
-        "reference": 0.8929
+        "min_if_short": 0.7536,
+        "reference": 0.8036
       }
     },
     "fc_2026-W45_cost": {
       "pass": true,
       "value": {
-        "agent": 1536.0,
+        "agent": 1498.0,
         "bound": 1745.8,
-        "ratio": 1.3813,
-        "reference": 1668.0,
+        "ratio": 1.3471,
+        "reference": 1636.0,
         "required": 1112.0
       }
     },
@@ -348,12 +350,12 @@
         "recomputed": {
           "priority": 0.9683,
           "standard": 0.9921,
-          "vip": 0.5952
+          "vip": 0.4821
         },
         "reported": {
           "priority": 0.968,
           "standard": 0.992,
-          "vip": 0.595
+          "vip": 0.482
         },
         "tol": 0.02
       }
@@ -377,19 +379,19 @@
     "fc_2026-W45_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.5952,
+        "agent": 0.4821,
         "floor": 0.95,
-        "min_if_short": 0.8548,
-        "reference": 0.9048
+        "min_if_short": 0.7714,
+        "reference": 0.8214
       }
     },
     "fc_2027-W10_cost": {
       "pass": true,
       "value": {
-        "agent": 1552.0,
+        "agent": 1510.0,
         "bound": 1745.8,
-        "ratio": 1.3957,
-        "reference": 1680.0,
+        "ratio": 1.3579,
+        "reference": 1654.0,
         "required": 1112.0
       }
     },
@@ -407,12 +409,12 @@
         "recomputed": {
           "priority": 0.9722,
           "standard": 0.9802,
-          "vip": 0.5595
+          "vip": 0.4762
         },
         "reported": {
           "priority": 0.972,
           "standard": 0.98,
-          "vip": 0.56
+          "vip": 0.476
         },
         "tol": 0.02
       }
@@ -436,10 +438,10 @@
     "fc_2027-W10_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.5595,
+        "agent": 0.4762,
         "floor": 0.95,
-        "min_if_short": 0.8369,
-        "reference": 0.8869
+        "min_if_short": 0.7952,
+        "reference": 0.8452
       }
     },
     "preflight_wfm_help": true,
@@ -540,17 +542,17 @@
     "run_northwind_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.972, \"standard\": 1.0, \"vip\": 0.571}, \"meets_target\": false, \"scheduled_hours\": 1556.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0,"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.972, \"standard\": 1.0, \"vip\": 0.476}, \"meets_target\": false, \"scheduled_hours\": 1526.0, \"agents_scheduled\": 51, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0,"
     },
     "run_northwind_2026-W45": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.968, \"standard\": 0.992, \"vip\": 0.595}, \"meets_target\": false, \"scheduled_hours\": 1536.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": "
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.968, \"standard\": 0.992, \"vip\": 0.482}, \"meets_target\": false, \"scheduled_hours\": 1498.0, \"agents_scheduled\": 51, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": "
     },
     "run_northwind_2027-W10": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2027-W10\", \"intervals\": 334, \"sla\": {\"priority\": 0.972, \"standard\": 0.98, \"vip\": 0.56}, \"meets_target\": false, \"scheduled_hours\": 1552.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0,"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2027-W10\", \"intervals\": 334, \"sla\": {\"priority\": 0.972, \"standard\": 0.98, \"vip\": 0.476}, \"meets_target\": false, \"scheduled_hours\": 1510.0, \"agents_scheduled\": 51, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
     },
     "runbook_present": true
   },
