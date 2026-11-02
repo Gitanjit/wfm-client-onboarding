@@ -18,6 +18,10 @@ Modules: `wfm/config.py` (config loading), `wfm/ingest/loader.py`, `wfm/staffing
 and `greedy.py`, `wfm/evaluate/metrics.py`, `wfm/cli.py`. Anything else under `wfm/scheduler/` is a draft;
 see `CHANGELOG.md`.
 
+Other commands (`wfm clients`, `wfm report`, `wfm export`, `wfm notify`) read the run outputs under `out/`;
+see `docs/OPERATIONS.md`. Client configs come in two schemas (flat, and nested `schema: 2`); `wfm/config.py`
+flattens both onto the defaults.
+
 Queueing. `wfm/staffing/erlang.py` is the service's Erlang C and the method of record. `vendor/qlib`
 (a vendored queueing library with an abandonment model) is kept for Fabrikam's abandonment model;
 `queueing: qlib` in a client config routes that client's staffing through it.

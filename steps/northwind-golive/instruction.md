@@ -2,9 +2,10 @@
 
 # Onboard Northwind into the WFM service
 
-You are the on-call engineer for a small workforce-management (WFM) service at `/app`. It serves two
-clients today, Contoso and Fabrikam: it takes a client's interval demand and writes a weekly agent
-schedule and an evaluation. Start with `/app/docs/ARCHITECTURE.md`.
+You are the on-call engineer for a small workforce-management (WFM) service at `/app`. It takes a
+client's interval demand and writes a weekly agent schedule and an evaluation. Contoso, Fabrikam and
+Wingtip are live today; `/app/clients/README.md` lists every client. Start with `/app/docs/ARCHITECTURE.md`.
+<!-- G: your call — multi-v3 wording (eight clients in the repo now) -->
 <!-- G: your call — keep the pointer to ARCHITECTURE, or let them find their own way in -->
 
 A new client, Northwind, goes live in ISO week 2026-W44. Their contract is `/app/docs/NORTHWIND_SOW.md`.
@@ -23,7 +24,7 @@ listed in `/app/docs/CHANGELOG.md`.
    handover note (what you changed and why, and what SOW §2.8 asks for); `/app/out/northwind/exceptions.md`
    as SOW §2.7 describes.
    <!-- G: your call — say how short? ("a few lines") -->
-3. Contoso and Fabrikam still run with `python -m wfm run --client <name> --week <week>` and do not get
+3. The live clients still run with `python -m wfm run --client <name> --week <week>` and do not get
    worse. Their contracts and config files are out of scope.
 
 ## Constraints

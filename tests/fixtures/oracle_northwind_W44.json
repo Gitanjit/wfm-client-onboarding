@@ -1,15 +1,15 @@
 {
-  "agents_scheduled": 52,
+  "agents_scheduled": 51,
   "client": "northwind",
   "intervals": 338,
-  "overstaffed_interval_hours": 435.0,
+  "overstaffed_interval_hours": 413.0,
   "required_hours": 1115.5,
-  "scheduled_hours": 1704.0,
+  "scheduled_hours": 1656.0,
   "sla": {
     "priority": 0.9761904761904762,
     "standard": 1.0,
-    "vip": 0.8928571428571429
+    "vip": 0.8035714285714286
   },
-  "understaffed_interval_hours": 17.0,
+  "understaffed_interval_hours": 31.5,
   "week": "2026-W44"
 }
