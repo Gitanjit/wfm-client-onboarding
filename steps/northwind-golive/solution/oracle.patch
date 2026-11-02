@@ -28,6 +28,39 @@ index 0000000..49a6398
 +split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
 +break_placement: max_surplus          # SOW §2.3 — window slot with the largest gross coverage surplus
 +efficiency_pass: drop_shrink          # SOW §1.6 — shed hours that buy no attainment
+diff --git a/tests_unit/test_cli_subcommands.py b/tests_unit/test_cli_subcommands.py
+index ec8a134..c310d76 100644
+--- a/tests_unit/test_cli_subcommands.py
++++ b/tests_unit/test_cli_subcommands.py
+@@ -22,10 +22,11 @@ def test_clients_lists_the_registry(capsys):
+         ["contoso", "tailspin", "adatum", "woodgrove"]
+ 
+ 
+-def test_clients_check_passes_with_northwind_pending(capsys):
++def test_clients_check_passes(capsys):
++    # Northwind's config and roster are in (go-live 2026-W44): nothing pending
+     cli.main(["clients", "--check"])
+     text = capsys.readouterr().out
+-    assert "northwind: pending" in text and "8 client(s) checked: 0 error(s), 0 warning(s)" in text
++    assert "8 client(s) checked: 0 error(s), 0 warning(s), 0 pending" in text
+ 
+ 
+ def test_week_arguments_are_validated():
+diff --git a/tests_unit/test_registry.py b/tests_unit/test_registry.py
+index 02a758c..af1d4ab 100644
+--- a/tests_unit/test_registry.py
++++ b/tests_unit/test_registry.py
+@@ -47,9 +47,7 @@ def test_clients_active_on_a_date():
+ 
+ def test_registry_agrees_with_configs_rosters_and_data():
+     problems = [p for r in registry.load_registry().values() for p in registry.check(r, layouts=LAYOUTS, data=True)]
+-    assert [str(p) for p in problems if p.level != registry.PENDING] == []
+-    assert "northwind: pending: no configs/northwind.yaml yet (go-live 2026-W44)" in [str(p) for p in problems]
+-    assert {p.client for p in problems} == {"northwind"}
++    assert [str(p) for p in problems] == []
+ 
+ 
+ RULES = [
 diff --git a/tests_unit/test_scheduler.py b/tests_unit/test_scheduler.py
 index fe093ad..b4f2147 100644
 --- a/tests_unit/test_scheduler.py

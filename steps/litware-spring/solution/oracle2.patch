@@ -45,12 +45,12 @@ index 6c95ef1..354c3cf 100644
 +    df = _read_export(f, {"client": "x", "tz": "Europe/London", "interval_minutes": 20})
 +    assert str(df["interval_start_utc"].iloc[0]) == "2027-03-15 09:00:00+00:00"
 diff --git a/wfm/cli.py b/wfm/cli.py
-index d5564e5..2731a62 100644
+index 2b12bde..2d32448 100644
 --- a/wfm/cli.py
 +++ b/wfm/cli.py
-@@ -8,7 +8,9 @@ from wfm.config import OUT_DIR, load_config
- from wfm.evaluate.metrics import evaluate
- from wfm.ingest.loader import load_week
+@@ -17,7 +17,9 @@ from wfm.notify import notify_dir, write_notifications
+ from wfm.report import compare, history, summary, volume
+ from wfm.report import markdown as md
  from wfm.roster import load_agents
 +from wfm.scheduler import rules
  from wfm.scheduler.greedy import schedule_week, to_frame
@@ -58,7 +58,7 @@ index d5564e5..2731a62 100644
  from wfm.staffing.required import add_required
  
  
-@@ -23,7 +25,9 @@ def run(client: str, week: str) -> dict:
+@@ -32,7 +34,9 @@ def run(client: str, week: str) -> dict:
      out = OUT_DIR / client
      out.mkdir(parents=True, exist_ok=True)
      sched.to_csv(out / "schedule.csv", index=False)
