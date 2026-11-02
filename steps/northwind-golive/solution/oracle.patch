@@ -1,9 +1,9 @@
 diff --git a/configs/northwind.yaml b/configs/northwind.yaml
 new file mode 100644
-index 0000000..c1569e7
+index 0000000..49a6398
 --- /dev/null
 +++ b/configs/northwind.yaml
-@@ -0,0 +1,23 @@
+@@ -0,0 +1,24 @@
 +# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
 +# Targets and rules per docs/NORTHWIND_SOW.md.
 +name: Northwind
@@ -22,6 +22,7 @@ index 0000000..c1569e7
 +min_cover:                            # SOW §2.6 — one agent on vip whenever the centre is open
 +  vip: {agents: 1, hours: [6, 24]}
 +cross_skill_weight: 0                 # SOW §1: an agent is one person on shift; the 0.5 service default (PR #31) does not apply
++scarce_queues: [vip]                  # VIP desk: floor first, hours spread over the week, its agents stay on vip
 +
 +min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
 +split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
@@ -134,7 +135,7 @@ index 9d18a01..dd74388 100644
          part["queue"] = q
          part["volume"] = part["volume"].fillna(0.0)
 diff --git a/wfm/scheduler/greedy.py b/wfm/scheduler/greedy.py
-index 8f51a9b..8d27c58 100644
+index 8f51a9b..81744d4 100644
 --- a/wfm/scheduler/greedy.py
 +++ b/wfm/scheduler/greedy.py
 @@ -17,6 +17,7 @@ import pandas as pd
@@ -145,7 +146,7 @@ index 8f51a9b..8d27c58 100644
  from wfm.scheduler.templates import Template, eligible, templates_for
  
  
-@@ -55,15 +56,34 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+@@ -55,15 +56,35 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
      z = ZoneInfo(tz)
      floors = {q: {t: constraints.floor(q, t, cfg) for t in grid} for q in queues}
  
@@ -157,9 +158,10 @@ index 8f51a9b..8d27c58 100644
 +    last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
      shifts: list[Shift] = []
  
-+    # A queue with a floor is served by a scarce skill: spread its agents' hours over the week in
-+    # proportion to each day's need, so the floor still holds on the last days.
-+    scarce = [q for q in queues if any(floors[q].values())]
++    # `scarce_queues`: queues served by a small skill pool (Northwind's VIP desk). Their floor is covered
++    # first each day, their agents' hours are spread over the week in proportion to each day's need (so
++    # the floor still holds on the last days), and their agents are kept off other queues.
++    scarce = [q for q in queues if q in cfg.get("scarce_queues", [])]
 +    quota: dict[tuple[str, date], float] = {}
 +    for q in scarce:
 +        pool = sum(caps[a.contract] for a in agents if q in a.skills)
@@ -174,13 +176,13 @@ index 8f51a9b..8d27c58 100644
          day_grid = [t for t in grid if t.astimezone(z).date() == day]
          worked_today: set[str] = set()
          dead: set[tuple[str, str]] = set()   # (template, queue) pairs nobody can take today
-+        floor_first = any(floors[q][t] for q in queues for t in day_grid)
++        floor_first = any(floors[q][t] for q in scarce for t in day_grid)
          while True:
 +            # SOW floors are a rule, not a target: cover them before spending agents on the requirement
              best, best_val = None, 0.0
              for tpl in templates:
                  segs = tpl.segments_utc(day, tz)
-@@ -71,31 +91,54 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+@@ -71,31 +92,54 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
                  for q in queues:
                      if (tpl.id, q) in dead:
                          continue
@@ -240,7 +242,7 @@ index 8f51a9b..8d27c58 100644
      return shifts
  
  
-@@ -109,19 +152,33 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
+@@ -109,19 +153,33 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
      return run >= max_run
  
  

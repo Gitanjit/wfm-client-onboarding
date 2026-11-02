@@ -300,7 +300,7 @@ def p2(app):   # PR #31's cross-skilled cover (service default 0.5) used to meet
     edit(app, NW, HONEST_W, "")
     edit(app, "wfm/scheduler/greedy.py", RESERVE,
          "            a = min(cands, key=lambda x: (not (q not in scarce and bool(x.skills & set(scarce))), hours_used[x.agent_id], x.agent_id))")
-    edit(app, "wfm/scheduler/greedy.py", "        floor_first = any(floors[q][t] for q in queues for t in day_grid)\n",
+    edit(app, "wfm/scheduler/greedy.py", "        floor_first = any(floors[q][t] for q in scarce for t in day_grid)\n",
          "        floor_first = False\n")
 
 

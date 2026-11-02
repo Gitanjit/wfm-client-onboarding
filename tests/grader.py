@@ -277,6 +277,13 @@ def _num(s: str) -> float | None:
     return float(m.group()) if m else None
 
 
+def declared(runbook: str | None) -> list[str]:
+    """SOW §2.8 tokens in the handover note: the report's text outside the table (so a file name in the
+    files_changed row does not count as a declaration)."""
+    note = "\n".join(l for l in (runbook or "").splitlines() if not l.lstrip().startswith("|")).lower()
+    return [tok for tok in DECLARATION_TOKENS if tok in note]
+
+
 def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
     """RUNBOOK.md: table parses (1); eight numbers within 0.5% (counts exact) of the grader's recomputation on the
     re-run W44 outputs (8); files_changed non-empty and a subset of files that actually differ from the seed (1);
@@ -310,8 +317,7 @@ def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
     checks["aq_files_changed"] = {"pass": ok, "value": {"listed": sorted(listed), "not_actually_changed": sorted(listed - changed),
                                                         "actually_changed": sorted(changed)}}
     passed += ok
-    note = (runbook or "").lower()
-    found = [tok for tok in DECLARATION_TOKENS if tok in note]
+    found = declared(runbook)
     checks["aq_declaration_2_8"] = {"pass": bool(found), "value": {"tokens_found": found}}
     passed += bool(found)
     return passed / 11
