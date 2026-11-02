@@ -1,0 +1,12 @@
+configs/northwind.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+tests_unit/test_northwind.py
+wfm/cli.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/report.py
+wfm/scheduler/search.py
+wfm/scheduler/templates.py
+wfm/scheduler/weekly.py
+wfm/staffing/required.py
