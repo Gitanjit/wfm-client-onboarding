@@ -255,7 +255,7 @@
   "data/woodgrove/week_2026-W03.csv": "56f4d0f014b4642bb5dbf9606fbafbce38664305fe995c066461d532ca15d906",
   "docs/ARCHITECTURE.md": "b74595be97ea72101fc0b89f2eee2a83c36085ca4663d23443403744b825597a",
   "docs/CHANGELOG.md": "cc6391756e1171a7e55737c50650965a6face2d24906ced68a965119d6650f1b",
-  "docs/NORTHWIND_SOW.md": "ff6e567345cba949537c06d8c3a1c104ae6bec12d6b4e1ce38453c244b39eb5d",
+  "docs/NORTHWIND_SOW.md": "c05234870ef8c461023063b3ddafe423e8c101f3410f1d9289cb84638c0b48f1",
   "docs/OPERATIONS.md": "f8f1220163c278c423436bbf7fb6042cc69faf1ccbcf6472f418e7c04e4b54c1",
   "docs/adr/0001-canonical-interval-format.md": "ff69036f51cd2d74de0cbcb51f976f25a1206c18c8b4b6e735a4f163d8a2e465",
   "docs/adr/0002-utc-storage-local-templates.md": "bfcb65ddf6a194d9f81fe52d2412d2720524ef8c3dcc353a4f96d39d84b519b5",

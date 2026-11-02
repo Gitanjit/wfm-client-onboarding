@@ -63,6 +63,7 @@ Effective from ISO week 2026-W44. For the WFM service team.
 
 2.8  The handover note lists any pre-existing deviation from the §1 method that affects this client's
      queues.
+     <!-- G: your call — §2.6–§2.8 are new (multi-v3); §2.7 is the brief's sentence verbatim, no warning by design -->
 
 ## 3. Weekly reconciliation report
 
