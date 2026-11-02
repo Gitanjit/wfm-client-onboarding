@@ -10,7 +10,8 @@ that keeps the floor is taken:
      neighbouring shifts;
   3. move it to another template of the same length if that raises the met count (this frees
      coverage for later drops).
-Breaks are re-placed by the configured rule inside every evaluation. Sweeps repeat until one changes
+Breaks are re-placed by the configured rule inside every evaluation; no move may leave more intervals
+below a `min_cover` floor (whole agents on the queue) than the greedy did. Sweeps repeat until one changes
 nothing: drops and shrinks lower hours, relocations raise the met count, both are bounded. Same
 agent, queue and day throughout, so weekly-hours, consecutive-day and skill rules cannot get worse.
 """
@@ -19,6 +20,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
+from wfm import constraints
 from wfm.roster import Agent
 from wfm.scheduler import rules
 from wfm.scheduler.templates import Template, eligible
@@ -47,7 +49,10 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
         groups[(sh.queue, sh.day)].append(sh)
         by_agent[sh.agent_id][sh.day] = sh
 
-    def met(q: str, day: date, group: list) -> int:
+    floor_at = {t: {q: constraints.floor(q, t, cfg) for q in {s.queue for s in shifts}} for g in day_grids.values() for t in g}
+
+    def met(q: str, day: date, group: list) -> tuple[int, int]:
+        """(intervals meeting target, intervals below the queue's floor) for one queue and local day."""
         gross: dict[datetime, int] = defaultdict(int)
         for sh in group:
             for t in sh.intervals:
@@ -59,7 +64,8 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
                 for t in sh.intervals:
                     if b < t + step and t < b + brk:
                         off[t] += 1
-        return sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
+        ok = sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
+        return ok, sum(1 for t in day_grids[day] if gross[t] < floor_at[t].get(q, 0))
 
     def reshape(sh, tpl: Template):
         segs = tpl.segments_utc(sh.day, tz)
@@ -77,7 +83,11 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
         return ((not before or new.segments[0][0] - max(before) >= min_rest)
                 and (not after or min(after) - new.segments[-1][1] >= min_rest))
 
-    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}
+    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}   # (met count, floor shortfall) of the greedy
+
+    def keeps(trial, key, need) -> bool:
+        m, short = met(key[0], key[1], trial)
+        return m >= need and short <= floor[key][1]
     changed = True
     while changed:
         changed = False
@@ -86,7 +96,7 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
             group = groups[key]
             for sh in sorted(group, key=lambda s: (-s.hours, s.segments[0][0], s.agent_id)):
                 rest = [s for s in group if s is not sh]
-                if met(q, day, rest) >= floor[key]:                                   # 1. drop
+                if keeps(rest, key, floor[key][0]):                                   # 1. drop
                     group = rest
                     del by_agent[sh.agent_id][sh.day]
                     changed = True
@@ -96,13 +106,13 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents: 
                 inside = sorted([t for t in shorter if lo <= _span(t)[0] and _span(t)[1] <= hi], key=lambda t: t.hours)
                 outside = sorted([t for t in shorter if t not in inside], key=lambda t: t.hours)
                 same = [t for t in allowed(sh) if t.hours == sh.template.hours]
-                current = met(q, day, group)
-                for tpl, need in [(t, floor[key]) for t in inside + outside] + [(t, current + 1) for t in same]:
+                current = met(q, day, group)[0]
+                for tpl, need in [(t, floor[key][0]) for t in inside + outside] + [(t, current + 1) for t in same]:
                     new = reshape(sh, tpl)                                            # 2. shrink / 3. relocate
                     if not rest_ok(new):
                         continue
                     trial = rest + [new]
-                    if met(q, day, trial) >= need:
+                    if keeps(trial, key, need):
                         group = trial
                         by_agent[sh.agent_id][sh.day] = new
                         changed = True

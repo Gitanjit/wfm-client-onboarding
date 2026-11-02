@@ -90,7 +90,7 @@ def load_week(cfg: dict, week: str) -> pd.DataFrame:
     df = _resample(df, grain)
     grid = pd.DatetimeIndex(sorted(df["interval_start_utc"].unique()))   # the week as the data delivers it
     frames = []
-    for q in QUEUES:
+    for q in cfg.get("queues", QUEUES):
         part = df[df["queue"] == q].set_index("interval_start_utc").reindex(grid)
         part["queue"] = q
         part["volume"] = part["volume"].fillna(0.0)

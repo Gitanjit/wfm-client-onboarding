@@ -4,12 +4,18 @@ name: Northwind
 interval_minutes: 30
 tz: America/Chicago
 operating_hours: [6, 24]
+queues: [priority, standard, vip]      # SOW §1.1
 
 aht_smoothing: interval               # SOW §1.2: each interval at its own handle time
 
 sla:                                  # SOW §1.2
   priority: {target: 0.90, seconds: 30}
   standard: {target: 0.80, seconds: 20}
+  vip: {target: 0.90, seconds: 20}
+
+min_cover:                            # SOW §2.6 — one agent on vip whenever the centre is open
+  vip: {agents: 1, hours: [6, 24]}
+cross_skill_weight: 0                 # SOW §1: an agent is one person on shift; the 0.5 service default (PR #31) does not apply
 
 min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
 split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts

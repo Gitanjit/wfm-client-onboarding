@@ -64,11 +64,26 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
     last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
     shifts: list[Shift] = []
 
+    # A queue with a floor is served by a scarce skill: spread its agents' hours over the week in
+    # proportion to each day's need, so the floor still holds on the last days.
+    scarce = [q for q in queues if any(floors[q].values())]
+    quota: dict[tuple[str, date], float] = {}
+    for q in scarce:
+        pool = sum(caps[a.contract] for a in agents if q in a.skills)
+        need = {d: sum(max(required[q][t], floors[q][t]) for t in grid if t.astimezone(z).date() == d) * grain_h
+                for d in local_days(week, tz)}
+        total = sum(need.values()) or 1.0
+        for d, n in need.items():
+            quota[(q, d)] = pool * n / total
+    placed: dict[tuple[str, date], float] = defaultdict(float)
+
     for day in local_days(week, tz):
         day_grid = [t for t in grid if t.astimezone(z).date() == day]
         worked_today: set[str] = set()
         dead: set[tuple[str, str]] = set()   # (template, queue) pairs nobody can take today
+        floor_first = any(floors[q][t] for q in queues for t in day_grid)
         while True:
+            # SOW floors are a rule, not a target: cover them before spending agents on the requirement
             best, best_val = None, 0.0
             for tpl in templates:
                 segs = tpl.segments_utc(day, tz)
@@ -76,11 +91,19 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
                 for q in queues:
                     if (tpl.id, q) in dead:
                         continue
-                    val = sum(min(1, constraints.uncovered(required[q][t], floors[q][t], cover[q][t], cross[q][t], cfg))
-                              for t in ivs)
+                    if not floor_first and (q, day) in quota and placed[(q, day)] + tpl.hours > quota[(q, day)] + 4:
+                        continue
+                    if floor_first:
+                        val = sum(min(1, max(0, floors[q][t] - constraints.cover(cover[q][t], cross[q][t], cfg))) for t in ivs)
+                    else:
+                        val = sum(min(1, constraints.uncovered(required[q][t], floors[q][t], cover[q][t], cross[q][t], cfg))
+                                  for t in ivs)
                     if val > best_val + 1e-9:
                         best, best_val = (tpl, q, segs, ivs), val
             if best is None or best_val * grain_h < 0.5:
+                if floor_first:
+                    floor_first, dead = False, set()
+                    continue
                 break
             tpl, q, segs, ivs = best
             cands = [a for a in agents
@@ -92,7 +115,9 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
             if not cands:
                 dead.add((tpl.id, q))
                 continue
-            a = min(cands, key=lambda x: (hours_used[x.agent_id], x.agent_id))
+            # keep agents holding a scarce skill for that queue
+            a = min(cands, key=lambda x: (q not in scarce and bool(x.skills & set(scarce)), hours_used[x.agent_id], x.agent_id))
+            placed[(q, day)] += tpl.hours
             shifts.append(Shift(a.agent_id, q, tpl, day, segs, ivs))
             hours_used[a.agent_id] += tpl.hours
             days_worked[a.agent_id].append(day)
