@@ -64,9 +64,10 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
     last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
     shifts: list[Shift] = []
 
-    # A queue with a floor is served by a scarce skill: spread its agents' hours over the week in
-    # proportion to each day's need, so the floor still holds on the last days.
-    scarce = [q for q in queues if any(floors[q].values())]
+    # `scarce_queues`: queues served by a small skill pool (Northwind's VIP desk). Their floor is covered
+    # first each day, their agents' hours are spread over the week in proportion to each day's need (so
+    # the floor still holds on the last days), and their agents are kept off other queues.
+    scarce = [q for q in queues if q in cfg.get("scarce_queues", [])]
     quota: dict[tuple[str, date], float] = {}
     for q in scarce:
         pool = sum(caps[a.contract] for a in agents if q in a.skills)
@@ -81,7 +82,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) 
         day_grid = [t for t in grid if t.astimezone(z).date() == day]
         worked_today: set[str] = set()
         dead: set[tuple[str, str]] = set()   # (template, queue) pairs nobody can take today
-        floor_first = any(floors[q][t] for q in queues for t in day_grid)
+        floor_first = any(floors[q][t] for q in scarce for t in day_grid)
         while True:
             # SOW floors are a rule, not a target: cover them before spending agents on the requirement
             best, best_val = None, 0.0
