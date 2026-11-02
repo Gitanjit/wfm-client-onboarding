@@ -238,10 +238,200 @@ def write_text(app: Path, files: dict[str, str]) -> list[Path]:
     return written
 
 
+# --------------------------------------------------------------------------------------------------
+# environment/history/plan.py: when each generated file enters the service's history
+# --------------------------------------------------------------------------------------------------
+
+DANA, TOMAS, MEI = "Dana Vexley", "Tomas Okafor", "Mei Lindqvist"
+STARTS = {DANA: date(2024, 11, 4), TOMAS: date(2025, 2, 17), MEI: date(2025, 6, 2)}
+NAMES = {"contoso": "Contoso", "tailspin": "Tailspin", "adatum": "Adatum", "woodgrove": "Woodgrove",
+         "fabrikam": "Fabrikam", "proseware": "Proseware", "wingtip": "Wingtip"}
+DST_WEEKS = {("tailspin", W(2025, 13)): 334, ("tailspin", W(2025, 43)): 338, ("adatum", W(2025, 44)): 169,
+             ("adatum", W(2026, 10)): 167, ("woodgrove", W(2025, 44)): 338, ("fabrikam", W(2025, 44)): 169,
+             ("fabrikam", W(2026, 10)): 167, ("proseware", W(2026, 13)): 334}
+DATA_SPECIAL = {
+    ("woodgrove", W(2025, 44)): ("2025-11-05T11:20:00+00:00", TOMAS,
+                                 "Woodgrove 2025-W44 data, re-cut after the fall-back conversion fix (WFM-114)\n\n"
+                                 "Each row's offset now comes from the timezone database; 338 intervals.\n"
+                                 "See docs/incidents/2025-11-05-woodgrove-dst-fall-back-ingest.md."),
+    ("adatum", W(2026, 4)): ("2026-01-29T16:52:00+00:00", MEI,
+                             "Adatum 2026-W04 data (late drop, received Thu 29 Jan; WFM-142)"),
+}
+LAST_NOTE = {("tailspin", W(2025, 43)): "last drop before the contract ends",
+             ("adatum", W(2026, 13)): "final week", ("woodgrove", W(2026, 3)): "final week",
+             ("proseware", W(2026, 33)): "last week before the pause"}
+OUTAGE_NOTE = {W(2025, 26): "telephony outage Tue 24 Jun, committed as delivered",
+               W(2026, 16): "tenant outage Tue 14 Apr, committed as delivered"}
+OUTAGE_CLIENTS = {W(2025, 26): OUTAGES[0][2], W(2026, 16): OUTAGES[1][2]}
+CHAT_WEEKS = {W(2025, w) for w in range(30, 36)}
+
+# (date, author, pr, message, paths). Paths are relative to environment/app, in their final form.
+DOC_EVENTS = [
+    ("2024-11-08T15:20:00+00:00", DANA, None, "ADR 0001: canonical interval format",
+     ["docs/adr/0001-canonical-interval-format.md"]),
+    ("2024-11-15T11:05:00+00:00", DANA, None, "ADR 0002: store UTC, plan in local wall-clock time",
+     ["docs/adr/0002-utc-storage-local-templates.md"]),
+    ("2024-11-21T16:40:00+00:00", DANA, None, "ADR 0003: deterministic scheduling",
+     ["docs/adr/0003-deterministic-scheduling.md"]),
+    ("2024-11-29T14:10:00+00:00", DANA, 4, "Contoso onboarding (WFM-006)\n\nPR note for the Contoso go-live in 2024-W49.",
+     ["docs/prs/004-contoso-onboarding.md"]),
+    ("2025-01-09T10:30:00+00:00", DANA, 9, "Tailspin onboarding: roster and PR note (WFM-019)",
+     ["data/agents/tailspin.csv", "docs/prs/009-tailspin-onboarding.md"]),
+    ("2025-03-05T09:45:00+00:00", TOMAS, None, "ADR 0004: per-client configuration overlay",
+     ["docs/adr/0004-per-client-config-overlay.md"]),
+    ("2025-03-06T15:30:00+00:00", TOMAS, None, "Tailspin settings as a client overlay (configs/tailspin.yaml)",
+     ["configs/tailspin.yaml"]),
+    ("2025-03-07T13:15:00+00:00", TOMAS, 14, "Adatum onboarding: config, roster (WFM-034)",
+     ["configs/adatum.yaml", "data/agents/adatum.csv", "docs/prs/014-adatum-onboarding.md"]),
+    ("2025-05-08T14:00:00+00:00", TOMAS, 19, "Woodgrove onboarding: config, roster (WFM-052)",
+     ["configs/woodgrove.yaml", "data/agents/woodgrove.csv", "docs/prs/019-woodgrove-onboarding.md"]),
+    ("2025-07-01T15:10:00+00:00", MEI, None, "Incident note: hosted telephony outage of 2025-06-24 (WFM-068)",
+     ["docs/incidents/2025-07-01-telephony-platform-outage.md"]),
+    ("2025-07-03T16:25:00+00:00", MEI, 24, "Volume report: weekly totals, interval counts, zero-volume runs (WFM-071)",
+     ["wfm/weeks.py", "wfm/report/__init__.py", "wfm/report/markdown.py", "wfm/report/volume.py",
+      "tests_unit/test_weeks.py", "tests_unit/test_report_volume.py", "docs/prs/024-volume-report.md"]),
+    ("2025-07-11T11:50:00+00:00", MEI, 28, "Archive weekly evaluations; multi-week summary (WFM-077)",
+     ["wfm/report/history.py", "wfm/report/summary.py", "tests_unit/test_report_summary.py",
+      "docs/prs/028-eval-history.md"]),
+    ("2025-08-08T10:20:00+00:00", MEI, None, "ADR 0005: vendoring third-party code",
+     ["docs/adr/0005-vendoring-policy.md"]),
+    ("2025-08-18T09:35:00+00:00", MEI, None, "ADR 0006: schedule export layouts",
+     ["docs/adr/0006-schedule-export-layouts.md"]),
+    ("2025-08-20T15:55:00+00:00", MEI, 39, "Schedule exports in the clients' layouts (WFM-093)",
+     ["wfm/export/__init__.py", "wfm/export/base.py", "wfm/export/activity_csv.py", "wfm/export/roster_grid.py",
+      "wfm/export/segments_json.py", "tests_unit/test_export.py", "docs/prs/039-schedule-export.md"]),
+    ("2025-09-03T14:30:00+00:00", TOMAS, None, "Client notes for Contoso", ["docs/clients/contoso.md"]),
+    ("2025-10-08T10:05:00+00:00", MEI, None, "Client notes for Fabrikam (renewed 2025-10-06)",
+     ["docs/clients/fabrikam.md"]),
+    ("2025-11-04T11:40:00+00:00", TOMAS, None, "Client notes for Tailspin, retired 2025-10-31",
+     ["docs/clients/tailspin.md"]),
+    ("2025-11-05T16:15:00+00:00", TOMAS, None, "Incident note: Woodgrove 2025-W44 fall-back ingest (WFM-114)",
+     ["docs/incidents/2025-11-05-woodgrove-dst-fall-back-ingest.md"]),
+    ("2025-11-10T10:00:00+00:00", TOMAS, None, "ADR 0007: client config schema 2",
+     ["docs/adr/0007-config-schema-v2.md"]),
+    ("2025-11-13T15:45:00+00:00", TOMAS, 50, "Client config schema 2 (WFM-121)", ["docs/prs/050-config-schema-v2.md"]),
+    ("2025-11-14T12:20:00+00:00", TOMAS, 51, "Proseware onboarding: schema-2 config, roster (WFM-123)",
+     ["configs/proseware.yaml", "data/agents/proseware.csv", "docs/prs/051-proseware-onboarding.md"]),
+    ("2026-01-20T13:10:00+00:00", TOMAS, None, "Client notes for Woodgrove, retired 2026-01-16",
+     ["docs/clients/woodgrove.md"]),
+    ("2026-01-30T10:30:00+00:00", MEI, None, "Incident note: Adatum 2026-W04 late drop (WFM-142)",
+     ["docs/incidents/2026-01-30-adatum-late-data-drop.md"]),
+    ("2026-02-05T16:00:00+00:00", MEI, 53, "Wingtip onboarding: schema-2 config, roster; v2 loader tests (WFM-146)",
+     ["configs/wingtip.yaml", "data/agents/wingtip.csv", "tests_unit/test_config_v2.py",
+      "docs/prs/053-wingtip-onboarding.md"]),
+    ("2026-02-10T09:50:00+00:00", MEI, None, "Client notes for Wingtip", ["docs/clients/wingtip.md"]),
+    ("2026-04-01T14:20:00+00:00", TOMAS, None, "Client notes for Adatum, retired 2026-03-27", ["docs/clients/adatum.md"]),
+    ("2026-04-21T15:35:00+00:00", TOMAS, None, "Incident note: contact-centre tenant outage of 2026-04-14 (WFM-158)",
+     ["docs/incidents/2026-04-21-contact-centre-tenant-outage.md"]),
+    ("2026-06-12T14:45:00+00:00", MEI, 55, "Weekly digests and agent shift lists (WFM-171)",
+     ["wfm/notify/__init__.py", "wfm/notify/templates.py", "wfm/notify/digest.py", "wfm/notify/agents.py",
+      "tests_unit/test_notify.py", "docs/prs/055-notify-digests.md"]),
+    ("2026-08-21T11:15:00+00:00", TOMAS, None, "Client notes for Proseware, paused from 2026-08-14",
+     ["docs/clients/proseware.md"]),
+    ("2026-10-14T16:30:00+00:00", TOMAS, 60, "Client registry and `wfm clients` (WFM-219)",
+     ["wfm/registry.py", "clients/registry.yaml", "clients/README.md", "docs/adr/0008-client-lifecycle.md",
+      "docs/OPERATIONS.md", "tests_unit/test_registry.py", "tests_unit/test_cli_subcommands.py",
+      "docs/prs/060-client-registry.md"]),
+    ("2026-10-15T10:40:00+00:00", DANA, None, "Unit tests pinning notable data weeks: DST interval counts, outage runs",
+     ["tests_unit/test_data_weeks.py"]),
+]
+
+# Edits to files that already exist on the branch (placed by the core history, not added here).
+CORE_EDITS = [
+    {"date": "2025-07-03", "pr": 24, "file": "wfm/cli.py", "what": "add `report volume`"},
+    {"date": "2025-07-11", "pr": 28, "file": "wfm/cli.py", "what": "add `report archive` and `report summary`"},
+    {"date": "2025-08-20", "pr": 39, "file": "wfm/cli.py", "what": "add `export` (--layout required until PR #60)"},
+    {"date": "2025-11-13", "pr": 50, "file": "wfm/config.py",
+     "what": "add V2_SECTIONS and _flatten_v2 (only keys that existed then; later keys join their section when added)"},
+    {"date": "2026-06-12", "pr": 55, "file": "wfm/cli.py", "what": "add `notify`"},
+    {"date": "2026-10-14", "pr": 60, "file": "wfm/cli.py",
+     "what": "add `clients`; export layout and notify account manager default from clients/registry.yaml"},
+]
+
+
+def _h(*parts) -> int:
+    """Small deterministic hash (no PYTHONHASHSEED dependence)."""
+    s = "|".join(map(str, parts))
+    return sum((i + 1) * ord(ch) for i, ch in enumerate(s))
+
+
+def _rota(d: date) -> str:
+    if d < STARTS[TOMAS]:
+        return DANA
+    iso = d.isocalendar()[1]
+    if d < STARTS[MEI]:
+        return (DANA, TOMAS)[iso % 2]
+    return (DANA, TOMAS, MEI)[iso % 3]
+
+
+def data_events() -> list[dict]:
+    events = []
+    for client in CLIENTS:
+        weeks = weeks_for(client)
+        for key in weeks:
+            path = f"data/{client}/week_{wk(key)}.csv"
+            if (client, key) in DATA_SPECIAL:
+                when, author, msg = DATA_SPECIAL[(client, key)]
+            else:
+                sunday = date.fromisocalendar(key[0], key[1], 7)
+                h = _h(client, wk(key))
+                d = sunday + timedelta(days=(1, 1, 1, 2, 2, 3)[h % 6])
+                minute = 8 * 60 + (h * 37) % 540
+                when = f"{d.isoformat()}T{minute // 60:02d}:{minute % 60:02d}:00+00:00"
+                author = _rota(d)
+                verb = ("{n} {w} data", "{n} {w} interval data", "Add {n} {w} drop", "{n} {w} drop")[h % 4]
+                msg = verb.format(n=NAMES[client], w=wk(key))
+                notes = []
+                if key == weeks[0]:
+                    notes.append("first live week")
+                if key in OUTAGE_NOTE and client in OUTAGE_CLIENTS[key]:
+                    notes.append(OUTAGE_NOTE[key])
+                if (client, key) in DST_WEEKS:
+                    notes.append(f"DST week, {DST_WEEKS[(client, key)]} intervals")
+                if client == "contoso" and key in CHAT_WEEKS:
+                    notes.append("with chat rows")
+                if (client, key) in LAST_NOTE:
+                    notes.append(LAST_NOTE[(client, key)])
+                if notes:
+                    msg += " (" + "; ".join(notes) + ")"
+            events.append({"date": when, "author": author, "message": msg, "add": [path], "pr": None})
+    return events
+
+
+def plan_events() -> list[dict]:
+    events = data_events()
+    for when, author, pr, msg, paths in DOC_EVENTS:
+        events.append({"date": when, "author": author, "message": msg, "add": list(paths), "pr": pr})
+    events.sort(key=lambda e: (e["date"], e["add"][0]))
+    for e in events:
+        d = date.fromisoformat(e["date"][:10])
+        assert d >= STARTS[e["author"]], e
+        assert date(2024, 11, 4) <= d <= date(2026, 10, 23), e
+    return events
+
+
+def write_plan(path: Path) -> None:
+    events = plan_events()
+    lines = ['"""History plan for the generated volume (written by tools/volume/gen_world.py; do not edit).',
+             "",
+             "EVENTS: one dict per commit, ordered by date. `add` lists paths relative to environment/app in",
+             "their final form; each generated path appears in exactly one event. `pr` set means a --no-ff",
+             "merge of a feature branch for that pull request.",
+             "CORE_EDITS: when files that already exist on the branch gained the pieces this volume relies on.",
+             '"""', "", "EVENTS = ["]
+    for e in events:
+        lines.append(f"    {e!r},")
+    lines += ["]", "", "CORE_EDITS = ["]
+    lines += [f"    {e!r}," for e in CORE_EDITS]
+    lines += ["]", ""]
+    path.write_text("\n".join(lines))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--app", type=Path, default=ROOT / "environment" / "app")
-    ap.add_argument("--only", choices=["data", "text"], default=None)
+    ap.add_argument("--only", choices=["data", "text", "plan"], default=None)
+    ap.add_argument("--plan", type=Path, default=ROOT / "environment" / "history" / "plan.py")
     args = ap.parse_args()
     written = []
     if args.only in (None, "data"):
@@ -249,6 +439,9 @@ def main() -> None:
         written += write_rosters(args.app)
     if args.only in (None, "text"):
         written += write_text(args.app, world_docs.files(CLIENTS, weeks_for))
+    if args.only in (None, "plan"):
+        write_plan(args.plan)
+        written.append(args.plan)
     total = sum(p.stat().st_size for p in written)
     print(f"{len(written)} files, {total / 1e6:.2f} MB")
 

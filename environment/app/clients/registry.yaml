@@ -32,7 +32,7 @@ clients:
     data_format: canonical
     export_layout: roster_grid_csv
     account_manager: null
-    notes: Contract not renewed; last week served 2025-W44.
+    notes: Contract not renewed; last drop 2025-W43.
   adatum:
     name: Adatum
     status: retired
@@ -122,4 +122,4 @@ clients:
     data_format: export
     export_layout: null
     account_manager: null
-    notes: Statement of work in docs/NORTHWIND_SOW.md; demand export format in data/northwind/README.txt.
+    notes: Signed for go-live in 2026-W44; demand export in local time with a UTC offset per row.

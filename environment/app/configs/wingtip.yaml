@@ -9,6 +9,5 @@ targets:
   sla:
     priority: {target: 0.80, seconds: 20}
     standard: {target: 0.80, seconds: 20}
-  sla_target: 0.90
 scheduling:
   weekly_hours: {FT: 40, PT: 30}

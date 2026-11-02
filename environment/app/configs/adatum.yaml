@@ -1,5 +1,4 @@
-# Adatum — canonical hourly files, US Mountain time. Retired 2026-03-27; kept for re-runs.
+# Adatum — canonical hourly files, US Mountain time. Operating hours and targets: service defaults.
 name: Adatum
 interval_minutes: 60
 tz: America/Denver
-sla_target: 0.85

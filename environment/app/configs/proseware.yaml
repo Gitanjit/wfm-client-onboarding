@@ -1,5 +1,4 @@
 # Proseware — canonical 30-minute files, German time. Config schema 2 (docs/adr/0007-config-schema-v2.md).
-# Paused at the client's request from 2026-08-14.
 schema: 2
 name: Proseware
 service:
@@ -10,7 +9,6 @@ targets:
   sla:
     priority: {target: 0.85, seconds: 20}
     standard: {target: 0.80, seconds: 30}
-  sla_target: 0.90
 scheduling:
   weekly_hours: {FT: 39, PT: 20}     # Proseware's works agreement
   max_consecutive_days: 5

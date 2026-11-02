@@ -1,4 +1,4 @@
-# Woodgrove Bank — canonical 30-minute files, US Pacific time. Retired 2026-01-16; kept for re-runs.
+# Woodgrove Bank — canonical 30-minute files, US Pacific time.
 name: Woodgrove Bank
 interval_minutes: 30
 tz: America/Los_Angeles

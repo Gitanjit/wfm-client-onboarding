@@ -25,5 +25,5 @@ Status
 - **onboarding** — signed, not yet live. The registry entry carries the go-live week; the config and
   roster land with the go-live change.
 
-Client notes: `docs/clients/<client>.md`. Northwind: `docs/NORTHWIND_SOW.md` and
-`data/northwind/README.txt`. Lifecycle rules: `docs/adr/0008-client-lifecycle.md`.
+Client notes: `docs/clients/<client>.md`. Lifecycle rules: `docs/adr/0008-client-lifecycle.md`.
+Weekly cycle: `docs/OPERATIONS.md`.
