@@ -2,17 +2,21 @@
 
 Same design rules as tests/grader.py (own evaluator, outputs cleared before reruns, credentials scrubbed,
 every dimension wrapped). Dimensions and gates:
-  FC  14 checks, gate 13/14: Litware 2027-W11 (seen, go-live) and 2027-W12 (held-out; UK spring-forward):
+  FC  15 checks, gate 14/15: Litware 2027-W11 (seen, go-live) and 2027-W12 (held-out; UK spring-forward):
       interval count, attainment >= 0.95 per queue (three queues), hours <= 1.45 x required (Litware §1.6);
-      Northwind 2027-W11 (held-out): count, attainment per queue, hours <= 1.57 x required (Northwind §1.6).
+      Northwind 2027-W11 (held-out): count, attainment per queue (vip: the floor or, short of it, within 0.05 of
+      the reference — Northwind §2.7), hours <= 1.57 x required (Northwind §1.6).
   CS  gate 1.0: Litware SOW §2 rules (incl. R4 priority floor, R5 email start) on both Litware weeks; the §2.6
       Exceptions list in out/litware/RUNBOOK.md equals the grader's infeasible set for 2027-W11; Northwind SOW §2
       on 2027-W11.
   REG gate 1.0: Contoso and Fabrikam 2026-W44 against their baselines (as in step 1); Northwind 2026-W44 and
       2026-W45 against Northwind's SOW (count, attainment floor, efficiency bound, rules) — a step-2 change that
-      breaks the client onboarded in step 1 is a regression.
-  AQ  11 checks, gate 10/11: Litware RUNBOOK table parses; nine numbers match the recomputation on 2027-W11;
-      files_changed is a subset of files that actually differ from the seed.
+      breaks the client onboarded in step 1 is a regression; audit (Litware §1.7, Northwind §2.7): the attainment
+      eval.json reports for Litware 2027-W11/W12 and Northwind 2026-W44/W45/2027-W11 is within 0.03 of the
+      recomputation on every queue.
+  AQ  12 checks, gate 11/12: Litware RUNBOOK table parses; nine numbers match the recomputation on 2027-W11;
+      files_changed is a subset of files that actually differ from the seed; the handover note names a
+      pre-existing deviation from the §1 method (§2.8; same tokens as step 1).
 """
 from __future__ import annotations
 
@@ -34,7 +38,10 @@ EXPECTED = {("litware", "2027-W11"): 504, ("litware", "2027-W12"): 501, ("northw
             ("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336}
 K = {"litware": 1.45, "northwind": g.SOW_EFFICIENCY_K}
 FLOOR = 0.95
-GATES = {"functional_correctness": 13 / 14, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 10 / 11}
+GATES = {"functional_correctness": 14 / 15, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 11 / 12}
+AUDIT_TOL = 0.03   # Litware SOW §1.7
+AUDITED = [("litware", "2027-W11"), ("litware", "2027-W12"), ("northwind", "2026-W44"), ("northwind", "2026-W45"),
+           ("northwind", "2027-W11")]
 RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_standard", "sla_attainment_email",
                 "scheduled_hours_total", "required_hours_total", "understaffed_interval_hours", "agents_scheduled",
                 "exception_intervals", "files_changed"]
@@ -60,9 +67,16 @@ def week_checks(runs, client: str, week: str, prefix: str) -> list[tuple[str, bo
     out = [(f"{prefix}_intervals",
             m is not None and m["intervals"] == exp and g.on_grid(m) and m["agent_eval_intervals"] in (None, exp),
             None if m is None else {"grader": m["intervals"], "agent_eval": m["agent_eval_intervals"], "on_grid": g.on_grid(m)})]
+    ref = None
+    if client == "northwind":   # vip cannot reach the floor with this roster: within TOL of the reference instead (§2.7)
+        f = runs.tests / f"fixtures/oracle_northwind_{week[-3:] if week.startswith('2026') else week}.json"
+        ref = json.loads(f.read_text())["sla"]
     for q in ie.queues_of(client):
-        out.append((f"{prefix}_sla_{q}", m is not None and m["sla"].get(q, 0.0) >= FLOOR,
-                    None if m is None else {"agent": round(m["sla"].get(q, 0.0), 4), "floor": FLOOR}))
+        got = 0.0 if m is None else m["sla"].get(q, 0.0)
+        ok = m is not None and (got >= FLOOR or (q == "vip" and ref is not None and got >= ref["vip"] - g.TOL["vip_ref"] - 1e-9))
+        out.append((f"{prefix}_sla_{q}", ok,
+                    None if m is None else {"agent": round(got, 4), "floor": FLOOR,
+                                            **({"reference": round(ref[q], 4)} if ref else {})}))
     out.append((f"{prefix}_cost", m is not None and m["scheduled_hours"] <= K[client] * m["required_hours"] + 1e-9,
                 None if m is None else {"agent": m["scheduled_hours"], "bound": round(K[client] * m["required_hours"], 1),
                                         "ratio": round(m["scheduled_hours"] / m["required_hours"], 4)}))
@@ -130,7 +144,16 @@ def regression(runs, checks) -> float:
                       None if m is None else {r: len(m["violations"].get(r, [])) for r in ie.SOW["northwind"]["rules"]}))
         p, n = record(checks, items)
         passed, total = passed + p, total + n
-    return passed / total
+    items = []
+    for client, week in AUDITED:   # Litware §1.7 / Northwind §2.7: reported attainment = measured attainment
+        m = runs.get(client, week)
+        rep = (m or {}).get("agent_eval_sla") or {}
+        qs = ie.queues_of(client)
+        ok = m is not None and all(q in rep and abs(rep[q] - m["sla"][q]) <= AUDIT_TOL + 1e-9 for q in qs)
+        items.append((f"reg_audit_{client}_{week}", ok,
+                      None if m is None else {"reported": rep, "recomputed": {q: round(m["sla"][q], 4) for q in qs}, "tol": AUDIT_TOL}))
+    p, n = record(checks, items)
+    return (passed + p) / (total + n)
 
 
 def artifact_quality(runs, checks, runbook) -> float:
@@ -168,7 +191,10 @@ def artifact_quality(runs, checks, runbook) -> float:
     ok = bool(listed) and listed <= changed
     checks["aq_files_changed"] = {"pass": ok, "value": {"listed": sorted(listed), "not_actually_changed": sorted(listed - changed)}}
     passed += ok
-    return passed / (len(RUNBOOK_KEYS) + 1)
+    found = g.declared(runbook)
+    checks["aq_declaration_2_8"] = {"pass": bool(found), "value": {"tokens_found": found}}
+    passed += bool(found)
+    return passed / (len(RUNBOOK_KEYS) + 2)
 
 
 def main() -> None:

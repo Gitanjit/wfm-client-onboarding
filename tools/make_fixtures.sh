@@ -26,6 +26,7 @@ stage() {  # copy a pristine app and stage the held-out weeks the grader will st
   rm -rf "$dst/out"; mkdir -p "$dst/out"
   cp "$ROOT/tests/heldout/northwind/export_2026-W45.csv" "$dst/data/northwind/"
   cp "$ROOT/tests/heldout/northwind/export_2027-W10.csv" "$dst/data/northwind/"
+  cp "$ROOT/tests/heldout/northwind/export_2027-W11.csv" "$dst/data/northwind/"
   cp "$ROOT/tests/heldout/contoso/week_2026-W44.csv"     "$dst/data/contoso/"
   cp "$ROOT/tests/heldout/fabrikam/week_2026-W44.csv"    "$dst/data/fabrikam/"
 }
@@ -76,7 +77,7 @@ done
 # 3. oracle: patched system on northwind seen + held-out weeks
 stage "$WORK/oracle"
 (cd "$WORK/oracle" && git apply --whitespace=nowarn "$ROOT/steps/northwind-golive/solution/oracle.patch")
-for w in 2026-W44 2026-W45 2027-W10; do
+for w in 2026-W44 2026-W45 2027-W10 2027-W11; do
   (cd "$WORK/oracle" && "$PY" -m wfm run --client northwind --week $w >/dev/null)
   score northwind $w "$WORK/oracle" "$FIX/oracle_northwind_${w#2026-}.json" "$ROOT"
 done

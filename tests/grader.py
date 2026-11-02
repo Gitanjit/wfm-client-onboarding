@@ -28,10 +28,17 @@ NW_WEEKS = ("2026-W44", "2026-W45", "2027-W10")   # seen; held-out; held-out wit
 EXPECTED_INTERVALS = {("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336, ("northwind", "2027-W10"): 334,
                       ("contoso", "2026-W44"): 672, ("fabrikam", "2026-W44"): 169}
 SOW_EFFICIENCY_K, SOW_ATTAINMENT_FLOOR = 1.57, 0.95   # Northwind SOW §1.6
-TOL = {"reg_sla": 0.02, "reg_cost": 1.10, "report_rel": 0.005}
-GATES = {"functional_correctness": 11 / 12, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 8 / 9}
+QUEUES_NW = ("priority", "standard", "vip")
+# reported_sla: eval.json attainment vs the recomputation (instruction, SOW §2.7 "measured as defined in §1");
+# vip_ref: vip cannot reach the 0.95 floor with this roster; the §2.7 "achievable value" must be within this of the reference's;
+# shortfall: exceptions.md achievable / shortfall vs the recomputation
+TOL = {"reg_sla": 0.02, "reg_cost": 1.10, "report_rel": 0.005, "reported_sla": 0.02, "vip_ref": 0.05, "shortfall": 0.03}
+GATES = {"functional_correctness": 17 / 18, "constraint_satisfaction": 1.0, "regression": 1.0, "artifact_quality": 10 / 11}
+# SOW §2.8 declaration: the handover note names one of the service's deviations from the §1 method by an identifying token
+DECLARATION_TOKENS = ("pr #47", "#47", "attainment_basis", "pr #31", "#31", "cross_skill_weight", "cross-skill",
+                      "cross skill", "qlib", "patience", "abandonment")
 SCRUB = ("OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "OPENAI_API_KEY")
-RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_standard",
+RUNBOOK_KEYS = ["intervals_in_week", "sla_attainment_priority", "sla_attainment_standard", "sla_attainment_vip",
                 "scheduled_hours_total", "required_hours_total", "understaffed_interval_hours", "agents_scheduled",
                 "files_changed"]
 HELDOUT = {"heldout/northwind/export_2026-W45.csv": "data/northwind/export_2026-W45.csv",
@@ -43,11 +50,11 @@ HELDOUT = {"heldout/northwind/export_2026-W45.csv": "data/northwind/export_2026-
 # ----------------------------------------------------------------------------- plumbing
 def run_cli(app: Path, client: str, week: str, timeout: int = 300) -> tuple[int, str]:
     """Run the agent's system with its output directory cleared first and credentials scrubbed.
-    RUNBOOK.md is left in place: it is a deliverable graded against recomputation, not a CLI output."""
+    RUNBOOK.md and exceptions.md are left in place: deliverables graded against recomputation, not CLI outputs."""
     out_dir = app / "out" / client
     if out_dir.exists():
         for f in out_dir.iterdir():
-            if f.name != "RUNBOOK.md":
+            if f.name not in ("RUNBOOK.md", "exceptions.md"):
                 shutil.rmtree(f) if f.is_dir() else f.unlink()
     env = {k: v for k, v in os.environ.items() if k not in SCRUB}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -92,9 +99,13 @@ class Runs:
                                 self.app / "data/agents" / f"{client}.csv")
                 ev = self.app / "out" / client / "eval.json"
                 m["agent_eval_intervals"] = None
+                m["agent_eval_sla"] = {}
                 if ev.exists():
                     try:
-                        m["agent_eval_intervals"] = json.loads(ev.read_text()).get("intervals")
+                        doc = json.loads(ev.read_text())
+                        m["agent_eval_intervals"] = doc.get("intervals")
+                        m["agent_eval_sla"] = {q: float(v) for q, v in (doc.get("sla") or {}).items()
+                                               if isinstance(v, (int, float))}
                     except Exception:
                         m["agent_eval_intervals"] = "unparseable"
             except Exception as e:
@@ -123,15 +134,24 @@ def changed_files(app: Path, tests: Path) -> set[str]:
 
 
 # ----------------------------------------------------------------------------- dimensions
+def reported_matches(m: dict, queues) -> bool:
+    """eval.json reports attainment for every SOW queue, each within TOL of the grader's recomputation."""
+    rep = m.get("agent_eval_sla") or {}
+    return all(q in rep and abs(rep[q] - m["sla"][q]) <= TOL["reported_sla"] + 1e-9 for q in queues)
+
+
 def functional_correctness(runs: Runs, checks: dict) -> float:
-    """Northwind W44 (seen), W45 and 2027-W10 (held-out), 4 checks each: intervals; weekly attainment per queue
-    >= the SOW §1.6 floor; scheduled hours <= SOW §1.6 k x required hours (grader's own required curve).
-    The reference solution's numbers are recorded beside each check for legibility; they are not thresholds."""
+    """Northwind W44 (seen), W45 and 2027-W10 (held-out), 6 checks each: intervals; attainment on priority and
+    standard >= the SOW §1.6 floor; vip >= the floor or, since this roster cannot reach it, within TOL of the
+    reference's achievable value (SOW §2.7); scheduled hours <= SOW §1.6 k x required hours (grader's own required
+    curve); and the attainment the system reports in eval.json matches the recomputation on every queue."""
     passed = total = 0
     for week in NW_WEEKS:
         m = runs.get("northwind", week)
         oracle = json.loads((runs.tests / f"fixtures/oracle_northwind_{week[-3:] if week.startswith('2026') else week}.json").read_text())
         exp = EXPECTED_INTERVALS[("northwind", week)]
+        vip_ok = m is not None and (m["sla"]["vip"] >= SOW_ATTAINMENT_FLOOR
+                                    or m["sla"]["vip"] >= oracle["sla"]["vip"] - TOL["vip_ref"] - 1e-9)
         tests = [
             (f"fc_{week}_intervals",
              m is not None and m["intervals"] == exp and on_grid(m) and m["agent_eval_intervals"] in (None, exp),
@@ -144,11 +164,19 @@ def functional_correctness(runs: Runs, checks: dict) -> float:
              m is not None and m["sla"]["standard"] >= SOW_ATTAINMENT_FLOOR,
              None if m is None else {"agent": round(m["sla"]["standard"], 4), "floor": SOW_ATTAINMENT_FLOOR,
                                      "reference": round(oracle["sla"]["standard"], 4)}),
+            (f"fc_{week}_sla_vip", vip_ok,
+             None if m is None else {"agent": round(m["sla"]["vip"], 4), "floor": SOW_ATTAINMENT_FLOOR,
+                                     "reference": round(oracle["sla"]["vip"], 4),
+                                     "min_if_short": round(oracle["sla"]["vip"] - TOL["vip_ref"], 4)}),
             (f"fc_{week}_cost",
              m is not None and m["scheduled_hours"] <= SOW_EFFICIENCY_K * m["required_hours"] + 1e-9,
              None if m is None else {"agent": m["scheduled_hours"], "bound": round(SOW_EFFICIENCY_K * m["required_hours"], 1),
                                      "required": m["required_hours"], "ratio": round(m["scheduled_hours"] / m["required_hours"], 4),
                                      "reference": oracle["scheduled_hours"]}),
+            (f"fc_{week}_reported_sla",
+             m is not None and reported_matches(m, QUEUES_NW),
+             None if m is None else {"reported": m.get("agent_eval_sla"),
+                                     "recomputed": {q: round(m["sla"][q], 4) for q in QUEUES_NW}, "tol": TOL["reported_sla"]}),
         ]
         for name, ok, val in tests:
             checks[name] = {"pass": bool(ok), "value": val}
@@ -157,8 +185,23 @@ def functional_correctness(runs: Runs, checks: dict) -> float:
     return passed / total
 
 
-def constraint_satisfaction(runs: Runs, checks: dict) -> float:
-    """Northwind W44, W45 and 2027-W10: each of the 8 SOW rules has zero violations on schedule.csv; mean over the weeks."""
+def parse_exceptions(text: str, queue: str, week: str) -> tuple[float, float] | None:
+    """(achievable, shortfall) from the first exceptions.md line naming the queue and the week (SOW §2.7, §3)."""
+    for line in text.splitlines():
+        low = line.lower()
+        if re.search(rf"\b{queue}\b", low) and week.lower() in low:
+            nums = [float(x) for x in re.findall(r"(?<![\w-])\d*\.\d+|(?<![\w-])\d+(?![\w-])", line.replace(week, " "))]
+            nums = [x for x in nums if 0.0 <= x <= 1.0]
+            if len(nums) >= 2:
+                return nums[0], nums[1]
+    return None
+
+
+def constraint_satisfaction(runs: Runs, checks: dict, exceptions: str | None = None) -> float:
+    """Northwind W44, W45 and 2027-W10: each of the 9 SOW §2 rules (incl. the §2.6 vip floor, counted in persons)
+    has zero violations on schedule.csv; plus SOW §2.7 on the go-live week: when the recomputed vip attainment is
+    under the target, exceptions.md carries a vip 2026-W44 row whose achievable value and shortfall match the
+    recomputation within TOL. Mean over the four items."""
     scores = []
     for week in NW_WEEKS:
         m = runs.get("northwind", week)
@@ -175,6 +218,19 @@ def constraint_satisfaction(runs: Runs, checks: dict) -> float:
             clean += not v
         checks[f"cs_{week}"] = {"pass": clean == len(rules), "value": detail}
         scores.append(clean / len(rules))
+    m = runs.get("northwind", "2026-W44")
+    row = parse_exceptions(exceptions, "vip", "2026-W44") if exceptions else None
+    if m is None:
+        ok, val = False, "no schedule"
+    elif m["sla"]["vip"] >= SOW_ATTAINMENT_FLOOR:
+        ok, val = True, {"recomputed_vip": round(m["sla"]["vip"], 4), "row_needed": False}
+    else:
+        achieved = m["sla"]["vip"]
+        ok = row is not None and abs(row[0] - achieved) <= TOL["shortfall"] + 1e-9 \
+            and abs(row[1] - (SOW_ATTAINMENT_FLOOR - achieved)) <= TOL["shortfall"] + 1e-9
+        val = {"recomputed_vip": round(achieved, 4), "row": row, "file_present": exceptions is not None, "tol": TOL["shortfall"]}
+    checks["cs_shortfall_vip_2026-W44"] = {"pass": bool(ok), "value": val}
+    scores.append(float(ok))
     return sum(scores) / len(scores)
 
 
@@ -221,17 +277,26 @@ def _num(s: str) -> float | None:
     return float(m.group()) if m else None
 
 
+def declared(runbook: str | None) -> list[str]:
+    """SOW §2.8 tokens in the handover note: the report's text outside the table (so a file name in the
+    files_changed row does not count as a declaration)."""
+    note = "\n".join(l for l in (runbook or "").splitlines() if not l.lstrip().startswith("|")).lower()
+    return [tok for tok in DECLARATION_TOKENS if tok in note]
+
+
 def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
-    """RUNBOOK.md: table parses (1); seven numbers within 0.5% (counts exact) of the grader's recomputation on the
-    re-run W44 outputs (7); files_changed non-empty and a subset of files that actually differ from the seed (1)."""
+    """RUNBOOK.md: table parses (1); eight numbers within 0.5% (counts exact) of the grader's recomputation on the
+    re-run W44 outputs (8); files_changed non-empty and a subset of files that actually differ from the seed (1);
+    the handover note names a pre-existing deviation from the SOW §1 method (§2.8) by an identifying token (1)."""
     kv = parse_runbook(runbook) if runbook else {}
-    checks["aq_table"] = {"pass": len(kv) >= 7, "value": sorted(kv)}
-    passed = int(len(kv) >= 7)
+    checks["aq_table"] = {"pass": len(kv) >= 8, "value": sorted(kv)}
+    passed = int(len(kv) >= 8)
     m = runs.get("northwind", "2026-W44")
     expected = None if m is None else {
         "intervals_in_week": (m["intervals"], True),
         "sla_attainment_priority": (m["sla"]["priority"], False),
         "sla_attainment_standard": (m["sla"]["standard"], False),
+        "sla_attainment_vip": (m["sla"]["vip"], False),
         "scheduled_hours_total": (m["scheduled_hours"], False),
         "required_hours_total": (m["required_hours"], False),
         "understaffed_interval_hours": (m["understaffed_interval_hours"], False),
@@ -252,7 +317,10 @@ def artifact_quality(runs: Runs, checks: dict, runbook: str | None) -> float:
     checks["aq_files_changed"] = {"pass": ok, "value": {"listed": sorted(listed), "not_actually_changed": sorted(listed - changed),
                                                         "actually_changed": sorted(changed)}}
     passed += ok
-    return passed / 9
+    found = declared(runbook)
+    checks["aq_declaration_2_8"] = {"pass": bool(found), "value": {"tokens_found": found}}
+    passed += bool(found)
+    return passed / 11
 
 
 # ----------------------------------------------------------------------------- main
@@ -269,6 +337,9 @@ def main() -> None:
         runbook_path = args.app / "out/northwind/RUNBOOK.md"
         runbook = runbook_path.read_text() if runbook_path.exists() else None   # read BEFORE outputs are cleared
         checks["runbook_present"] = runbook is not None
+        exc_path = args.app / "out/northwind/exceptions.md"
+        exceptions = exc_path.read_text() if exc_path.exists() else None
+        checks["exceptions_present"] = exceptions is not None
         checks["preflight_wfm_help"] = subprocess.run([sys.executable, "-m", "wfm", "--help"], cwd=args.app,
                                                       capture_output=True).returncode == 0
         stage_heldout(args.tests, args.app)
@@ -276,7 +347,8 @@ def main() -> None:
         for d in DIMS:
             try:
                 fn = globals()[d]
-                scores[d] = float(fn(runs, checks, runbook) if d == "artifact_quality" else fn(runs, checks))
+                scores[d] = float(fn(runs, checks, runbook) if d == "artifact_quality"
+                                  else fn(runs, checks, exceptions) if d == "constraint_satisfaction" else fn(runs, checks))
             except Exception as e:
                 checks[f"{d}_error"] = f"{type(e).__name__}: {e}"
                 traceback.print_exc()

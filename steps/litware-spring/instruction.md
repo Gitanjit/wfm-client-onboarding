@@ -16,10 +16,10 @@ export for 2027-W10 has also arrived in `/app/data/northwind/`.
    writes `/app/out/litware/schedule.csv` and `/app/out/litware/eval.json` (schemas in
    `/app/docs/ARCHITECTURE.md`). The same command must work for any other week of Litware data
    dropped into `/app/data/litware/`.
-2. `/app/out/litware/RUNBOOK.md` for 2027-W11 with the table and the Exceptions section from Litware
-   SOW §3, and a short note on what you changed and why.
+2. `/app/out/litware/RUNBOOK.md` for 2027-W11 with the table, the Exceptions section and the handover
+   note from Litware SOW §3 (what you changed and why, and what SOW §2.8 asks for).
 3. Contoso, Fabrikam and Northwind still run for any week of their data and do not get worse.
-   Northwind still meets its SOW in every week.
+   Northwind still meets its SOW in every week, §2.7 included.
 
 ## Constraints
 
@@ -36,6 +36,8 @@ An independent implementation of each SOW will evaluate: Litware's 2027-W11 `sch
 your system produces for other weeks of Litware and Northwind data; and schedules for Contoso's,
 Fabrikam's and Northwind's earlier weeks. The checks: SLA attainment per queue and total scheduled hours
 against each SOW's §1.6; zero violations of each SOW's §2, including the §2.6 report; no regression for
-the existing clients; and RUNBOOK figures that match a recomputation from your outputs.
+the existing clients; attainment each client's `eval.json` reports, and RUNBOOK figures, that match a
+recomputation from your outputs (Litware SOW §1.7); and the §2.8 handover note.
+<!-- G: your call — new clause (multi-v3) -->
 
 You have 90 minutes.

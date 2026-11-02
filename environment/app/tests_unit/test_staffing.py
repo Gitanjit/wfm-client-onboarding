@@ -25,3 +25,12 @@ def test_required_uses_queue_mean_aht():
     })
     req = add_required(df, CFG)
     assert req["required"].iloc[0] == req["required"].iloc[1] == required_agents(100, 3600, 300, 0.80, 20)
+
+
+def test_qlib_route_for_abandonment_clients():
+    # Fabrikam's route: vendor/qlib at the library's default patience; the service default is Erlang C
+    from vendor.qlib import required_agents as qlib_required
+    df = pd.DataFrame({"queue": ["priority"], "interval_start_utc": pd.to_datetime(["2026-10-05T10:00:00Z"]),
+                       "volume": [100.0], "aht_sec": [300.0]})
+    req = add_required(df, {**CFG, "queueing": "qlib"})
+    assert req["required"].iloc[0] == qlib_required(100, 3600, 300, 0.80, 20)

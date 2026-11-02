@@ -18,10 +18,13 @@ QUEUES = ("priority", "standard")
 
 # The contracts. Targets are the SOW's, not the config files'.
 SOW = {
+    # multi-v3: vip queue (90/20, contacts 08-20) with a one-agent floor 06-24 (SOW §2.6), whole persons
     "northwind": {"tz": "America/Chicago", "grain": 30, "hours": (6, 24), "cap": 0.85,
-                  "sla": {"priority": (0.90, 30), "standard": (0.80, 20)},
+                  "queues": ("priority", "standard", "vip"),
+                  "sla": {"priority": (0.90, 30), "standard": (0.80, 20), "vip": (0.90, 20)},
+                  "min_agents": {"vip": 1},
                   "rules": ["rest11h", "split_pt_only", "break_window_max_surplus", "weekly_hours",
-                            "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
+                            "consecutive_days", "skill_match", "no_overlap", "coverage_sane", "vip_floor"]},
     "contoso": {"tz": "UTC", "grain": 15, "hours": (6, 24), "cap": 0.85,
                 "sla": {"priority": (0.80, 20), "standard": (0.80, 20)},
                 "rules": ["weekly_hours", "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
@@ -300,12 +303,14 @@ def audit(client, week, segments, agents, required, gross, grid) -> dict[str, li
             gap = (b[0].start - a[-1].end).total_seconds() / 3600.0
             if gap < REST_HOURS - 1e-9:
                 v["rest11h"].append(f"{aid}: {a[-1].end:%a %H:%MZ} -> {b[0].start:%a %H:%MZ} = {gap:.1f} h")
-    # priority_floor (Litware R4): agents scheduled on the queue (breaks aside) in every operating interval
+    # <queue>_floor (Litware R4 priority_floor, Northwind §2.6 vip_floor): persons scheduled on the queue itself
+    # (breaks aside) in every operating interval. gross[q][t] counts schedule rows on q, so an agent on another
+    # queue never counts, whatever skills they hold.
     for q, n in sow.get("min_agents", {}).items():
         for t in grid:
             loc = t.astimezone(z)
             if open_h <= loc.hour + loc.minute / 60 < close_h and gross[q][t] < n:
-                v["priority_floor"].append(f"{q} {t:%Y-%m-%dT%H:%MZ}: {gross[q][t]} < {n}")
+                v[f"{q}_floor"].append(f"{q} {t:%Y-%m-%dT%H:%MZ}: {gross[q][t]} < {n}")
     # email_earliest (Litware R5): no segment on the queue starts before its earliest local hour
     for q, hr in sow.get("earliest", {}).items():
         for s in segments:

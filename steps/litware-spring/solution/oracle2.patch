@@ -1,9 +1,9 @@
 diff --git a/configs/litware.yaml b/configs/litware.yaml
 new file mode 100644
-index 0000000..affe126
+index 0000000..ff0b51f
 --- /dev/null
 +++ b/configs/litware.yaml
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,24 @@
 +# Litware — 20-minute local-time export stamped with the interval END (data/litware/README.txt).
 +# Targets and rules per docs/LITWARE_SOW.md.
 +name: Litware
@@ -23,7 +23,9 @@ index 0000000..affe126
 +min_rest_hours: 11                    # SOW §2.1
 +split_shifts: PT                      # SOW §2.2
 +break_placement: max_surplus          # SOW §2.3
-+min_agents: {priority: 2}             # SOW §2.4 (R4) — agents on the queue in every operating interval
++min_cover:                            # SOW §2.4 (R4) — agents on the queue in every operating interval
++  priority: {agents: 2, hours: [7, 21]}
++cross_skill_weight: 0                 # whole persons on the queue (SOW §1); the 0.5 service default (PR #31) does not apply
 +queue_earliest_hour: {email: 9}       # SOW §2.5 (R5) — nobody on email before 09:00; infeasible intervals reported (§2.6)
 +efficiency_pass: drop_shrink          # SOW §1.6
 diff --git a/tests_unit/test_config_and_loader.py b/tests_unit/test_config_and_loader.py
@@ -68,11 +70,11 @@ index d5564e5..2731a62 100644
      return result
  
 diff --git a/wfm/evaluate/metrics.py b/wfm/evaluate/metrics.py
-index a115019..d28cf3c 100644
+index 370088c..a39c4e7 100644
 --- a/wfm/evaluate/metrics.py
 +++ b/wfm/evaluate/metrics.py
-@@ -36,7 +36,9 @@ def coverage(sched: pd.DataFrame, grid, grain_min: int) -> tuple[dict, dict]:
-     return gross, on_break
+@@ -43,7 +43,9 @@ def coverage(sched: pd.DataFrame, grid, grain_min: int, skills: dict | None = No
+     return gross, on_break, cross
  
  
 -def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) -> dict:
@@ -82,7 +84,7 @@ index a115019..d28cf3c 100644
      sched = _parse(sched)
      grain = cfg["interval_minutes"]
      grid = sorted(set(req["interval_start_utc"]))
-@@ -47,7 +49,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
+@@ -55,7 +57,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
      for q, g in req.groupby("queue"):
          met = tot = 0
          for r in g.itertuples(index=False):
@@ -92,7 +94,7 @@ index a115019..d28cf3c 100644
              tot += 1
              scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]
 diff --git a/wfm/ingest/loader.py b/wfm/ingest/loader.py
-index 8f5b85c..6af300a 100644
+index dd74388..6af300a 100644
 --- a/wfm/ingest/loader.py
 +++ b/wfm/ingest/loader.py
 @@ -51,8 +51,14 @@ def _fixed_offsets(local: pd.Series, table: dict[str, str]) -> pd.Series:
@@ -112,79 +114,50 @@ index 8f5b85c..6af300a 100644
          # The export's utc_offset is authoritative (data/<client>/README.txt): build UTC from it rather
          # than localising the wall-clock label, which repeats during a DST fall-back.
          stamp = df["interval_start_local"].str.strip() + df["utc_offset"].str.strip()
-@@ -90,7 +96,7 @@ def load_week(cfg: dict, week: str) -> pd.DataFrame:
-     df = _resample(df, grain)
-     grid = pd.DatetimeIndex(sorted(df["interval_start_utc"].unique()))   # the week as the data delivers it
-     frames = []
--    for q in QUEUES:
-+    for q in cfg.get("queues", QUEUES):
-         part = df[df["queue"] == q].set_index("interval_start_utc").reindex(grid)
-         part["queue"] = q
-         part["volume"] = part["volume"].fillna(0.0)
 diff --git a/wfm/scheduler/greedy.py b/wfm/scheduler/greedy.py
-index 707ba0f..7e9d29b 100644
+index 81744d4..7b50cec 100644
 --- a/wfm/scheduler/greedy.py
 +++ b/wfm/scheduler/greedy.py
-@@ -55,6 +55,9 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+@@ -58,6 +58,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
  
      min_rest = float(cfg.get("min_rest_hours", 0))
      split_policy = str(cfg.get("split_shifts", "all"))
 +    earliest = cfg.get("queue_earliest_hour", {})
-+    # what the greedy covers: the required agents, raised to any per-queue floor (R4)
-+    need = {q: {t: max(r, rules.floor_need(q, t, cfg)) for t, r in required[q].items()} for q in queues}
  
      hours_used: dict[str, float] = defaultdict(float)
      days_worked: dict[str, list[date]] = defaultdict(list)
-@@ -71,9 +74,9 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+@@ -90,7 +91,7 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
                  segs = tpl.segments_utc(day, tz)
                  ivs = _covered(segs, day_grid)
                  for q in queues:
 -                    if (tpl.id, q) in dead:
 +                    if (tpl.id, q) in dead or not rules.queue_allows(tpl, q, earliest):
                          continue
--                    val = sum(max(0, min(1, required[q][t] - cover[q][t])) for t in ivs)
-+                    val = sum(max(0, min(1, need[q][t] - cover[q][t])) for t in ivs)
-                     if val > best_val + 1e-9:
-                         best, best_val = (tpl, q, segs, ivs), val
-             if best is None or best_val * grain_h < 0.5:
+                     if not floor_first and (q, day) in quota and placed[(q, day)] + tpl.hours > quota[(q, day)] + 4:
+                         continue
 diff --git a/wfm/scheduler/improve.py b/wfm/scheduler/improve.py
-index 4386385..5d2a9f5 100644
+index 6831134..4647753 100644
 --- a/wfm/scheduler/improve.py
 +++ b/wfm/scheduler/improve.py
-@@ -10,7 +10,8 @@ that keeps the floor is taken:
-      neighbouring shifts;
+@@ -11,7 +11,8 @@ that keeps the floor is taken:
    3. move it to another template of the same length if that raises the met count (this frees
       coverage for later drops).
--Breaks are re-placed by the configured rule inside every evaluation. Sweeps repeat until one changes
-+Breaks are re-placed by the configured rule inside every evaluation; no move may leave more intervals
-+below a per-queue floor (R4) than the greedy did, and templates a queue may not start are never used (R5). Sweeps repeat until one changes
+ Breaks are re-placed by the configured rule inside every evaluation; no move may leave more intervals
+-below a `min_cover` floor (whole agents on the queue) than the greedy did. Sweeps repeat until one changes
++below a `min_cover` floor (whole agents on the queue) than the greedy did, and templates a queue may not
++start are never used (R5). Sweeps repeat until one changes
  nothing: drops and shrinks lower hours, relocations raise the met count, both are bounded. Same
  agent, queue and day throughout, so weekly-hours, consecutive-day and skill rules cannot get worse.
  """
-@@ -47,7 +48,11 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
+@@ -49,6 +50,7 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
          groups[(sh.queue, sh.day)].append(sh)
          by_agent[sh.agent_id][sh.day] = sh
  
--    def met(q: str, day: date, group: list) -> int:
 +    earliest = cfg.get("queue_earliest_hour", {})
-+    floor_at = {t: {q: rules.floor_need(q, t, cfg) for q in {s.queue for s in shifts}} for g in day_grids.values() for t in g}
-+
-+    def met(q: str, day: date, group: list) -> tuple[int, int]:
-+        """(intervals meeting target, intervals below the per-queue floor) for one queue and local day."""
-         gross: dict[datetime, int] = defaultdict(int)
-         for sh in group:
-             for t in sh.intervals:
-@@ -59,7 +64,8 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
-                 for t in sh.intervals:
-                     if b < t + step and t < b + brk:
-                         off[t] += 1
--        return sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
-+        ok = sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
-+        return ok, sum(1 for t in day_grids[day] if gross[t] < floor_at[t].get(q, 0))
+     floor_at = {t: {q: constraints.floor(q, t, cfg) for q in {s.queue for s in shifts}} for g in day_grids.values() for t in g}
  
-     def reshape(sh, tpl: Template):
-         segs = tpl.segments_utc(sh.day, tz)
-@@ -67,7 +73,8 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
+     def met(q: str, day: date, group: list) -> tuple[int, int]:
+@@ -73,7 +75,8 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
  
      def allowed(sh) -> list[Template]:
          c = contract.get(sh.agent_id, "FT")
@@ -194,47 +167,8 @@ index 4386385..5d2a9f5 100644
  
      def rest_ok(new) -> bool:
          """The reshaped shift keeps the rest rule against the agent's previous and next shifts."""
-@@ -77,7 +84,11 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
-         return ((not before or new.segments[0][0] - max(before) >= min_rest)
-                 and (not after or min(after) - new.segments[-1][1] >= min_rest))
- 
--    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}
-+    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}   # (met count, floor shortfall) of the greedy
-+
-+    def keeps(trial, key, need) -> bool:
-+        m, short = met(key[0], key[1], trial)
-+        return m >= need and short <= floor[key][1]
-     changed = True
-     while changed:
-         changed = False
-@@ -86,7 +97,7 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
-             group = groups[key]
-             for sh in sorted(group, key=lambda s: (-s.hours, s.segments[0][0], s.agent_id)):
-                 rest = [s for s in group if s is not sh]
--                if met(q, day, rest) >= floor[key]:                                   # 1. drop
-+                if keeps(rest, key, floor[key][0]):                                   # 1. drop
-                     group = rest
-                     del by_agent[sh.agent_id][sh.day]
-                     changed = True
-@@ -96,13 +107,13 @@ def drop_or_shrink(shifts: list, required: dict, live: dict, cfg: dict, agents:
-                 inside = sorted([t for t in shorter if lo <= _span(t)[0] and _span(t)[1] <= hi], key=lambda t: t.hours)
-                 outside = sorted([t for t in shorter if t not in inside], key=lambda t: t.hours)
-                 same = [t for t in allowed(sh) if t.hours == sh.template.hours]
--                current = met(q, day, group)
--                for tpl, need in [(t, floor[key]) for t in inside + outside] + [(t, current + 1) for t in same]:
-+                current = met(q, day, group)[0]
-+                for tpl, need in [(t, floor[key][0]) for t in inside + outside] + [(t, current + 1) for t in same]:
-                     new = reshape(sh, tpl)                                            # 2. shrink / 3. relocate
-                     if not rest_ok(new):
-                         continue
-                     trial = rest + [new]
--                    if met(q, day, trial) >= need:
-+                    if keeps(trial, key, need):
-                         group = trial
-                         by_agent[sh.agent_id][sh.day] = new
-                         changed = True
 diff --git a/wfm/scheduler/rules.py b/wfm/scheduler/rules.py
-index e919d91..b4535a6 100644
+index e919d91..c49f353 100644
 --- a/wfm/scheduler/rules.py
 +++ b/wfm/scheduler/rules.py
 @@ -1,10 +1,13 @@
@@ -242,8 +176,8 @@ index e919d91..b4535a6 100644
  
 -Northwind SOW §2 is the first contract to use all three (configs/northwind.yaml).
 +Northwind SOW §2 is the first contract to use rest, PT-only splits and surplus breaks
-+(configs/northwind.yaml); Litware adds a per-queue floor, a per-queue earliest start and the
-+infeasible-interval report (configs/litware.yaml).
++(configs/northwind.yaml); Litware adds a per-queue earliest start and the infeasible-interval report
++(configs/litware.yaml). Floors are `min_cover` (wfm/constraints.py).
  """
  from __future__ import annotations
  
@@ -252,7 +186,7 @@ index e919d91..b4535a6 100644
  from typing import Callable
  
  from wfm.scheduler.templates import Template
-@@ -22,6 +25,37 @@ def split_allowed(template: Template, contract: str, policy: str) -> bool:
+@@ -22,6 +25,31 @@ def split_allowed(template: Template, contract: str, policy: str) -> bool:
      return not template.is_split or policy == "all" or contract == policy
  
  
@@ -264,12 +198,6 @@ index e919d91..b4535a6 100644
 +def operating(t: datetime, tz: str, hours) -> bool:
 +    loc = t.astimezone(ZoneInfo(tz))
 +    return hours[0] <= loc.hour + loc.minute / 60 < hours[1]
-+
-+
-+def floor_need(queue: str, t: datetime, cfg: dict) -> int:
-+    """Litware SOW §2.4 (R4): agents scheduled on `queue` in every operating interval (0 when not configured)."""
-+    n = cfg.get("min_agents", {}).get(queue, 0)
-+    return n if n and operating(t, cfg["tz"], cfg["operating_hours"]) else 0
 +
 +
 +def infeasible(req, cfg: dict, templates: list[Template]) -> list[tuple[str, datetime]]:

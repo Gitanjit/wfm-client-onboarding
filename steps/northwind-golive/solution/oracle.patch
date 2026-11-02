@@ -1,21 +1,28 @@
 diff --git a/configs/northwind.yaml b/configs/northwind.yaml
 new file mode 100644
-index 0000000..1a5652c
+index 0000000..49a6398
 --- /dev/null
 +++ b/configs/northwind.yaml
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,24 @@
 +# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
 +# Targets and rules per docs/NORTHWIND_SOW.md.
 +name: Northwind
 +interval_minutes: 30
 +tz: America/Chicago
 +operating_hours: [6, 24]
++queues: [priority, standard, vip]      # SOW §1.1
 +
 +aht_smoothing: interval               # SOW §1.2: each interval at its own handle time
 +
 +sla:                                  # SOW §1.2
 +  priority: {target: 0.90, seconds: 30}
 +  standard: {target: 0.80, seconds: 20}
++  vip: {target: 0.90, seconds: 20}
++
++min_cover:                            # SOW §2.6 — one agent on vip whenever the centre is open
++  vip: {agents: 1, hours: [6, 24]}
++cross_skill_weight: 0                 # SOW §1: an agent is one person on shift; the 0.5 service default (PR #31) does not apply
++scarce_queues: [vip]                  # VIP desk: floor first, hours spread over the week, its agents stay on vip
 +
 +min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
 +split_shifts: PT                      # SOW §2.2 — split templates only for part-time contracts
@@ -46,13 +53,13 @@ index fe093ad..b4f2147 100644
 +    assert [s.template.id for s in schedule_week(req, CFG, agents, WEEK)] == ["E8"]
 +    assert [s.template.id for s in schedule_week(req, {**CFG, "efficiency_pass": "drop_shrink"}, agents, WEEK)] == ["P4"]
 diff --git a/tests_unit/test_staffing.py b/tests_unit/test_staffing.py
-index 5361e42..9892ee1 100644
+index 7f19417..83428fb 100644
 --- a/tests_unit/test_staffing.py
 +++ b/tests_unit/test_staffing.py
-@@ -25,3 +25,13 @@ def test_required_uses_queue_mean_aht():
-     })
-     req = add_required(df, CFG)
-     assert req["required"].iloc[0] == req["required"].iloc[1] == required_agents(100, 3600, 300, 0.80, 20)
+@@ -34,3 +34,13 @@ def test_qlib_route_for_abandonment_clients():
+                        "volume": [100.0], "aht_sec": [300.0]})
+     req = add_required(df, {**CFG, "queueing": "qlib"})
+     assert req["required"].iloc[0] == qlib_required(100, 3600, 300, 0.80, 20)
 +
 +
 +def test_required_uses_interval_aht_when_configured():
@@ -64,18 +71,18 @@ index 5361e42..9892ee1 100644
 +    req = add_required(df, {**CFG, "aht_smoothing": "interval"})
 +    assert list(req["required"]) == [required_agents(100, 3600, a, 0.80, 20, 0.85) for a in (200.0, 400.0)]
 diff --git a/wfm/evaluate/metrics.py b/wfm/evaluate/metrics.py
-index b54e0bc..a115019 100644
+index ad17893..370088c 100644
 --- a/wfm/evaluate/metrics.py
 +++ b/wfm/evaluate/metrics.py
-@@ -62,6 +62,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
+@@ -72,6 +72,7 @@ def evaluate(req: pd.DataFrame, sched: pd.DataFrame, cfg: dict, agents: list[Age
          "client": cfg["client"], "week": week, "intervals": len(grid),
          "sla": sla, "meets_target": all(v >= cfg["sla_target"] for v in sla.values()),
          "scheduled_hours": round(hours, 1),
 +        "required_hours": round(float(req["required"].sum()) * h, 1),   # agents required x interval hours, all queues
          "understaffed_interval_hours": round(under, 1), "overstaffed_interval_hours": round(over, 1),
          "agents_scheduled": int(sched["agent_id"].nunique()),
-         "violations": audit(sched, cfg, agents),
-@@ -73,7 +74,24 @@ def audit(sched: pd.DataFrame, cfg: dict, agents: list[Agent]) -> dict[str, int]
+         "violations": {**audit(sched, cfg, agents), "min_cover": floor_gaps(gross, cross, grid, cfg)},
+@@ -89,7 +90,24 @@ def audit(sched: pd.DataFrame, cfg: dict, agents: list[Agent]) -> dict[str, int]
      by_id = {a.agent_id: a for a in agents}
      z = ZoneInfo(cfg["tz"])
      v = {"weekly_hours": 0, "consecutive_days": 0, "skill_match": 0, "no_overlap": 0}
@@ -101,7 +108,7 @@ index b54e0bc..a115019 100644
          g = g.sort_values("segment_start_utc")
          hours = ((g["segment_end_utc"] - g["segment_start_utc"]).dt.total_seconds() / 3600).sum()
 diff --git a/wfm/ingest/loader.py b/wfm/ingest/loader.py
-index 9d18a01..8f5b85c 100644
+index 9d18a01..dd74388 100644
 --- a/wfm/ingest/loader.py
 +++ b/wfm/ingest/loader.py
 @@ -52,7 +52,12 @@ def _fixed_offsets(local: pd.Series, table: dict[str, str]) -> pd.Series:
@@ -118,21 +125,30 @@ index 9d18a01..8f5b85c 100644
          df["interval_start_utc"] = _fixed_offsets(local, FABRIKAM_OFFSETS)
      else:
          df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
+@@ -85,7 +90,7 @@ def load_week(cfg: dict, week: str) -> pd.DataFrame:
+     df = _resample(df, grain)
+     grid = pd.DatetimeIndex(sorted(df["interval_start_utc"].unique()))   # the week as the data delivers it
+     frames = []
+-    for q in QUEUES:
++    for q in cfg.get("queues", QUEUES):
+         part = df[df["queue"] == q].set_index("interval_start_utc").reindex(grid)
+         part["queue"] = q
+         part["volume"] = part["volume"].fillna(0.0)
 diff --git a/wfm/scheduler/greedy.py b/wfm/scheduler/greedy.py
-index 1e5c8eb..707ba0f 100644
+index 8f51a9b..81744d4 100644
 --- a/wfm/scheduler/greedy.py
 +++ b/wfm/scheduler/greedy.py
-@@ -16,6 +16,7 @@ import pandas as pd
- 
+@@ -17,6 +17,7 @@ import pandas as pd
+ from wfm import constraints
  from wfm.ingest.loader import local_days
  from wfm.roster import Agent
 +from wfm.scheduler import improve, rules
  from wfm.scheduler.templates import Template, eligible, templates_for
  
  
-@@ -52,8 +53,12 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
-     grid = sorted(set(req["interval_start_utc"]))
+@@ -55,15 +56,35 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
      z = ZoneInfo(tz)
+     floors = {q: {t: constraints.floor(q, t, cfg) for t in grid} for q in queues}
  
 +    min_rest = float(cfg.get("min_rest_hours", 0))
 +    split_policy = str(cfg.get("split_shifts", "all"))
@@ -142,8 +158,50 @@ index 1e5c8eb..707ba0f 100644
 +    last_end: dict[str, datetime] = {}   # week state: when each agent's previous shift ended (UTC)
      shifts: list[Shift] = []
  
++    # `scarce_queues`: queues served by a small skill pool (Northwind's VIP desk). Their floor is covered
++    # first each day, their agents' hours are spread over the week in proportion to each day's need (so
++    # the floor still holds on the last days), and their agents are kept off other queues.
++    scarce = [q for q in queues if q in cfg.get("scarce_queues", [])]
++    quota: dict[tuple[str, date], float] = {}
++    for q in scarce:
++        pool = sum(caps[a.contract] for a in agents if q in a.skills)
++        need = {d: sum(max(required[q][t], floors[q][t]) for t in grid if t.astimezone(z).date() == d) * grain_h
++                for d in local_days(week, tz)}
++        total = sum(need.values()) or 1.0
++        for d, n in need.items():
++            quota[(q, d)] = pool * n / total
++    placed: dict[tuple[str, date], float] = defaultdict(float)
++
      for day in local_days(week, tz):
-@@ -76,8 +81,10 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+         day_grid = [t for t in grid if t.astimezone(z).date() == day]
+         worked_today: set[str] = set()
+         dead: set[tuple[str, str]] = set()   # (template, queue) pairs nobody can take today
++        floor_first = any(floors[q][t] for q in scarce for t in day_grid)
+         while True:
++            # SOW floors are a rule, not a target: cover them before spending agents on the requirement
+             best, best_val = None, 0.0
+             for tpl in templates:
+                 segs = tpl.segments_utc(day, tz)
+@@ -71,31 +92,54 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+                 for q in queues:
+                     if (tpl.id, q) in dead:
+                         continue
+-                    val = sum(min(1, constraints.uncovered(required[q][t], floors[q][t], cover[q][t], cross[q][t], cfg))
+-                              for t in ivs)
++                    if not floor_first and (q, day) in quota and placed[(q, day)] + tpl.hours > quota[(q, day)] + 4:
++                        continue
++                    if floor_first:
++                        val = sum(min(1, max(0, floors[q][t] - constraints.cover(cover[q][t], cross[q][t], cfg))) for t in ivs)
++                    else:
++                        val = sum(min(1, constraints.uncovered(required[q][t], floors[q][t], cover[q][t], cross[q][t], cfg))
++                                  for t in ivs)
+                     if val > best_val + 1e-9:
+                         best, best_val = (tpl, q, segs, ivs), val
+             if best is None or best_val * grain_h < 0.5:
++                if floor_first:
++                    floor_first, dead = False, set()
++                    continue
+                 break
              tpl, q, segs, ivs = best
              cands = [a for a in agents
                       if q in a.skills and eligible(tpl, a.contract) and a.agent_id not in worked_today
@@ -155,7 +213,10 @@ index 1e5c8eb..707ba0f 100644
              if not cands:
                  dead.add((tpl.id, q))
                  continue
-@@ -85,11 +92,22 @@ def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str)
+-            a = min(cands, key=lambda x: (hours_used[x.agent_id], x.agent_id))
++            # keep agents holding a scarce skill for that queue
++            a = min(cands, key=lambda x: (q not in scarce and bool(x.skills & set(scarce)), hours_used[x.agent_id], x.agent_id))
++            placed[(q, day)] += tpl.hours
              shifts.append(Shift(a.agent_id, q, tpl, day, segs, ivs))
              hours_used[a.agent_id] += tpl.hours
              days_worked[a.agent_id].append(day)
@@ -163,6 +224,8 @@ index 1e5c8eb..707ba0f 100644
              worked_today.add(a.agent_id)
              for t in ivs:
                  cover[q][t] += 1
+                 for other in a.skills & set(queues) - {q}:
+                     cross[other][t] += 1
  
 -    place_breaks(shifts, cfg)
 +    if cfg.get("efficiency_pass") == "drop_shrink":   # SOW §1.6: shed hours that buy no attainment
@@ -179,7 +242,7 @@ index 1e5c8eb..707ba0f 100644
      return shifts
  
  
-@@ -103,19 +121,33 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
+@@ -109,19 +153,33 @@ def _would_exceed_run(worked: list[date], day: date, max_run: int) -> bool:
      return run >= max_run
  
  
@@ -225,10 +288,10 @@ index 1e5c8eb..707ba0f 100644
  def to_frame(shifts: list[Shift]) -> pd.DataFrame:
 diff --git a/wfm/scheduler/improve.py b/wfm/scheduler/improve.py
 new file mode 100644
-index 0000000..4386385
+index 0000000..6831134
 --- /dev/null
 +++ b/wfm/scheduler/improve.py
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,123 @@
 +"""Efficiency pass: shed scheduled hours that buy no attainment (Northwind SOW §1.6).
 +
 +Runs after the greedy placement when a client sets `efficiency_pass: drop_shrink`. The floor is the
@@ -241,7 +304,8 @@ index 0000000..4386385
 +     neighbouring shifts;
 +  3. move it to another template of the same length if that raises the met count (this frees
 +     coverage for later drops).
-+Breaks are re-placed by the configured rule inside every evaluation. Sweeps repeat until one changes
++Breaks are re-placed by the configured rule inside every evaluation; no move may leave more intervals
++below a `min_cover` floor (whole agents on the queue) than the greedy did. Sweeps repeat until one changes
 +nothing: drops and shrinks lower hours, relocations raise the met count, both are bounded. Same
 +agent, queue and day throughout, so weekly-hours, consecutive-day and skill rules cannot get worse.
 +"""
@@ -250,6 +314,7 @@ index 0000000..4386385
 +from collections import defaultdict
 +from datetime import date, datetime, timedelta
 +
++from wfm import constraints
 +from wfm.roster import Agent
 +from wfm.scheduler import rules
 +from wfm.scheduler.templates import Template, eligible
@@ -278,7 +343,10 @@ index 0000000..4386385
 +        groups[(sh.queue, sh.day)].append(sh)
 +        by_agent[sh.agent_id][sh.day] = sh
 +
-+    def met(q: str, day: date, group: list) -> int:
++    floor_at = {t: {q: constraints.floor(q, t, cfg) for q in {s.queue for s in shifts}} for g in day_grids.values() for t in g}
++
++    def met(q: str, day: date, group: list) -> tuple[int, int]:
++        """(intervals meeting target, intervals below the queue's floor) for one queue and local day."""
 +        gross: dict[datetime, int] = defaultdict(int)
 +        for sh in group:
 +            for t in sh.intervals:
@@ -290,7 +358,8 @@ index 0000000..4386385
 +                for t in sh.intervals:
 +                    if b < t + step and t < b + brk:
 +                        off[t] += 1
-+        return sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
++        ok = sum(1 for t in day_grids[day] if t in live[q] and gross[t] - off[t] >= required[q][t])
++        return ok, sum(1 for t in day_grids[day] if gross[t] < floor_at[t].get(q, 0))
 +
 +    def reshape(sh, tpl: Template):
 +        segs = tpl.segments_utc(sh.day, tz)
@@ -308,7 +377,11 @@ index 0000000..4386385
 +        return ((not before or new.segments[0][0] - max(before) >= min_rest)
 +                and (not after or min(after) - new.segments[-1][1] >= min_rest))
 +
-+    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}
++    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}   # (met count, floor shortfall) of the greedy
++
++    def keeps(trial, key, need) -> bool:
++        m, short = met(key[0], key[1], trial)
++        return m >= need and short <= floor[key][1]
 +    changed = True
 +    while changed:
 +        changed = False
@@ -317,7 +390,7 @@ index 0000000..4386385
 +            group = groups[key]
 +            for sh in sorted(group, key=lambda s: (-s.hours, s.segments[0][0], s.agent_id)):
 +                rest = [s for s in group if s is not sh]
-+                if met(q, day, rest) >= floor[key]:                                   # 1. drop
++                if keeps(rest, key, floor[key][0]):                                   # 1. drop
 +                    group = rest
 +                    del by_agent[sh.agent_id][sh.day]
 +                    changed = True
@@ -327,13 +400,13 @@ index 0000000..4386385
 +                inside = sorted([t for t in shorter if lo <= _span(t)[0] and _span(t)[1] <= hi], key=lambda t: t.hours)
 +                outside = sorted([t for t in shorter if t not in inside], key=lambda t: t.hours)
 +                same = [t for t in allowed(sh) if t.hours == sh.template.hours]
-+                current = met(q, day, group)
-+                for tpl, need in [(t, floor[key]) for t in inside + outside] + [(t, current + 1) for t in same]:
++                current = met(q, day, group)[0]
++                for tpl, need in [(t, floor[key][0]) for t in inside + outside] + [(t, current + 1) for t in same]:
 +                    new = reshape(sh, tpl)                                            # 2. shrink / 3. relocate
 +                    if not rest_ok(new):
 +                        continue
 +                    trial = rest + [new]
-+                    if met(q, day, trial) >= need:
++                    if keeps(trial, key, need):
 +                        group = trial
 +                        by_agent[sh.agent_id][sh.day] = new
 +                        changed = True
@@ -377,13 +450,13 @@ index 0000000..e919d91
 +    breaks, minus required) is largest; ties go to the earliest slot."""
 +    return max(window, key=lambda t: (surplus(t), -t.timestamp()))
 diff --git a/wfm/staffing/required.py b/wfm/staffing/required.py
-index 7f196c8..28535e7 100644
+index 82a14b2..0bb15bb 100644
 --- a/wfm/staffing/required.py
 +++ b/wfm/staffing/required.py
-@@ -17,16 +17,17 @@ def _handle_time(g: pd.DataFrame, mode: str) -> pd.Series:
- def add_required(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+@@ -30,16 +30,17 @@ def add_required(df: pd.DataFrame, cfg: dict) -> pd.DataFrame:
      """Append a `required` column to the canonical intervals frame."""
      interval_sec = cfg["interval_minutes"] * 60
+     model = _model(cfg)
 -    cap = cfg.get("occupancy_cap")  # WFM-212: read here, not yet applied in the call below
 +    cap = cfg.get("occupancy_cap")  # WFM-212: applied per interval
      mode = cfg.get("aht_smoothing", "queue_mean")
@@ -396,8 +469,8 @@ index 7f196c8..28535e7 100644
 +        # the handle-time series is used per interval (WFM-198 collapsed it to one value, so `interval` had no effect)
 +        aht = _handle_time(g, mode)
          out.loc[g.index, "required"] = [
--            required_agents(v, interval_sec, aht, sla["target"], sla["seconds"]) for v in g["volume"]
-+            required_agents(v, interval_sec, a, sla["target"], sla["seconds"], cap)
+-            model(v, interval_sec, aht, sla["target"], sla["seconds"]) for v in g["volume"]
++            model(v, interval_sec, a, sla["target"], sla["seconds"], cap)
 +            for v, a in zip(g["volume"], aht)
          ]
      out.attrs["occupancy_cap"] = cap

@@ -7,14 +7,20 @@ schedule and an evaluation.
 
     data/<client>/*.csv  →  wfm.ingest    →  canonical intervals (UTC, client grain)
                          →  wfm.staffing  →  required agents per queue per interval (Erlang C)
+                         →  wfm.constraints → per-queue minimum cover (floors), where a client has them
                          →  wfm.scheduler →  out/<client>/schedule.csv (greedy template placement)
                          →  wfm.evaluate  →  out/<client>/eval.json
 
 Run: `python -m wfm run --client <name> --week <YYYY-Www>` from `/app`.
 
 Modules: `wfm/config.py` (config loading), `wfm/ingest/loader.py`, `wfm/staffing/erlang.py` and
-`required.py`, `wfm/roster.py` (agents), `wfm/scheduler/templates.py` and `greedy.py`,
-`wfm/evaluate/metrics.py`, `wfm/cli.py`. Anything else under `wfm/scheduler/` is a draft; see `CHANGELOG.md`.
+`required.py`, `wfm/constraints.py` (minimum cover), `wfm/roster.py` (agents), `wfm/scheduler/templates.py`
+and `greedy.py`, `wfm/evaluate/metrics.py`, `wfm/cli.py`. Anything else under `wfm/scheduler/` is a draft;
+see `CHANGELOG.md`.
+
+Queueing. `wfm/staffing/erlang.py` is the service's Erlang C and the method of record. `vendor/qlib`
+(a vendored queueing library with an abandonment model) is kept for Fabrikam's abandonment model;
+`queueing: qlib` in a client config routes that client's staffing through it.
 
 History and tickets: `git log` in `/app`. Tickets are WFM-nnn.
 <!-- G: your call — keep this line? It points at the history without saying what is in it -->
@@ -73,8 +79,8 @@ One row per segment. The break row is the segment that contains it. `break_minut
 
 ## eval.json
 
-`intervals`, attainment per queue (`sla`), `meets_target` (attainment at or above the configured
-`sla_target`), `scheduled_hours`, `understaffed_interval_hours`, `overstaffed_interval_hours`,
+`intervals`, attainment per queue (`sla`, on the client's `attainment_basis`: `service_level` by
+default), `meets_target` (attainment at or above the configured `sla_target`), `scheduled_hours`, `understaffed_interval_hours`, `overstaffed_interval_hours`,
 `agents_scheduled`, and `violations` keyed by rule name. The evaluator is a convenience for engineers.
 Contractual evaluation is done independently against each client's SOW.
 

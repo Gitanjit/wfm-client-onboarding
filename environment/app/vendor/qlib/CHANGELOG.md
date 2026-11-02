@@ -2,7 +2,7 @@
 
 ## 1.3.0
 - `DEFAULT_PATIENCE_SEC` changes from 0 (no abandonment) to 90 s, the median caller patience in the
-  2024 benchmark survey. Callers that do not pass `patience_sec` now get the Erlang A model and a
+  2024 industry survey. Callers that do not pass `patience_sec` now get the Erlang A model and a
   higher service level for the same agents. Pass `patience_sec=0` for the 1.2 behaviour.
 - `asa()` returns a finite mean wait for overloaded queues when patience is set.
 
