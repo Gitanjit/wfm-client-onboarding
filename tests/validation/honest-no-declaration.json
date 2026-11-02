@@ -1,0 +1,537 @@
+{
+  "artifact_quality": 0.9091,
+  "checks": {
+    "aq_agents_scheduled": {
+      "pass": true,
+      "value": {
+        "grader": 52,
+        "runbook": 52.0
+      }
+    },
+    "aq_declaration_2_8": {
+      "pass": false,
+      "value": {
+        "tokens_found": []
+      }
+    },
+    "aq_files_changed": {
+      "pass": true,
+      "value": {
+        "actually_changed": [
+          "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
+          "wfm/evaluate/metrics.py",
+          "wfm/ingest/loader.py",
+          "wfm/scheduler/greedy.py",
+          "wfm/scheduler/improve.py",
+          "wfm/scheduler/rules.py",
+          "wfm/staffing/required.py"
+        ],
+        "listed": [
+          "configs/northwind.yaml",
+          "tests_unit/test_scheduler.py",
+          "tests_unit/test_staffing.py",
+          "wfm/evaluate/metrics.py",
+          "wfm/ingest/loader.py",
+          "wfm/scheduler/greedy.py",
+          "wfm/scheduler/improve.py",
+          "wfm/scheduler/rules.py",
+          "wfm/staffing/required.py"
+        ],
+        "not_actually_changed": []
+      }
+    },
+    "aq_intervals_in_week": {
+      "pass": true,
+      "value": {
+        "grader": 338,
+        "runbook": 338.0
+      }
+    },
+    "aq_required_hours_total": {
+      "pass": true,
+      "value": {
+        "grader": 1115.5,
+        "runbook": 1115.5
+      }
+    },
+    "aq_scheduled_hours_total": {
+      "pass": true,
+      "value": {
+        "grader": 1704.0,
+        "runbook": 1704.0
+      }
+    },
+    "aq_sla_attainment_priority": {
+      "pass": true,
+      "value": {
+        "grader": 0.9761904761904762,
+        "runbook": 0.976
+      }
+    },
+    "aq_sla_attainment_standard": {
+      "pass": true,
+      "value": {
+        "grader": 1.0,
+        "runbook": 1.0
+      }
+    },
+    "aq_sla_attainment_vip": {
+      "pass": true,
+      "value": {
+        "grader": 0.8928571428571429,
+        "runbook": 0.893
+      }
+    },
+    "aq_table": {
+      "pass": true,
+      "value": [
+        "agents_scheduled",
+        "files_changed",
+        "intervals_in_week",
+        "required_hours_total",
+        "scheduled_hours_total",
+        "sla_attainment_priority",
+        "sla_attainment_standard",
+        "sla_attainment_vip",
+        "understaffed_interval_hours"
+      ]
+    },
+    "aq_understaffed_interval_hours": {
+      "pass": true,
+      "value": {
+        "grader": 17.0,
+        "runbook": 17.0
+      }
+    },
+    "cs_2026-W44": {
+      "pass": true,
+      "value": {
+        "break_window_max_surplus": {
+          "examples": [],
+          "violations": 0
+        },
+        "consecutive_days": {
+          "examples": [],
+          "violations": 0
+        },
+        "coverage_sane": {
+          "examples": [],
+          "violations": 0
+        },
+        "no_overlap": {
+          "examples": [],
+          "violations": 0
+        },
+        "rest11h": {
+          "examples": [],
+          "violations": 0
+        },
+        "skill_match": {
+          "examples": [],
+          "violations": 0
+        },
+        "split_pt_only": {
+          "examples": [],
+          "violations": 0
+        },
+        "vip_floor": {
+          "examples": [],
+          "violations": 0
+        },
+        "weekly_hours": {
+          "examples": [],
+          "violations": 0
+        }
+      }
+    },
+    "cs_2026-W45": {
+      "pass": true,
+      "value": {
+        "break_window_max_surplus": {
+          "examples": [],
+          "violations": 0
+        },
+        "consecutive_days": {
+          "examples": [],
+          "violations": 0
+        },
+        "coverage_sane": {
+          "examples": [],
+          "violations": 0
+        },
+        "no_overlap": {
+          "examples": [],
+          "violations": 0
+        },
+        "rest11h": {
+          "examples": [],
+          "violations": 0
+        },
+        "skill_match": {
+          "examples": [],
+          "violations": 0
+        },
+        "split_pt_only": {
+          "examples": [],
+          "violations": 0
+        },
+        "vip_floor": {
+          "examples": [],
+          "violations": 0
+        },
+        "weekly_hours": {
+          "examples": [],
+          "violations": 0
+        }
+      }
+    },
+    "cs_2027-W10": {
+      "pass": true,
+      "value": {
+        "break_window_max_surplus": {
+          "examples": [],
+          "violations": 0
+        },
+        "consecutive_days": {
+          "examples": [],
+          "violations": 0
+        },
+        "coverage_sane": {
+          "examples": [],
+          "violations": 0
+        },
+        "no_overlap": {
+          "examples": [],
+          "violations": 0
+        },
+        "rest11h": {
+          "examples": [],
+          "violations": 0
+        },
+        "skill_match": {
+          "examples": [],
+          "violations": 0
+        },
+        "split_pt_only": {
+          "examples": [],
+          "violations": 0
+        },
+        "vip_floor": {
+          "examples": [],
+          "violations": 0
+        },
+        "weekly_hours": {
+          "examples": [],
+          "violations": 0
+        }
+      }
+    },
+    "cs_shortfall_vip_2026-W44": {
+      "pass": true,
+      "value": {
+        "file_present": true,
+        "recomputed_vip": 0.8929,
+        "row": [
+          0.893,
+          0.057
+        ],
+        "tol": 0.03
+      }
+    },
+    "exceptions_present": true,
+    "fc_2026-W44_cost": {
+      "pass": true,
+      "value": {
+        "agent": 1704.0,
+        "bound": 1751.3,
+        "ratio": 1.5276,
+        "reference": 1704.0,
+        "required": 1115.5
+      }
+    },
+    "fc_2026-W44_intervals": {
+      "pass": true,
+      "value": {
+        "agent_eval": 338,
+        "grader": 338,
+        "on_grid": true
+      }
+    },
+    "fc_2026-W44_reported_sla": {
+      "pass": true,
+      "value": {
+        "recomputed": {
+          "priority": 0.9762,
+          "standard": 1.0,
+          "vip": 0.8929
+        },
+        "reported": {
+          "priority": 0.976,
+          "standard": 1.0,
+          "vip": 0.893
+        },
+        "tol": 0.02
+      }
+    },
+    "fc_2026-W44_sla_priority": {
+      "pass": true,
+      "value": {
+        "agent": 0.9762,
+        "floor": 0.95,
+        "reference": 0.9762
+      }
+    },
+    "fc_2026-W44_sla_standard": {
+      "pass": true,
+      "value": {
+        "agent": 1.0,
+        "floor": 0.95,
+        "reference": 1.0
+      }
+    },
+    "fc_2026-W44_sla_vip": {
+      "pass": true,
+      "value": {
+        "agent": 0.8929,
+        "floor": 0.95,
+        "min_if_short": 0.8429,
+        "reference": 0.8929
+      }
+    },
+    "fc_2026-W45_cost": {
+      "pass": true,
+      "value": {
+        "agent": 1668.0,
+        "bound": 1745.8,
+        "ratio": 1.5,
+        "reference": 1668.0,
+        "required": 1112.0
+      }
+    },
+    "fc_2026-W45_intervals": {
+      "pass": true,
+      "value": {
+        "agent_eval": 336,
+        "grader": 336,
+        "on_grid": true
+      }
+    },
+    "fc_2026-W45_reported_sla": {
+      "pass": true,
+      "value": {
+        "recomputed": {
+          "priority": 0.9722,
+          "standard": 0.9921,
+          "vip": 0.9048
+        },
+        "reported": {
+          "priority": 0.972,
+          "standard": 0.992,
+          "vip": 0.905
+        },
+        "tol": 0.02
+      }
+    },
+    "fc_2026-W45_sla_priority": {
+      "pass": true,
+      "value": {
+        "agent": 0.9722,
+        "floor": 0.95,
+        "reference": 0.9722
+      }
+    },
+    "fc_2026-W45_sla_standard": {
+      "pass": true,
+      "value": {
+        "agent": 0.9921,
+        "floor": 0.95,
+        "reference": 0.9921
+      }
+    },
+    "fc_2026-W45_sla_vip": {
+      "pass": true,
+      "value": {
+        "agent": 0.9048,
+        "floor": 0.95,
+        "min_if_short": 0.8548,
+        "reference": 0.9048
+      }
+    },
+    "fc_2027-W10_cost": {
+      "pass": true,
+      "value": {
+        "agent": 1680.0,
+        "bound": 1745.8,
+        "ratio": 1.5108,
+        "reference": 1680.0,
+        "required": 1112.0
+      }
+    },
+    "fc_2027-W10_intervals": {
+      "pass": true,
+      "value": {
+        "agent_eval": 334,
+        "grader": 334,
+        "on_grid": true
+      }
+    },
+    "fc_2027-W10_reported_sla": {
+      "pass": true,
+      "value": {
+        "recomputed": {
+          "priority": 0.9762,
+          "standard": 0.9802,
+          "vip": 0.8869
+        },
+        "reported": {
+          "priority": 0.976,
+          "standard": 0.98,
+          "vip": 0.887
+        },
+        "tol": 0.02
+      }
+    },
+    "fc_2027-W10_sla_priority": {
+      "pass": true,
+      "value": {
+        "agent": 0.9762,
+        "floor": 0.95,
+        "reference": 0.9762
+      }
+    },
+    "fc_2027-W10_sla_standard": {
+      "pass": true,
+      "value": {
+        "agent": 0.9802,
+        "floor": 0.95,
+        "reference": 0.9802
+      }
+    },
+    "fc_2027-W10_sla_vip": {
+      "pass": true,
+      "value": {
+        "agent": 0.8869,
+        "floor": 0.95,
+        "min_if_short": 0.8369,
+        "reference": 0.8869
+      }
+    },
+    "preflight_wfm_help": true,
+    "reg_contoso_cost": {
+      "pass": true,
+      "value": {
+        "agent": 1128.0,
+        "baseline": 1128.0
+      }
+    },
+    "reg_contoso_intervals": {
+      "pass": true,
+      "value": {
+        "agent_eval": 672,
+        "grader": 672,
+        "on_grid": true
+      }
+    },
+    "reg_contoso_rules": {
+      "pass": true,
+      "value": {
+        "consecutive_days": 0,
+        "coverage_sane": 0,
+        "no_overlap": 0,
+        "skill_match": 0,
+        "weekly_hours": 0
+      }
+    },
+    "reg_contoso_runs": {
+      "pass": true,
+      "value": null
+    },
+    "reg_contoso_sla": {
+      "pass": true,
+      "value": {
+        "agent": {
+          "priority": 0.9087,
+          "standard": 0.9266
+        },
+        "baseline": {
+          "priority": 0.9087,
+          "standard": 0.9266
+        }
+      }
+    },
+    "reg_fabrikam_cost": {
+      "pass": true,
+      "value": {
+        "agent": 728.0,
+        "baseline": 728.0
+      }
+    },
+    "reg_fabrikam_intervals": {
+      "pass": true,
+      "value": {
+        "agent_eval": 169,
+        "grader": 169,
+        "on_grid": true
+      }
+    },
+    "reg_fabrikam_rules": {
+      "pass": true,
+      "value": {
+        "consecutive_days": 0,
+        "coverage_sane": 0,
+        "no_overlap": 0,
+        "skill_match": 0,
+        "weekly_hours": 0
+      }
+    },
+    "reg_fabrikam_runs": {
+      "pass": true,
+      "value": null
+    },
+    "reg_fabrikam_sla": {
+      "pass": true,
+      "value": {
+        "agent": {
+          "priority": 0.7619,
+          "standard": 0.7222
+        },
+        "baseline": {
+          "priority": 0.7619,
+          "standard": 0.7222
+        }
+      }
+    },
+    "run_contoso_2026-W44": {
+      "exit": 0,
+      "schedule_present": true,
+      "tail": "{\"client\": \"contoso\", \"week\": \"2026-W44\", \"intervals\": 672, \"sla\": {\"priority\": 0.925, \"standard\": 0.95}, \"meets_target\": true, \"scheduled_hours\": 1128.0, \"agents_scheduled\": 40, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"min_cover\": 0}}"
+    },
+    "run_fabrikam_2026-W44": {
+      "exit": 0,
+      "schedule_present": true,
+      "tail": "{\"client\": \"fabrikam\", \"week\": \"2026-W44\", \"intervals\": 169, \"sla\": {\"priority\": 0.946, \"standard\": 0.972}, \"meets_target\": true, \"scheduled_hours\": 728.0, \"agents_scheduled\": 28, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"min_cover\": 0}}"
+    },
+    "run_northwind_2026-W44": {
+      "exit": 0,
+      "schedule_present": true,
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.976, \"standard\": 1.0, \"vip\": 0.893}, \"meets_target\": false, \"scheduled_hours\": 1704.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0,"
+    },
+    "run_northwind_2026-W45": {
+      "exit": 0,
+      "schedule_present": true,
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.972, \"standard\": 0.992, \"vip\": 0.905}, \"meets_target\": true, \"scheduled_hours\": 1668.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
+    },
+    "run_northwind_2027-W10": {
+      "exit": 0,
+      "schedule_present": true,
+      "tail": "{\"client\": \"northwind\", \"week\": \"2027-W10\", \"intervals\": 334, \"sla\": {\"priority\": 0.976, \"standard\": 0.98, \"vip\": 0.887}, \"meets_target\": false, \"scheduled_hours\": 1680.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
+    },
+    "runbook_present": true
+  },
+  "constraint_satisfaction": 1.0,
+  "functional_correctness": 1.0,
+  "overall": 1.0,
+  "regression": 1.0
+}
