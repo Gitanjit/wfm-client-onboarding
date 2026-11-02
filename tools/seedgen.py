@@ -91,7 +91,8 @@ VIP = dict(base_daily=1000.0, aht=540.0, hours=(8, 20), seed_offset=5000)
 # VIP desk: agents appended after the generated roster (existing ids unchanged). FT unless noted.
 VIP_ROSTER = [("NW-041", "FT", "vip"), ("NW-042", "FT", "vip"), ("NW-043", "FT", "vip"), ("NW-044", "FT", "vip"),
               ("NW-045", "FT", "priority;vip"), ("NW-046", "FT", "priority;vip"), ("NW-047", "FT", "priority;vip"),
-              ("NW-048", "FT", "priority;vip"), ("NW-049", "FT", "vip")]
+              ("NW-048", "FT", "priority;vip"), ("NW-049", "FT", "vip"), ("NW-050", "FT", "vip"), ("NW-051", "FT", "vip"),
+              ("NW-052", "FT", "vip")]
 
 
 def add_vip(rows, tz: ZoneInfo, grain_min: int, seed: int, scale: float):
