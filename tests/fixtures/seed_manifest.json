@@ -28,7 +28,7 @@
   "tests_unit/test_scheduler.py": "1886e7c603c3cb3041c0b62818f2625132541c9bd216be2b17b03785a563e1df",
   "tests_unit/test_staffing.py": "535ebd910343c034f27266eff9421aba8e9215237e20ec40fa4965c139253a7d",
   "vendor/__init__.py": "e2ffd23b468294b2419f7f360645d35d666b63528bedfa531e3cfe19cbee0042",
-  "vendor/qlib/CHANGELOG.md": "af8cc12dfccfc895d2ff7090e42cd5dafff7648d300ca8ab6415f70c6a89276e",
+  "vendor/qlib/CHANGELOG.md": "a05ef34e6291971da5630f8700920299eb47cb55f0379bd98243e41ac7380719",
   "vendor/qlib/LICENSE": "2c75dc1225483378bf5a654e98c85dafdde8047608c8c10713bed8a21edfe867",
   "vendor/qlib/README.md": "2d6218c53da0243875d83616925e05b22be0aaa93e74b3815216863d2a5a026c",
   "vendor/qlib/__init__.py": "42fbd8de8ddf4cc91646547590c564ee9037173f7559ab830c54b8aeb7fb27c6",

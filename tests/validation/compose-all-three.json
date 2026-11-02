@@ -69,8 +69,8 @@
     "aq_scheduled_hours_total": {
       "pass": true,
       "value": {
-        "grader": 1466.0,
-        "runbook": 1466.0
+        "grader": 1310.0,
+        "runbook": 1310.0
       }
     },
     "aq_sla_attainment_priority": {
@@ -90,8 +90,8 @@
     "aq_sla_attainment_vip": {
       "pass": false,
       "value": {
-        "grader": 0.7797619047619048,
-        "runbook": 0.979
+        "grader": 0.47619047619047616,
+        "runbook": 0.664
       }
     },
     "aq_table": {
@@ -111,8 +111,8 @@
     "aq_understaffed_interval_hours": {
       "pass": false,
       "value": {
-        "grader": 73.5,
-        "runbook": 11.5
+        "grader": 150.0,
+        "runbook": 80.5
       }
     },
     "cs_2026-W44": {
@@ -120,11 +120,11 @@
       "value": {
         "break_window_max_surplus": {
           "examples": [
-            "NW-003 2026-10-26: break at 14:00Z surplus 3 < max 4",
-            "NW-003 2026-10-27: break at 22:30Z surplus 0 < max 1",
-            "NW-003 2026-10-29: break at 22:30Z surplus 1 < max 2"
+            "NW-001 2026-10-28: break at 22:30Z surplus 1 < max 2",
+            "NW-002 2026-10-26: break at 14:00Z surplus 3 < max 4",
+            "NW-003 2026-10-26: break at 14:00Z surplus 3 < max 4"
           ],
-          "violations": 52
+          "violations": 37
         },
         "consecutive_days": {
           "examples": [],
@@ -151,8 +151,12 @@
           "violations": 0
         },
         "vip_floor": {
-          "examples": [],
-          "violations": 0
+          "examples": [
+            "vip 2026-10-31T11:00Z: 0 < 1",
+            "vip 2026-10-31T11:30Z: 0 < 1",
+            "vip 2026-10-31T12:00Z: 0 < 1"
+          ],
+          "violations": 72
         },
         "weekly_hours": {
           "examples": [],
@@ -165,11 +169,11 @@
       "value": {
         "break_window_max_surplus": {
           "examples": [
-            "NW-001 2026-11-05: break at 23:30Z surplus 1 < max 2",
-            "NW-002 2026-11-03: break at 00:00Z surplus 1 < max 2",
-            "NW-003 2026-11-03: break at 15:00Z surplus 3 < max 4"
+            "NW-001 2026-11-02: break at 00:00Z surplus 1 < max 2",
+            "NW-001 2026-11-04: break at 23:30Z surplus 2 < max 3",
+            "NW-002 2026-11-04: break at 23:30Z surplus 2 < max 3"
           ],
-          "violations": 63
+          "violations": 58
         },
         "consecutive_days": {
           "examples": [],
@@ -196,8 +200,12 @@
           "violations": 0
         },
         "vip_floor": {
-          "examples": [],
-          "violations": 0
+          "examples": [
+            "vip 2026-11-07T12:00Z: 0 < 1",
+            "vip 2026-11-07T12:30Z: 0 < 1",
+            "vip 2026-11-07T13:00Z: 0 < 1"
+          ],
+          "violations": 72
         },
         "weekly_hours": {
           "examples": [],
@@ -210,11 +218,11 @@
       "value": {
         "break_window_max_surplus": {
           "examples": [
-            "NW-001 2027-03-11: break at 23:30Z surplus 1 < max 2",
-            "NW-004 2027-03-08: break at 15:00Z surplus 3 < max 4",
-            "NW-004 2027-03-11: break at 23:30Z surplus 1 < max 2"
+            "NW-001 2027-03-08: break at 00:00Z surplus 1 < max 2",
+            "NW-003 2027-03-08: break at 15:00Z surplus 3 < max 4",
+            "NW-004 2027-03-08: break at 23:30Z surplus 1 < max 2"
           ],
-          "violations": 34
+          "violations": 33
         },
         "consecutive_days": {
           "examples": [],
@@ -241,8 +249,12 @@
           "violations": 0
         },
         "vip_floor": {
-          "examples": [],
-          "violations": 0
+          "examples": [
+            "vip 2027-03-13T12:00Z: 0 < 1",
+            "vip 2027-03-13T12:30Z: 0 < 1",
+            "vip 2027-03-13T13:00Z: 0 < 1"
+          ],
+          "violations": 72
         },
         "weekly_hours": {
           "examples": [],
@@ -254,8 +266,11 @@
       "pass": false,
       "value": {
         "file_present": true,
-        "recomputed_vip": 0.7798,
-        "row": null,
+        "recomputed_vip": 0.4762,
+        "row": [
+          0.664,
+          0.286
+        ],
         "tol": 0.03
       }
     },
@@ -263,9 +278,9 @@
     "fc_2026-W44_cost": {
       "pass": true,
       "value": {
-        "agent": 1466.0,
+        "agent": 1310.0,
         "bound": 1751.3,
-        "ratio": 1.3142,
+        "ratio": 1.1744,
         "reference": 1704.0,
         "required": 1115.5
       }
@@ -284,12 +299,12 @@
         "recomputed": {
           "priority": 0.8571,
           "standard": 0.7619,
-          "vip": 0.7798
+          "vip": 0.4762
         },
         "reported": {
           "priority": 0.992,
           "standard": 0.99,
-          "vip": 0.979
+          "vip": 0.664
         },
         "tol": 0.02
       }
@@ -313,7 +328,7 @@
     "fc_2026-W44_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.7798,
+        "agent": 0.4762,
         "floor": 0.95,
         "min_if_short": 0.8429,
         "reference": 0.8929
@@ -322,9 +337,9 @@
     "fc_2026-W45_cost": {
       "pass": true,
       "value": {
-        "agent": 1478.0,
+        "agent": 1334.0,
         "bound": 1745.8,
-        "ratio": 1.3291,
+        "ratio": 1.1996,
         "reference": 1668.0,
         "required": 1112.0
       }
@@ -343,12 +358,12 @@
         "recomputed": {
           "priority": 0.8095,
           "standard": 0.7937,
-          "vip": 0.8095
+          "vip": 0.4762
         },
         "reported": {
           "priority": 0.992,
           "standard": 0.993,
-          "vip": 0.982
+          "vip": 0.663
         },
         "tol": 0.02
       }
@@ -372,7 +387,7 @@
     "fc_2026-W45_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.8095,
+        "agent": 0.4762,
         "floor": 0.95,
         "min_if_short": 0.8548,
         "reference": 0.9048
@@ -381,9 +396,9 @@
     "fc_2027-W10_cost": {
       "pass": true,
       "value": {
-        "agent": 1478.0,
+        "agent": 1342.0,
         "bound": 1745.8,
-        "ratio": 1.3291,
+        "ratio": 1.2068,
         "reference": 1680.0,
         "required": 1112.0
       }
@@ -402,12 +417,12 @@
         "recomputed": {
           "priority": 0.8492,
           "standard": 0.8413,
-          "vip": 0.8214
+          "vip": 0.4643
         },
         "reported": {
           "priority": 0.989,
           "standard": 0.995,
-          "vip": 0.974
+          "vip": 0.662
         },
         "tol": 0.02
       }
@@ -431,7 +446,7 @@
     "fc_2027-W10_sla_vip": {
       "pass": false,
       "value": {
-        "agent": 0.8214,
+        "agent": 0.4643,
         "floor": 0.95,
         "min_if_short": 0.8369,
         "reference": 0.8869
@@ -535,22 +550,22 @@
     "run_northwind_2026-W44": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.992, \"standard\": 0.99, \"vip\": 0.979}, \"meets_target\": true, \"scheduled_hours\": 1466.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0,"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W44\", \"intervals\": 338, \"sla\": {\"priority\": 0.992, \"standard\": 0.99, \"vip\": 0.664}, \"meets_target\": false, \"scheduled_hours\": 1310.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
     },
     "run_northwind_2026-W45": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.992, \"standard\": 0.993, \"vip\": 0.982}, \"meets_target\": true, \"scheduled_hours\": 1478.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2026-W45\", \"intervals\": 336, \"sla\": {\"priority\": 0.992, \"standard\": 0.993, \"vip\": 0.663}, \"meets_target\": false, \"scheduled_hours\": 1334.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": "
     },
     "run_northwind_2027-W10": {
       "exit": 0,
       "schedule_present": true,
-      "tail": "{\"client\": \"northwind\", \"week\": \"2027-W10\", \"intervals\": 334, \"sla\": {\"priority\": 0.989, \"standard\": 0.995, \"vip\": 0.974}, \"meets_target\": true, \"scheduled_hours\": 1478.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": 0"
+      "tail": "{\"client\": \"northwind\", \"week\": \"2027-W10\", \"intervals\": 334, \"sla\": {\"priority\": 0.989, \"standard\": 0.995, \"vip\": 0.662}, \"meets_target\": false, \"scheduled_hours\": 1342.0, \"agents_scheduled\": 52, \"violations\": {\"weekly_hours\": 0, \"consecutive_days\": 0, \"skill_match\": 0, \"no_overlap\": 0, \"rest11h\": "
     },
     "runbook_present": true
   },
-  "constraint_satisfaction": 0.6667,
+  "constraint_satisfaction": 0.5833,
   "functional_correctness": 0.3333,
-  "overall": 0.6364,
+  "overall": 0.6155,
   "regression": 1.0
 }
