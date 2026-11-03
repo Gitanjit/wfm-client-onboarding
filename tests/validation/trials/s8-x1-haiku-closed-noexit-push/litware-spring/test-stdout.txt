@@ -1,0 +1,16 @@
+== wfm-client-onboarding verifier, step 2 (litware-spring) ==
+== summary (step 2: litware-spring) ==
+  functional_correctness   0.9333  (gate 0.9333)
+  constraint_satisfaction  0.9389  (gate 1.0000)
+  regression               0.8621  (gate 1.0000)
+  artifact_quality         0.0000  (gate 0.9167)
+  overall                  0.6836
+  failed checks: ['fc_northwind_2027-W11_sla_vip', 'cs_litware_2027-W11', 'cs_northwind_2027-W11', 'reg_northwind_2026-W44_sla_vip', 'reg_northwind_2026-W44_rules', 'reg_northwind_2026-W45_sla_vip', 'reg_northwind_2026-W45_rules', 'aq_table', 'aq_intervals_in_week', 'aq_sla_attainment_priority', 'aq_sla_attainment_standard', 'aq_sla_attainment_email', 'aq_scheduled_hours_total', 'aq_required_hours_total', 'aq_understaffed_interval_hours', 'aq_agents_scheduled', 'aq_exception_intervals', 'aq_files_changed', 'aq_declaration_2_8']
+== reward ==
+{
+  "artifact_quality": 0.0,
+  "constraint_satisfaction": 0.9389,
+  "functional_correctness": 0.9333,
+  "overall": 0.6836,
+  "regression": 0.8621
+}

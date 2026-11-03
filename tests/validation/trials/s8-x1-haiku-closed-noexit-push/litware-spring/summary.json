@@ -1,0 +1,101 @@
+{
+  "job": "s8-x1-haiku-closed-noexit-push",
+  "trial": "wfm-client-onboarding__tiNCokp",
+  "step": "litware-spring",
+  "model": "anthropic/claude-haiku-5-5",
+  "kwargs": {
+    "max_budget_usd": 3,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 0.6008893900000002,
+  "tokens": {
+    "n_input_tokens": 6684330,
+    "n_cache_tokens": 6490802,
+    "n_output_tokens": 112893
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 835.2,
+    "verifier": 31.5
+  },
+  "rewards": {
+    "artifact_quality": 0.0,
+    "constraint_satisfaction": 0.9389,
+    "functional_correctness": 0.9333,
+    "overall": 0.6836,
+    "regression": 0.8621
+  },
+  "exception": "AgentAuthenticationError",
+  "exception_message": "Command failed (exit 1): export PATH=\"$HOME/.local/bin:$PATH\"; claude_code_instruction_44af1f08d0d441caa6ff28fcd7985741=\"$CLAUDE_CODE_INSTRUCTION_44AF1F08D0D441CAA6FF28FCD7985741\"; unset CLAUDE_CODE_INSTRUCTION_44AF1F08D0D441CAA6FF28FCD7985741; printf \"%s\" \"$claude_code_instruction_44af1f08d0d441ca\u2026",
+  "tool_calls": 68,
+  "final_metrics": {
+    "total_prompt_tokens": 6684330,
+    "total_completion_tokens": 112893,
+    "total_cached_tokens": 6490802,
+    "total_cost_usd": 0.6008893900000002,
+    "total_steps": 51,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 193430,
+      "total_cache_read_input_tokens": 6490802
+    }
+  },
+  "delivered_unchanged": [
+    "data/agents/litware.csv",
+    "data/litware/README.txt",
+    "data/litware/export_2027-W10.csv",
+    "data/litware/export_2027-W11.csv",
+    "data/northwind/export_2027-W10.csv",
+    "docs/LITWARE_SOW.md"
+  ],
+  "changed_files": [
+    "clients/README.md",
+    "clients/registry.yaml",
+    "configs/defaults.yaml",
+    "configs/litware.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/runbooks/litware_2027-W11_handover.md",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_litware.py",
+    "tests_unit/test_registry.py",
+    "wfm/cli.py",
+    "wfm/config.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/infeasible.py",
+    "wfm/ingest/loader.py",
+    "wfm/report/runbook.py",
+    "wfm/scheduler/greedy.py",
+    "wfm/scheduler/templates.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2027-W11",
+    "sla": {
+      "priority": 0.0,
+      "standard": 0.0,
+      "email": 0.0
+    },
+    "hours": 744.0,
+    "required": 527.0,
+    "intervals": 504,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 100,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 207,
+      "priority_floor": 294,
+      "email_earliest": 0
+    }
+  }
+}

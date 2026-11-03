@@ -1,0 +1,85 @@
+{
+  "job": "s8-x1-haiku-closed-noexit-push",
+  "trial": "wfm-client-onboarding__tiNCokp",
+  "step": "northwind-golive",
+  "model": "anthropic/claude-haiku-5-5",
+  "kwargs": {
+    "max_budget_usd": 3,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 0.48696478500000007,
+  "tokens": {
+    "n_input_tokens": 4989401,
+    "n_cache_tokens": 4809924,
+    "n_output_tokens": 111451
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 589.3,
+    "verifier": 23.3
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 0.675,
+    "functional_correctness": 0.8333,
+    "overall": 0.79,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 48,
+  "final_metrics": {
+    "total_prompt_tokens": 4989401,
+    "total_completion_tokens": 111451,
+    "total_cached_tokens": 4809924,
+    "total_cost_usd": 0.48696478500000007,
+    "total_steps": 41,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 179397,
+      "total_cache_read_input_tokens": 4809924
+    }
+  },
+  "changed_files": [
+    "clients/README.md",
+    "clients/registry.yaml",
+    "configs/defaults.yaml",
+    "configs/northwind.yaml",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_registry.py",
+    "wfm/config.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/scheduler/greedy.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2026-W44",
+    "sla": {
+      "priority": 0.9682539682539683,
+      "standard": 0.9642857142857143,
+      "vip": 0.6845238095238095
+    },
+    "hours": 1638.0,
+    "required": 1115.5,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "vip_floor": 72
+    }
+  }
+}

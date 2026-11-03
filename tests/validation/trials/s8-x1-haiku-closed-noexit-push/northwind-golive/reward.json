@@ -1,0 +1,7 @@
+{
+  "artifact_quality": 1.0,
+  "constraint_satisfaction": 0.675,
+  "functional_correctness": 0.8333,
+  "overall": 0.79,
+  "regression": 1.0
+}

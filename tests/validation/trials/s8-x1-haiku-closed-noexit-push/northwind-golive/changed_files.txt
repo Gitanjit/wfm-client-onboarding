@@ -1,0 +1,11 @@
+clients/README.md
+clients/registry.yaml
+configs/defaults.yaml
+configs/northwind.yaml
+tests_unit/test_cli_subcommands.py
+tests_unit/test_registry.py
+wfm/config.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/scheduler/greedy.py
+wfm/staffing/required.py
