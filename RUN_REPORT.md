@@ -1,6 +1,6 @@
 # wfm-client-onboarding — RUN_REPORT
 
-**Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
+**Author:** Gitanjit Medhi · **Task:** `wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
 **Submitted revision:** tag `multi-v3-final`, which is `multi-v3` (D-061) plus the author's wording pass. The trials ran
 on `multi-v3` (marker-free copy), and every difference between the two is wording or a review marker (§9).
 

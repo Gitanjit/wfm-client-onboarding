@@ -1,4 +1,4 @@
-# collinear-candidate/wfm-client-onboarding
+# wfm-client-onboarding
 
 **What it is.** A two-step Harbor task in one container. In step 1 (`northwind-golive`) the agent onboards a new
 contact-centre client into a small workforce-management service. The service is a 24-month, ~300-commit repository
