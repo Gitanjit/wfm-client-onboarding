@@ -1,6 +1,6 @@
 # wfm-client-onboarding — RUN_REPORT
 
-**Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026
+**Author:** Gitanjit Medhi · **Task:** `wfm-client-onboarding` · **Date:** 3 Nov 2026
 
 One line: onboard a new contact-centre client (Northwind) into a small workforce-management service —
 new export format with a DST transition, a staffing defect that only bites at peaks, three contractual
