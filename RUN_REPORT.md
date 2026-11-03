@@ -1,8 +1,8 @@
 # wfm-client-onboarding — RUN_REPORT
 
 **Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
-**Submitted revision:** `multi-v3` (D-061). The final tag `multi-v3-final` follows the wording pass; the trials ran on `multi-v3`
-(marker-free copy), and every difference between the two is wording or a review marker (§9).
+**Submitted revision:** tag `multi-v3-final`, which is `multi-v3` (D-061) plus the author's wording pass. The trials ran
+on `multi-v3` (marker-free copy), and every difference between the two is wording or a review marker (§9).
 
 One line: onboard a new contact-centre client (Northwind) into a small workforce-management service.
 The new export straddles a DST transition, a staffing defect bites only at peaks, the contract adds scheduling rules,
@@ -1091,7 +1091,6 @@ Added for `multi-v3` (session 6), also written from scratch for this task:
 The design draws on three papers:
 - ImpossibleBench (Zhong, Raghunathan and Carlini, arXiv 2510.20270): an honest exit for unsatisfiable requirements;
   the §5 abort result is cited in §7.
-- SpecBench: held-out composition checks that add no requirement the spec does not already imply.
 - HVTB: a visible past solution is read as the intended approach.
 
 - SpecBench: Measuring Reward Hacking in Long-Horizon Coding Agents. arXiv 2605.21384 (2026).
@@ -1099,14 +1098,14 @@ The design draws on three papers:
 
 ## 12. How this was built
 
-I had some background in this problem since I worked on a WFM project for around 8 months, my first project in first job post undergraduate. This was back in 2023-24, and while I mostly worked on the building pieces and the cadence of actually introducing new clients to the existing systems, so many variables in place, a lot of stuff that should theoretically work didnt always work, a human element of decision making and aligning, brainstorming even arguing with the client or the proxy of the client would end up sometimes improving the way we wrote out constraints python scripts, staffing algorithms etc.
+I had some background in this problem since I worked on a WFM project for around 8 months, my first project in first job post undergraduate. This was back in 2023-24, and while I mostly worked on the building pieces and the cadence of actually introducing new clients to the existing systems, so many variables in place, a lot of stuff that should theoretically work didn't always work, a human element of decision making and aligning, brainstorming even arguing with the client or the proxy of the client would end up sometimes improving the way we wrote out constraints python scripts, staffing algorithms etc.
 
-In retro, I have tried to keep up with this domain as a whole, still believing in it being an interesting and genuinely difficult problem (in my scenario I had also worked on the time series forecasting part that precedes the erlang step, which I kept out from this scope considering the extremely stochastic nature of that module) -> what I understood is that there's still a genuine human element to this to this day, building blocks have been evolving (timestral seems to potentially revolutionise the forecasting component), but the aspect of demystifing and communicating all the maths and statistics with work force managers who would have dealt with this problem on intuition still feels novel to me.
+In retro, I have tried to keep up with this domain as a whole, still believing in it being an interesting and genuinely difficult problem (in my scenario I had also worked on the time series forecasting part that precedes the erlang step, which I kept out from this scope considering the extremely stochastic nature of that module) -> what I understood is that there's still a genuine human element to this day, building blocks have been evolving (temporal seems to potentially revolutionise the forecasting component), but the aspect of demystifying and communicating all the maths and statistics with work force managers who would have dealt with this problem on intuition still feels novel to me.
 
-I used a Claude chat session to align myself with the latest state of this problem as a whole and it building pieces independently, grounded myself towards the aspect of verifiers and evals (harbor and beyond), and planned out what and how should the exact "difficult" task be, how to design it, what to keep as a seed and a progression etc
+I used a Claude chat session to align myself with the latest state of this problem as a whole and its building pieces independently, grounded myself towards the aspect of verifiers and evals (harbor and beyond), and planned out what and how should the exact "difficult" task be, how to design it, what to keep as a seed and a progression etc
 
-I used a separate implementation session assisted by claude code where I ran experiments, trying our different knob combinations, and while I didnt really write any code myself, I did try to review the state of the repo world to keep myself grounded and informed.
+I used a separate implementation session assisted by claude code where I ran experiments, trying out different knob combinations, and while I didn't really write any code myself, I did try to review the state of the repo world to keep myself grounded and informed.
 
-I iterated and discussed the higher level aspects of the problem and solution with the original claude chat session itself
+I iterated and discussed the higher level aspects of the problem and solution with the original claude chat session itself.
 
 Every decision and run is in `ledger/LEDGER.md` (D-001..D-081) with its reason.
