@@ -7,7 +7,7 @@ artifacts = ["/app"]
 multi_step_reward_strategy = "mean"
 
 [task]
-name = "collinear-candidate/wfm-client-onboarding"
+name = "gitanjit/wfm-client-onboarding"
 description = "Two steps in one container. Step 1: onboard a new contact-centre client into a small workforce-management service (export with a DST transition, a peak-only staffing defect, three scheduling rules, an efficiency bound) without regressing two existing clients. Step 2, months later: onboard a fourth client whose contract and data break step-1 shortcuts (20-minute grain, end-stamped export, a third queue, a staffing floor, an infeasible rule to report), and keep the first three clients whole."
 keywords = ["long-horizon", "workforce-management", "scheduling", "data-forensics", "regression", "erlang-c"]
 authors = [{ name = "Gitanjit Medhi", email = "gitanjit6@gmail.com" }]
