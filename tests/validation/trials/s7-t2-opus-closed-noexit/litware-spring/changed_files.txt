@@ -1,0 +1,15 @@
+clients/README.md
+clients/registry.yaml
+configs/litware.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+docs/LITWARE_HANDOVER.md
+tests_unit/test_cli_subcommands.py
+tests_unit/test_litware.py
+tests_unit/test_registry.py
+wfm/cli.py
+wfm/constraints.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/report/runbook.py
+wfm/scheduler/week.py

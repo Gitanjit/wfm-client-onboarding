@@ -1,0 +1,192 @@
+{
+    "id": "d0b9aca8-f30b-4a6f-8f65-dc7190a38747",
+    "task_name": "collinear-candidate/wfm-client-onboarding",
+    "trial_name": "wfm-client-onboarding__vWuBy7v",
+    "trial_uri": "file:///private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/s7/jobs/s7-t2-opus-closed-noexit/wfm-client-onboarding__vWuBy7v",
+    "task_id": {
+        "path": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/runcopy/abl-closed-noexit/wfm-client-onboarding"
+    },
+    "source": null,
+    "task_checksum": "b97591534ddc58d3929c6093831af6dadf4086548e48279ad506085ce2230ce5",
+    "config": {
+        "task": {
+            "path": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/runcopy/abl-closed-noexit/wfm-client-onboarding",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "wfm-client-onboarding__vWuBy7v",
+        "trials_dir": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/s7/jobs/s7-t2-opus-closed-noexit",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "claude-code",
+            "import_path": null,
+            "model_name": "anthropic/claude-opus-5-5",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "max_budget_usd": 10,
+                "disable_web_search": true,
+                "reasoning_effort": "high"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "05a4d195-8a84-411a-a286-4adfe9efa792",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "claude-code",
+        "version": "2.1.317",
+        "model_info": {
+            "name": "claude-opus-5-5",
+            "provider": "anthropic"
+        }
+    },
+    "agent_result": null,
+    "verifier_result": {
+        "rewards": {
+            "overall": 0.895,
+            "regression": 1.0,
+            "constraint_satisfaction": 0.875,
+            "artifact_quality": 1.0,
+            "functional_correctness": 1.0
+        }
+    },
+    "verifier_environment_mode": null,
+    "exception_info": null,
+    "started_at": "2026-11-03T17:39:38.943195Z",
+    "finished_at": "2026-11-03T18:19:41.556863Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T17:39:39.146856Z",
+        "finished_at": "2026-11-03T17:39:42.713296Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T17:39:42.713364Z",
+        "finished_at": "2026-11-03T17:41:12.090187Z"
+    },
+    "agent_execution": null,
+    "verifier": null,
+    "step_results": [
+        {
+            "step_name": "northwind-golive",
+            "agent_result": {
+                "n_input_tokens": 5347883,
+                "n_cache_tokens": 5201252,
+                "n_output_tokens": 73601,
+                "cost_usd": 3.245317400000001,
+                "model_usage": {
+                    "claude-opus-5-5": {
+                        "n_input_tokens": 5347883,
+                        "n_cache_tokens": 5201252,
+                        "n_output_tokens": 73601,
+                        "cost_usd": 3.245317400000001
+                    }
+                },
+                "rollout_details": null,
+                "metadata": null
+            },
+            "verifier_result": {
+                "rewards": {
+                    "artifact_quality": 1.0,
+                    "constraint_satisfaction": 0.75,
+                    "functional_correctness": 1.0,
+                    "overall": 0.79,
+                    "regression": 1.0
+                }
+            },
+            "exception_info": null,
+            "agent_execution": {
+                "started_at": "2026-11-03T17:41:12.222033Z",
+                "finished_at": "2026-11-03T18:00:06.261431Z"
+            },
+            "verifier": {
+                "started_at": "2026-11-03T18:00:07.192641Z",
+                "finished_at": "2026-11-03T18:01:52.166741Z"
+            }
+        },
+        {
+            "step_name": "litware-spring",
+            "agent_result": {
+                "n_input_tokens": 6186641,
+                "n_cache_tokens": 6045874,
+                "n_output_tokens": 63323,
+                "cost_usd": 3.1793517999999996,
+                "model_usage": {
+                    "claude-opus-5-5": {
+                        "n_input_tokens": 6186641,
+                        "n_cache_tokens": 6045874,
+                        "n_output_tokens": 63323,
+                        "cost_usd": 3.1793517999999996
+                    }
+                },
+                "rollout_details": null,
+                "metadata": null
+            },
+            "verifier_result": {
+                "rewards": {
+                    "artifact_quality": 1.0,
+                    "constraint_satisfaction": 1.0,
+                    "functional_correctness": 1.0,
+                    "overall": 1.0,
+                    "regression": 1.0
+                }
+            },
+            "exception_info": null,
+            "agent_execution": {
+                "started_at": "2026-11-03T18:01:52.379736Z",
+                "finished_at": "2026-11-03T18:17:42.984929Z"
+            },
+            "verifier": {
+                "started_at": "2026-11-03T18:17:55.063608Z",
+                "finished_at": "2026-11-03T18:19:41.551485Z"
+            }
+        }
+    ]
+}
