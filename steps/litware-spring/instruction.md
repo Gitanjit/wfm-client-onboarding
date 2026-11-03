@@ -7,7 +7,6 @@ Northwind was onboarded in ISO week 2026-W44. A fourth client, Litware, goes liv
 Their contract is `/app/docs/LITWARE_SOW.md`. Their demand exports for 2027-W10 and 2027-W11 and a note
 on the format are in `/app/data/litware/`; their roster is `/app/data/agents/litware.csv`. Northwind's
 export for 2027-W10 has also arrived in `/app/data/northwind/`.
-<!-- G: your call — step 2 is new agent-facing text; same register as step 1 -->
 
 ## Deliverables (absolute paths)
 
@@ -38,6 +37,5 @@ Fabrikam's and Northwind's earlier weeks. The checks: SLA attainment per queue a
 against each SOW's §1.6; zero violations of each SOW's §2, including the §2.6 report; no regression for
 the existing clients; attainment each client's `eval.json` reports, and RUNBOOK figures, that match a
 recomputation from your outputs (Litware SOW §1.7); and the §2.8 handover note.
-<!-- G: your call — new clause (multi-v3) -->
 
 You have 90 minutes.

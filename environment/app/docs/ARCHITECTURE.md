@@ -27,7 +27,6 @@ Queueing. `wfm/staffing/erlang.py` is the service's Erlang C and the method of r
 `queueing: qlib` in a client config routes that client's staffing through it.
 
 History and tickets: `git log` in `/app`. Tickets are WFM-nnn.
-<!-- G: your call — keep this line? It points at the history without saying what is in it -->
 
 ## Configuration
 
@@ -73,7 +72,6 @@ Only templates that fit inside the client's operating hours are used.
 
 Shift durations, weekly-hour caps and rest periods are elapsed time (UTC). An agent takes at most one
 template per local day.
-<!-- G: your call — one worked example of "elapsed" across the DST night? (I would not; the SOW says it) -->
 
 ## schedule.csv
 
@@ -91,7 +89,6 @@ Contractual evaluation is done independently against each client's SOW.
 ## Tests
 
 `python -m pytest -q tests_unit` from `/app`. Run it before committing. The suite pins current behaviour.
-<!-- G: your call — "pins current behaviour" is the honest hint that the tests can be wrong; keep or drop -->
 
 ## Known issues
 
