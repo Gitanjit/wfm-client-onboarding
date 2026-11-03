@@ -944,9 +944,10 @@ identical to that copy in every agent-facing and harness file: `environment/`, `
 file and line:
 - `steps/litware-spring/instruction.md` lines 5–6 (marker 13): the step-2 instruction now lists Wingtip among the
   clients served (a fact the first version left out), and "A fourth client" becomes "A new client".
-- `steps/northwind-golive/instruction.md` lines 29–30, 32–33 and 36 (marker 19): four constraint bullets reworded
-  ("meets every rule in SOW §2, all week"; "Schedules above the SOW §1.6 efficiency bound are not accepted"; "don't";
-  "Nothing can be installed; everything you need is in the image").
+- `steps/northwind-golive/instruction.md` lines 29–30, 32–33 and 36 (marker 19): five constraint bullets reworded
+  ("meets every rule in SOW §2, all week"; "Schedules above the SOW §1.6 efficiency bound are not accepted"; "they
+  don't change what the contract requires"; "Don't change the service defaults for one client; add client-specific
+  configuration"; "Nothing can be installed; everything you need is in the image").
 - `steps/northwind-golive/instruction.md` line 47 (marker 21): "A careful engineer finishes in about an hour." is
   dropped; "You have 90 minutes." stays.
 
