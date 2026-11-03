@@ -18,7 +18,7 @@ export for 2027-W10 has also arrived in `/app/data/northwind/`.
 2. `/app/out/litware/RUNBOOK.md` for 2027-W11 with the table, the Exceptions section and the handover
    note from Litware SOW §3 (what you changed and why, and what SOW §2.8 asks for).
 3. Contoso, Fabrikam and Northwind still run for any week of their data and do not get worse.
-   Northwind still meets its SOW in every week, §2.7 included.
+   Northwind still meets its SOW in every week.
 
 ## Constraints
 
