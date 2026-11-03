@@ -22,7 +22,7 @@ PYTHON="$PY" tools/make_fixtures.sh >/dev/null
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
   git commit -qam "Strip the author's review markers; regenerate fixtures (tools/finalize.sh)"; echo "committed $(git rev-parse --short HEAD)"
 fi
-! git grep -n "$MARK" || { echo "FAIL: review markers left"; exit 1; }
+! git grep -n "$MARK" -- . ':!ledger/' || { echo "FAIL: review markers left"; exit 1; }   # ledger/ quotes the marker (D-032, D-033)
 ! git grep -nE 'sk-[A-Za-z0-9_-]{16,}' || { echo "FAIL: key-shaped string tracked"; exit 1; }   # plain "sk-" hits "desk-11"
 if [ -n "${KEYFILE:-}" ]; then
   K=$(grep -E '^ANTHROPIC_API_KEY=' "$KEYFILE" | cut -d= -f2- | tr -d '[:space:]"'"'")
