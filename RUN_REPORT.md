@@ -936,12 +936,21 @@ it was not used, because the key line was empty (D-054). The validation row file
 the desk-11 tables (committed after the tag, c15751b); a clone of the tag regenerates the desk-11 values, and the files on
 `multi-v3-final` are those values.
 
-**What the trials ran on (D-024, D-033)** <<DRAFT — G to confirm at the final tag>>. Opus (s6-opus-1) and Sonnet (E1b) ran
+**What the trials ran on (D-024, D-033).** Opus (s6-opus-1) and Sonnet (E1b) ran
 on a marker-free copy of `multi-v3`. A byte comparison on 3 Nov found that the marker-stripped `precedents` HEAD is
 identical to that copy in every agent-facing and harness file: `environment/`, `steps/` (both solutions included),
 `task.toml`, and `tests/` apart from validation evidence. The 21 review-marker lines in 9 files are the whole difference.
 `multi-v3-final` differs from what the trials ran on only by the wording choices in the author's pass, listed here by
-file and line: <<SESSION: filled at 2e>>. None changes a clause number, key, figure, path or rule. Session 6's own edits
+file and line:
+- `steps/litware-spring/instruction.md` lines 5–6 (marker 13): the step-2 instruction now lists Wingtip among the
+  clients served (a fact the first version left out), and "A fourth client" becomes "A new client".
+- `steps/northwind-golive/instruction.md` lines 29–30, 32–33 and 36 (marker 19): four constraint bullets reworded
+  ("meets every rule in SOW §2, all week"; "Schedules above the SOW §1.6 efficiency bound are not accepted"; "don't";
+  "Nothing can be installed; everything you need is in the image").
+- `steps/northwind-golive/instruction.md` line 47 (marker 21): "A careful engineer finishes in about an hour." is
+  dropped; "You have 90 minutes." stays.
+
+Every other marker was kept as written (A). None changes a clause number, key, figure, path or rule. Session 6's own edits
 to the agent-facing text, against the drafts approved before it, are in `review/before/s6/DIFF.md`.
 
 **Earlier revisions (single step, `single-v1`):**
