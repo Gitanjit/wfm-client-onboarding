@@ -10,6 +10,7 @@ A new client, Northwind, goes live in ISO week 2026-W44. Their contract is `/app
 Their demand export and a note on its format are in `/app/data/northwind/`. The contract asks for
 service levels and scheduling rules that the service does not fully support yet. Known issues are
 listed in `/app/docs/CHANGELOG.md`.
+The roster has been checked by Northwind's WFM lead and is sufficient to meet every §1 target.
 
 ## Deliverables (absolute paths)
 
