@@ -1,0 +1,1308 @@
+--- a/clients/README.md
++++ b/clients/README.md
+@@ -13,7 +13,7 @@
+ | fabrikam | Fabrikam | live | 2025-08-11 (pilot); renewed 2025-10-06 | — | 60 | America/New_York | priority, standard | 1 (flat) |
+ | proseware | Proseware | paused | 2025-11-17 | paused 2026-08-14 | 30 | Europe/Berlin | priority, standard | 2 (nested) |
+ | wingtip | Wingtip Toys | live | 2026-02-09 | — | 30 | America/Phoenix | priority, standard | 2 (nested) |
+-| northwind | Northwind Traders | onboarding (go-live 2026-W44) | — | — | 30 | America/Chicago | priority, standard, vip | pending |
++| northwind | Northwind Traders | onboarding (go-live 2026-W44) | — | — | 30 | America/Chicago | priority, standard, vip | 2 (nested) |
+ 
+ Status
+ 
+--- a/clients/registry.yaml
++++ b/clients/registry.yaml
+@@ -118,8 +118,8 @@
+     grain: 30
+     tz: America/Chicago
+     queues: [priority, standard, vip]
+-    config_schema: null
++    config_schema: 2
+     data_format: export
+     export_layout: null
+     account_manager: null
+-    notes: Signed for go-live in 2026-W44; demand export in local time with a UTC offset per row.
++    notes: Signed for go-live in 2026-W44; demand export in local time with a UTC offset per row, US Central with DST. Config and roster landed with the go-live change.
+--- a/configs/defaults.yaml
++++ b/configs/defaults.yaml
+@@ -23,3 +23,17 @@
+   min_shift_hours: 6          # shifts at least this long get one break
+   minutes: 20
+   window_hours: [2, 5]        # break starts between these many hours after shift start
++
++# Opt-in keys. Their values here are the service's historical behaviour; a client file that needs the
++# stricter behaviour sets them (see configs/northwind.yaml). They are not client-specific defaults.
++queues: null                  # queue names to read from the demand file; null = priority, standard
++calendar_grid: false          # true: the week's grid comes from the calendar (DST-aware), not from the file
++queue_hours: {}               # per-queue local operating hours where narrower than operating_hours, e.g. {vip: [8, 20]}
++apply_occupancy_cap: false    # true: occupancy_cap is applied in required staffing (WFM-212)
++attainment_intervals: volume  # volume: intervals with volume count; operating: every operating interval counts
++scheduler: greedy             # greedy (wfm/scheduler/greedy.py, per day) or weekly (wfm/scheduler/weekly.py)
++min_rest_hours: null          # elapsed hours between shifts of one agent; null = not enforced
++split_contracts: null         # contracts allowed split shifts; null = any
++break_rule: midpoint          # midpoint (shift midpoint) or surplus (largest gross surplus in the break window)
++sow_reports: false            # true: `run` also writes RUNBOOK.md and exceptions.md (Northwind SOW 3)
++max_hours_ratio: null         # cap on scheduled / required agent-hours the weekly scheduler plans to (a contract bound)
+--- a/configs/northwind.yaml
++++ b/configs/northwind.yaml
+@@ -0,0 +1,38 @@
++# Northwind Traders — docs/NORTHWIND_SOW.md. Local-time export with a UTC offset per row, America/Chicago
++# (DST), three queues, 30-minute grain. Everything here comes from the SOW, not from what the service did
++# before: service defaults are left alone.
++schema: 2
++name: Northwind Traders
++service:
++  interval_minutes: 30            # SOW 1.5
++  tz: America/Chicago
++  operating_hours: [6, 24]        # SOW 1.4
++  queues: [priority, standard, vip]
++  queue_hours: {vip: [8, 20]}     # SOW 1.4: vip contacts arrive 08:00-20:00
++  calendar_grid: true             # the week's intervals from the calendar: 169 h in a fall-back week
++targets:
++  sla:                            # SOW 1.2
++    priority: {target: 0.90, seconds: 30}
++    standard: {target: 0.80, seconds: 20}
++    vip: {target: 0.90, seconds: 20}
++  sla_target: 0.95                # SOW 1.6: weekly attainment per queue
++  attainment_basis: service_level
++  attainment_intervals: operating # SOW 1.6: the fraction of operating intervals, not of those with volume
++staffing:
++  queueing: erlang                # SOW 1.2: Erlang C, no abandonment
++  occupancy_cap: 0.85             # SOW 1.3
++  apply_occupancy_cap: true       # WFM-212: not applied by default
++  aht_smoothing: interval         # SOW 1.2: the interval's own handle time (WFM-198 smoothing off)
++scheduling:
++  weekly_hours: {FT: 40, PT: 24}  # SOW 2.4
++  max_consecutive_days: 5
++  break: {min_shift_hours: 6, minutes: 20, window_hours: [2, 5]}   # SOW 2.3
++  break_rule: surplus             # SOW 2.3: largest gross coverage surplus inside the window
++  min_rest_hours: 11              # SOW 2.1
++  split_contracts: [PT]           # SOW 2.2
++  min_cover: {vip: {agents: 1, hours: [6, 24]}}   # SOW 2.6
++  cross_skill_weight: 0           # SOW 1.2: a person counts once, on the queue they are scheduled on
++  scheduler: weekly
++  max_hours_ratio: 1.57           # SOW 1.6
++reporting:
++  sow_reports: true
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -52,6 +52,16 @@
+ interval of the ISO week in the client's timezone. A week has as many intervals as its elapsed length
+ requires. A DST transition changes the count.
+ 
++### Opt-in keys
++
++Client configs may set (defaults in `configs/defaults.yaml` are the historical behaviour): `queues`,
++`calendar_grid` (grid from the calendar, DST-aware), `queue_hours`, `apply_occupancy_cap`,
++`attainment_intervals: operating`, `scheduler: weekly` with `max_hours_ratio`, `min_rest_hours`,
++`split_contracts` and `break_rule: surplus`, and `sow_reports`. Northwind's file shows them in use.
++`scheduler: weekly` plans on coverage net of breaks and enforces rest, split-shift eligibility and the break
++rule while scheduling; with it the evaluator audits those rules too (`rest`, `split_shift`, `break_*` keys in
++`violations`). An export with a `utc_offset` column is converted with that offset.
++
+ ## Agents and templates
+ 
+ `data/agents/<client>.csv`: `agent_id, contract (FT|PT), skills (semicolon-separated)`.
+--- a/docs/CHANGELOG.md
++++ b/docs/CHANGELOG.md
+@@ -1,6 +1,11 @@
+ # Changelog
+ 
+ ## Unreleased
++- Northwind onboarding (go-live 2026-W44, `docs/NORTHWIND_SOW.md`). New opt-in config keys, all defaulting to the
++  old behaviour: `queues`, `calendar_grid`, `queue_hours`, `apply_occupancy_cap`, `attainment_intervals`, `scheduler`
++  (`weekly`: `wfm/scheduler/weekly.py`), `max_hours_ratio`, `min_rest_hours`, `split_contracts`, `break_rule`
++  (`surplus`), `sow_reports`. The loader reads `utc_offset` where an export has it. `wfm/report/sow.py` writes
++  RUNBOOK.md and exceptions.md. WFM-212 stays open for the other clients; `greedy_v2.py` stays unwired.
+ - WFM-231: week-aware scheduler draft in `wfm/scheduler/greedy_v2.py`. In progress, not wired in. Do not use yet.
+ - Unit tests under `tests_unit/` (`python -m pytest -q tests_unit`). They pin current behaviour.
+ 
+--- a/docs/clients/northwind.md
++++ b/docs/clients/northwind.md
+@@ -0,0 +1,34 @@
++# Northwind Traders
++
++| | |
++|---|---|
++| Go-live | 2026-W44 |
++| Contract | `docs/NORTHWIND_SOW.md` (the contract wins over anything in `configs/`) |
++| Grain / timezone | 30 minutes / America/Chicago (DST) |
++| Operating hours | 06:00–24:00 local, seven days; `vip` contacts 08:00–20:00 |
++| Queues | priority 90/30, standard 80/20, vip 90/20; occupancy cap 0.85; weekly attainment ≥ 0.95 per queue |
++| Working time | 40 h full-time, 24 h part-time per week; 11 h rest; split shifts PT only |
++| Config | `configs/northwind.yaml` (schema 2) |
++| Roster | `data/agents/northwind.csv`, 51 agents (8 part-time, 11 hold `vip`) |
++| Data | `data/northwind/export_<ISO>.csv`, local time with a `utc_offset` per row |
++| Scheduler | `weekly` (`wfm/scheduler/weekly.py`) |
++
++## Time
++
++The export's `utc_offset` is authoritative. A fall-back week (2026-W44) has 169 h and 338 intervals: the
++01:00–02:00 labels occur twice, with offsets −05:00 and −06:00. A spring-forward week has 167 h.
++Rows are reported on stderr if they are off the 30-minute boundary (two rows in W44 are labelled 10:01),
++outside the week, missing or duplicated.
++
++## Run and reports
++
++`python -m wfm run --client northwind --week <ISO>` writes `schedule.csv`, `eval.json`, `RUNBOOK.md` (the SOW
++section 3 table and the handover note) and `exceptions.md` (SOW 2.7) under `out/northwind/`. A run takes about
++half a minute.
++
++## Roster limit on `vip`
++
++Only 11 agents hold the `vip` skill (7 `vip`, 4 `priority;vip`), at most 440 h a week between them. The
++`vip` requirement under the SOW needs roughly 540 h (W44) to reach 100 %, and more than 440 h for 95 %, so
++the weekly `vip` target is not reachable with this roster; `exceptions.md` records the best attained value each week.
++The account team has to add `vip`-skilled agents.
+--- a/tests_unit/test_cli_subcommands.py
++++ b/tests_unit/test_cli_subcommands.py
+@@ -22,10 +22,10 @@
+         ["contoso", "tailspin", "adatum", "woodgrove"]
+ 
+ 
+-def test_clients_check_passes_with_northwind_pending(capsys):
++def test_clients_check_passes_with_northwind_configured(capsys):
+     cli.main(["clients", "--check"])
+     text = capsys.readouterr().out
+-    assert "northwind: pending" in text and "8 client(s) checked: 0 error(s), 0 warning(s)" in text
++    assert "8 client(s) checked: 0 error(s), 0 warning(s), 0 pending" in text
+ 
+ 
+ def test_week_arguments_are_validated():
+--- a/tests_unit/test_northwind.py
++++ b/tests_unit/test_northwind.py
+@@ -0,0 +1,59 @@
++"""Northwind onboarding: DST-aware ingest, SOW staffing, the weekly scheduler's rules, the SOW reports."""
++import math
++
++import pandas as pd
++
++from wfm.config import load_config
++from wfm.evaluate.metrics import evaluate
++from wfm.ingest.loader import load_week, week_grid
++from wfm.roster import Agent, load_agents
++from wfm.scheduler.weekly import schedule_week
++from wfm.scheduler.greedy import to_frame
++from wfm.staffing.erlang import required_agents
++from wfm.staffing.required import add_required
++
++
++def test_fall_back_week_has_169_hours_and_three_queues():
++    cfg = load_config("northwind")
++    df = load_week(cfg, "2026-W44")
++    assert df["interval_start_utc"].nunique() == 338 and set(df["queue"]) == {"priority", "standard", "vip"}
++    assert len(df) == 3 * 338
++    assert len(week_grid("2026-W44", "America/Chicago", 30)) == 338
++    assert len(week_grid("2027-W10", "America/Chicago", 30)) == 2 * 167   # spring forward: 23-hour day
++
++
++def test_normal_week_has_336_intervals_and_off_grid_row_is_bucketed():
++    cfg = load_config("northwind")
++    assert load_week(cfg, "2026-W43")["interval_start_utc"].nunique() == 336
++    df = load_week(cfg, "2026-W44")
++    t = pd.Timestamp("2026-10-27T15:00:00Z")
++    assert df[(df["queue"] == "priority") & (df["interval_start_utc"] == t)]["volume"].iat[0] > 7
++
++
++def test_required_staffing_uses_interval_aht_and_the_cap():
++    cfg = load_config("northwind")
++    req = add_required(load_week(cfg, "2026-W43"), cfg)
++    r = req[req["volume"] > 0].iloc[0]
++    q = r["queue"]
++    sla = cfg["sla"][q]
++    assert r["required"] == required_agents(r["volume"], 1800, r["aht_sec"], sla["target"], sla["seconds"], 0.85)
++    a = r["volume"] * r["aht_sec"] / 1800
++    assert a / r["required"] <= 0.85 + 1e-9
++
++
++def test_other_clients_keep_the_old_staffing_defaults():
++    cfg = load_config("contoso")
++    assert cfg["apply_occupancy_cap"] is False and cfg["scheduler"] == "greedy" and cfg["calendar_grid"] is False
++
++
++def test_weekly_schedule_obeys_sow_rules(tmp_path):
++    cfg = load_config("northwind")
++    agents = load_agents("northwind")
++    req = add_required(load_week(cfg, "2026-W43"), cfg)
++    sched = to_frame(schedule_week(req, cfg, agents, "2026-W43"))
++    ev = evaluate(req, sched, cfg, agents, "2026-W43")
++    assert ev["intervals"] == 336
++    assert all(n == 0 for n in ev["violations"].values()), ev["violations"]
++    assert ev["scheduled_hours"] <= 1.57 * float(req["required"].sum()) * 0.5
++    assert min(ev["sla"][q] for q in ("priority", "standard")) >= 0.95
++    assert set(sched["template_id"]) <= {"E8", "D8", "L8", "N8", "P6a", "P6b", "P4", "S44"}
+--- a/tests_unit/test_registry.py
++++ b/tests_unit/test_registry.py
+@@ -48,8 +48,7 @@
+ def test_registry_agrees_with_configs_rosters_and_data():
+     problems = [p for r in registry.load_registry().values() for p in registry.check(r, layouts=LAYOUTS, data=True)]
+     assert [str(p) for p in problems if p.level != registry.PENDING] == []
+-    assert "northwind: pending: no configs/northwind.yaml yet (go-live 2026-W44)" in [str(p) for p in problems]
+-    assert {p.client for p in problems} == {"northwind"}
++    assert problems == []     # Northwind's config and roster landed with its go-live change
+ 
+ 
+ RULES = [
+--- a/wfm/cli.py
++++ b/wfm/cli.py
+@@ -26,7 +26,11 @@
+     demand = load_week(cfg, week)
+     req = add_required(demand, cfg)
+     agents = load_agents(client)
+-    shifts = schedule_week(req, cfg, agents, week)
++    if cfg.get("scheduler", "greedy") == "weekly":
++        from wfm.scheduler.weekly import schedule_week as schedule_weekly
++        shifts = schedule_weekly(req, cfg, agents, week)
++    else:
++        shifts = schedule_week(req, cfg, agents, week)
+     sched = to_frame(shifts)
+ 
+     out = OUT_DIR / client
+@@ -34,6 +38,9 @@
+     sched.to_csv(out / "schedule.csv", index=False)
+     result = evaluate(req, sched, cfg, agents, week)
+     (out / "eval.json").write_text(json.dumps(result, indent=2) + "\n")
++    if cfg.get("sow_reports"):
++        from wfm.report.sow import write_sow_reports
++        write_sow_reports(req, cfg, agents, week, out)
+     return result
+ 
+ 
+--- a/wfm/config.py
++++ b/wfm/config.py
+@@ -17,10 +17,12 @@
+ 
+ # Schema 2: section -> the flat keys it may hold. `name` and `schema` stay at the top level.
+ V2_SECTIONS = {
+-    "service": ("interval_minutes", "tz", "operating_hours"),
+-    "targets": ("sla", "sla_target", "attainment_basis"),
+-    "staffing": ("queueing", "patience_sec", "occupancy_cap", "aht_smoothing"),
+-    "scheduling": ("weekly_hours", "max_consecutive_days", "break", "min_cover", "cross_skill_weight"),
++    "service": ("interval_minutes", "tz", "operating_hours", "queues", "calendar_grid", "queue_hours"),
++    "targets": ("sla", "sla_target", "attainment_basis", "attainment_intervals"),
++    "staffing": ("queueing", "patience_sec", "occupancy_cap", "aht_smoothing", "apply_occupancy_cap"),
++    "scheduling": ("weekly_hours", "max_consecutive_days", "break", "min_cover", "cross_skill_weight",
++                   "scheduler", "max_hours_ratio", "min_rest_hours", "split_contracts", "break_rule"),
++    "reporting": ("sow_reports",),
+ }
+ 
+ 
+--- a/wfm/constraints.py
++++ b/wfm/constraints.py
+@@ -43,3 +43,12 @@
+     """What the interval still lacks: the staffing requirement (agents on the queue) or the floor
+     (cover as above), whichever is short by more."""
+     return max(0.0, required - on_queue, floor_need - cover(on_queue, cross_skilled, cfg))
++
++
++def in_hours(queue: str, t: datetime, cfg: dict) -> bool:
++    """True if the interval starting at `t` is an operating interval of `queue`: inside the client's local
++    operating hours, or the queue's own `queue_hours` where narrower (Northwind's vip, 08:00-20:00)."""
++    loc = t.astimezone(ZoneInfo(cfg["tz"]))
++    h = loc.hour + loc.minute / 60
++    lo, hi = (cfg.get("queue_hours") or {}).get(queue, cfg["operating_hours"])
++    return lo <= h < hi
+--- a/wfm/evaluate/metrics.py
++++ b/wfm/evaluate/metrics.py
+@@ -52,10 +52,18 @@
+     basis = cfg.get("attainment_basis", "service_level")
+ 
+     sla, under, over = {}, 0.0, 0.0
++    operating = cfg.get("attainment_intervals", "volume") == "operating"   # SOW 1.6: every operating interval
+     for q, g in req.groupby("queue"):
+         met = tot = 0
+         for r in g.itertuples(index=False):
+-            if r.volume <= 0:
++            if operating and constraints.in_hours(q, r.interval_start_utc, cfg):
++                tot += 1
++                scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]
++                met += scheduled >= r.required
++                under += max(0, r.required - scheduled) * h
++                over += max(0, scheduled - r.required) * h
++                continue
++            if operating or r.volume <= 0:
+                 continue
+             tot += 1
+             scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]
+@@ -74,7 +82,8 @@
+         "scheduled_hours": round(hours, 1),
+         "understaffed_interval_hours": round(under, 1), "overstaffed_interval_hours": round(over, 1),
+         "agents_scheduled": int(sched["agent_id"].nunique()),
+-        "violations": {**audit(sched, cfg, agents), "min_cover": floor_gaps(gross, cross, grid, cfg)},
++        "violations": {**audit(sched, cfg, agents), "min_cover": floor_gaps(gross, cross, grid, cfg),
++                       **audit_contract(sched, req, gross, cfg, agents)},
+     }
+ 
+ 
+@@ -108,3 +117,58 @@
+                 v["consecutive_days"] += 1
+                 break
+     return v
++
++
++def audit_contract(sched: pd.DataFrame, req: pd.DataFrame, gross: dict, cfg: dict, agents: list[Agent]) -> dict[str, int]:
++    """Rules that only some contracts set, audited only where the config sets them (so that the violation
++    keys of the older clients stay as they were): `min_rest_hours`, `split_contracts`, and, with
++    `break_rule: surplus`, one break per long shift inside its window at the largest gross surplus."""
++    v: dict[str, int] = {}
++    by_id = {a.agent_id: a for a in agents}
++    z = ZoneInfo(cfg["tz"])
++    # shifts: an agent's segments on one local day
++    sched = sched.assign(_day=[t.astimezone(z).date() for t in sched["segment_start_utc"]])
++    shifts = [g.sort_values("segment_idx") for _, g in sched.groupby(["agent_id", "_day"])]
++    if cfg.get("min_rest_hours"):
++        need = pd.Timedelta(hours=float(cfg["min_rest_hours"]))
++        n = 0
++        for aid, g in sched.groupby("agent_id"):
++            sh = sorted((s["segment_start_utc"].min(), s["segment_end_utc"].max())
++                        for s in shifts if s["agent_id"].iat[0] == aid)
++            n += sum(1 for (a0, a1), (b0, b1) in zip(sh, sh[1:]) if b0 - a1 < need)
++        v["rest"] = n
++    if cfg.get("split_contracts") is not None:
++        v["split_shift"] = sum(1 for s in shifts if len(s) > 1 and (by_id.get(s["agent_id"].iat[0]) is None or
++                               by_id[s["agent_id"].iat[0]].contract not in cfg["split_contracts"]))
++    if cfg.get("break_rule") == "surplus":
++        rule = cfg["break"]
++        lo, hi = (pd.Timedelta(hours=x) for x in rule["window_hours"])
++        step = pd.Timedelta(minutes=cfg["interval_minutes"])
++        grid = sorted(set(req["interval_start_utc"]))
++        required = {q: dict(zip(g["interval_start_utc"], g["required"])) for q, g in req.groupby("queue")}
++        n_count = n_window = n_place = 0
++        for s in shifts:
++            hours = ((s["segment_end_utc"] - s["segment_start_utc"]).dt.total_seconds() / 3600).sum()
++            br = s[s["break_minutes"] > 0]
++            if hours < rule["min_shift_hours"]:
++                n_count += len(br) > 0
++                continue
++            if len(br) != 1 or int(br["break_minutes"].iat[0]) != rule["minutes"]:
++                n_count += 1
++                continue
++            b = br["break_start_utc"].iat[0]
++            start = s["segment_start_utc"].min()
++            inside = any(r.segment_start_utc <= b and b + pd.Timedelta(minutes=rule["minutes"]) <= r.segment_end_utc
++                         for r in s.itertuples(index=False))
++            if not (lo <= b - start <= hi) or not inside:
++                n_window += 1
++                continue
++            q = s["queue"].iat[0]
++            cand = [t for t in grid if lo <= t - start <= hi and any(
++                r.segment_start_utc <= t and t + pd.Timedelta(minutes=rule["minutes"]) <= r.segment_end_utc
++                for r in s.itertuples(index=False))]
++            sur = {t: gross[q][t] - required[q].get(t, 0) for t in cand}
++            if sur and sur.get(b, float("-inf")) < max(sur.values()):
++                n_place += 1
++        v.update({"break_count": int(n_count), "break_window": int(n_window), "break_placement": int(n_place)})
++    return v
+--- a/wfm/ingest/loader.py
++++ b/wfm/ingest/loader.py
+@@ -10,13 +10,15 @@
+ """
+ from __future__ import annotations
+ 
+-from datetime import date, timedelta
++import sys
++from datetime import date, datetime, timedelta
++from zoneinfo import ZoneInfo
+ 
+ import pandas as pd
+ 
+ from wfm.config import DATA_DIR
+ 
+-QUEUES = ("priority", "standard")
++QUEUES = ("priority", "standard")   # service default; a client config may name its own under `queues`
+ 
+ 
+ def iso_week_monday(week: str) -> date:
+@@ -49,10 +51,19 @@
+                           format="%Y-%m-%d %H:%M%z", utc=True)
+ 
+ 
++def _offset_to_utc(df: pd.DataFrame) -> pd.Series:
++    """UTC from the export's own label + `utc_offset` columns. The offset is authoritative: the same
++    wall-clock label occurs twice on a fall-back day and does not exist on a spring-forward day."""
++    stamp = df["interval_start_local"].astype(str).str.strip() + df["utc_offset"].astype(str).str.strip()
++    return pd.to_datetime(stamp, format="%Y-%m-%d %H:%M%z", utc=True)
++
++
+ def _read_export(path, cfg: dict) -> pd.DataFrame:
+     df = pd.read_csv(path)
+     local = pd.to_datetime(df["interval_start_local"])
+-    if cfg["client"] == "fabrikam" and "utc_offset" not in df:   # WFM-204
++    if "utc_offset" in df and cfg["client"] != "fabrikam":
++        df["interval_start_utc"] = _offset_to_utc(df)
++    elif cfg["client"] == "fabrikam" and "utc_offset" not in df:   # WFM-204
+         df["interval_start_utc"] = _fixed_offsets(local, FABRIKAM_OFFSETS)
+     else:
+         df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
+@@ -70,6 +81,17 @@
+     return g[["queue", "interval_start_utc", "volume", "aht_sec"]]
+ 
+ 
++def week_grid(week: str, tz: str, grain_min: int) -> pd.DatetimeIndex:
++    """Every grain-sized interval start (UTC) of the ISO week, Monday 00:00 to next Monday 00:00 in the
++    client's timezone. A DST week has one hour more or fewer than 168."""
++    z = ZoneInfo(tz)
++    mon = iso_week_monday(week)
++    start = pd.Timestamp(datetime(mon.year, mon.month, mon.day, tzinfo=z)).tz_convert("UTC")
++    nxt = mon + timedelta(days=7)
++    end = pd.Timestamp(datetime(nxt.year, nxt.month, nxt.day, tzinfo=z)).tz_convert("UTC")
++    return pd.date_range(start, end, freq=f"{grain_min}min", inclusive="left")
++
++
+ def load_week(cfg: dict, week: str) -> pd.DataFrame:
+     client = cfg["client"]
+     grain = cfg["interval_minutes"]
+@@ -82,10 +104,31 @@
+     else:
+         raise SystemExit(f"no data for {client} {week}: expected {canon} or {export}")
+ 
++    if cfg.get("calendar_grid"):
++        off = df[df["interval_start_utc"] != df["interval_start_utc"].dt.floor(f"{grain}min")]
++        if len(off):
++            print(f"warning: {client} {week}: {len(off)} row(s) not on a {grain}-minute boundary, "
++                  f"assigned to the interval they fall in: "
++                  + "; ".join(f"{r.interval_start_utc:%Y-%m-%dT%H:%MZ} {r.queue}" for r in off.itertuples()),
++                  file=sys.stderr)
+     df = _resample(df, grain)
+     grid = pd.DatetimeIndex(sorted(df["interval_start_utc"].unique()))   # the week as the data delivers it
++    if cfg.get("calendar_grid"):
++        # the week as the calendar has it; rows outside it, or intervals the file lacks, are reported
++        grid = week_grid(week, cfg["tz"], grain)
++        stray = df[~df["interval_start_utc"].isin(grid)]
++        if len(stray):
++            print(f"warning: {client} {week}: {len(stray)} row(s) outside the week ignored "
++                  f"({stray['interval_start_utc'].min()} .. {stray['interval_start_utc'].max()})", file=sys.stderr)
++        df = df[df["interval_start_utc"].isin(grid)]
++        if df.duplicated(["queue", "interval_start_utc"]).any():
++            raise SystemExit(f"{client} {week}: duplicate rows for the same queue and instant")
++        lacking = len(grid) * len(cfg.get("queues") or QUEUES) - len(df)
++        if lacking > 0:
++            print(f"warning: {client} {week}: {lacking} queue-interval(s) missing from the file, taken as zero volume",
++                  file=sys.stderr)
+     frames = []
+-    for q in QUEUES:
++    for q in (cfg.get("queues") or QUEUES):
+         part = df[df["queue"] == q].set_index("interval_start_utc").reindex(grid)
+         part["queue"] = q
+         part["volume"] = part["volume"].fillna(0.0)
+--- a/wfm/report/sow.py
++++ b/wfm/report/sow.py
+@@ -0,0 +1,171 @@
++"""Weekly reconciliation report for contracts that ask for one (Northwind SOW section 3).
++
++`python -m wfm run` calls `write_sow_reports` when the client config sets `sow_reports: true`. It writes,
++next to schedule.csv and eval.json:
++
++  RUNBOOK.md     the two-column reconciliation table, then the handover note
++  exceptions.md  one row per queue whose weekly attainment is below target (SOW 2.7)
++
++Every figure is recomputed here from the schedule just written (read back from schedule.csv) and from
++the demand, not carried over from the run, so the report and the files cannot disagree.
++"""
++from __future__ import annotations
++
++from pathlib import Path
++
++import pandas as pd
++
++from wfm.evaluate.metrics import evaluate
++from wfm.roster import Agent
++
++# Repository-relative paths changed to onboard Northwind (reported as `files_changed`).
++FILES_CHANGED = [
++    "clients/README.md",
++    "clients/registry.yaml",
++    "configs/defaults.yaml",
++    "configs/northwind.yaml",
++    "docs/ARCHITECTURE.md",
++    "docs/CHANGELOG.md",
++    "docs/clients/northwind.md",
++    "tests_unit/test_cli_subcommands.py",
++    "tests_unit/test_northwind.py",
++    "tests_unit/test_registry.py",
++    "wfm/cli.py",
++    "wfm/config.py",
++    "wfm/constraints.py",
++    "wfm/evaluate/metrics.py",
++    "wfm/ingest/loader.py",
++    "wfm/report/sow.py",
++    "wfm/scheduler/weekly.py",
++    "wfm/staffing/required.py",
++]
++
++
++def figures(req: pd.DataFrame, out_dir: Path, cfg: dict, agents: list[Agent], week: str) -> dict:
++    sched = pd.read_csv(out_dir / "schedule.csv")
++    ev = evaluate(req, sched, cfg, agents, week)
++    required_hours = float(req["required"].sum()) * cfg["interval_minutes"] / 60.0
++    return {"eval": ev, "required_hours": required_hours, "sched": sched}
++
++
++def exceptions(ev: dict, cfg: dict, week: str) -> list[tuple[str, str, float, float]]:
++    target = float(cfg["sla_target"])
++    return [(q, week, v, round(target - v, 3)) for q, v in ev["sla"].items() if v < target - 1e-9]
++
++
++def pool_hours(agents: list[Agent], cfg: dict, queue: str) -> float:
++    return float(sum(cfg["weekly_hours"][a.contract] for a in agents if queue in a.skills))
++
++
++def data_notes(cfg: dict, week: str) -> str:
++    """Oddities in the week's raw export worth raising with the client's WFM contact."""
++    from wfm.config import DATA_DIR
++    path = DATA_DIR / cfg["client"] / f"export_{week}.csv"
++    if not path.exists():
++        return "no raw export to inspect."
++    df = pd.read_csv(path)
++    grain = cfg["interval_minutes"]
++    minutes = pd.to_datetime(df["interval_start_local"]).dt.minute
++    off = df[minutes % grain != 0]
++    if off.empty:
++        return "nothing unusual found (all rows on the 30-minute boundary, one row per queue per instant)."
++    rows = "; ".join(f"`{r.interval_start_local} {r.queue}`" for r in off.itertuples())
++    return (f"{len(off)} row(s) are not on a {grain}-minute boundary ({rows}); each was taken as the interval it falls "
++            f"in. Please confirm with Northwind's WFM contact.")
++
++
++def write_sow_reports(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str, out_dir: Path) -> None:
++    f = figures(req, out_dir, cfg, agents, week)
++    ev = f["eval"]
++    rows = [
++        ("intervals_in_week", str(ev["intervals"])),
++        ("sla_attainment_priority", f"{ev['sla']['priority']:.3f}"),
++        ("sla_attainment_standard", f"{ev['sla']['standard']:.3f}"),
++        ("sla_attainment_vip", f"{ev['sla']['vip']:.3f}"),
++        ("scheduled_hours_total", f"{ev['scheduled_hours']:.1f}"),
++        ("required_hours_total", f"{f['required_hours']:.1f}"),
++        ("understaffed_interval_hours", f"{ev['understaffed_interval_hours']:.1f}"),
++        ("agents_scheduled", str(ev["agents_scheduled"])),
++        ("files_changed", ", ".join(FILES_CHANGED)),
++    ]
++    table = "| key | value |\n|---|---|\n" + "\n".join(f"| {k} | {v} |" for k, v in rows)
++    ratio = ev["scheduled_hours"] / f["required_hours"] if f["required_hours"] else float("nan")
++    exc = exceptions(ev, cfg, week)
++
++    shortfalls = ""
++    for q, _, got, gap in exc:
++        sched = f["sched"]
++        q_hours = float(((pd.to_datetime(sched[sched["queue"] == q]["segment_end_utc"])
++                          - pd.to_datetime(sched[sched["queue"] == q]["segment_start_utc"])).dt.total_seconds() / 3600).sum())
++        shortfalls += (f"- `{q}`: attainment {got:.3f} against {cfg['sla_target']:.2f}. The agents who hold the `{q}` skill can "
++                       f"work at most {pool_hours(agents, cfg, q):.0f} h a week between them (weekly caps); the schedule uses "
++                       f"{q_hours:.1f} h of that for the queue. This is the best the search found within the roster "
++                       f"and the SOW rules; more `{q}`-skilled agents (or cross-skilling) are needed to reach the target. "
++                       f"To be raised with the account team (SOW 2.7); see `exceptions.md`.\n")
++    if not shortfalls:
++        shortfalls = "- None: every queue meets its weekly attainment target with the roster provided.\n"
++
++    note = f"""
++## Handover note
++
++Week {week}. Scheduled {ev['scheduled_hours']:.1f} h against {f['required_hours']:.1f} required h
++(ratio {ratio:.3f}; SOW 1.6 allows 1.57). Rule violations in `eval.json`: {sum(ev['violations'].values())}.
++
++### What changed, and why
++
++Northwind could not be run on the service as it stood, so the service learned the following. Everything
++is opt-in per client through `configs/northwind.yaml`; `configs/defaults.yaml` only gained the new keys at
++their old behaviour, so Contoso, Fabrikam and Wingtip produce the same output as before.
++
++- **Ingest** (`wfm/ingest/loader.py`): the export's `utc_offset` is used to get UTC (the old path
++  localised the wall-clock label, which fails on the repeated 01:00-02:00 of a fall-back day: 2026-W44 has
++  169 h and 338 intervals). The week's grid comes from the calendar (`calendar_grid`), the queues come from
++  config (`queues`, so `vip` is read; it was silently dropped), and rows outside the week, missing rows,
++  duplicates and rows off the 30-minute boundary are reported on stderr.
++- **Staffing** (`wfm/staffing/required.py`): the 0.85 occupancy cap is applied (`apply_occupancy_cap`,
++  WFM-212) and each interval is staffed on its own handle time (`aht_smoothing: interval`; the old
++  `interval` mode averaged it away anyway). Targets per queue are the SOW's (priority 90/30, standard 80/20,
++  vip 90/20), in the client file.
++- **Scheduler** (`wfm/scheduler/weekly.py`, selected by `scheduler: weekly`; this finishes the WFM-231 draft,
++  `greedy_v2.py`, which stays unwired): week-aware rest (11 h elapsed), split shifts for PT only, elapsed-time
++  weekly caps, breaks placed by the SOW 2.3 rule (largest gross surplus in the 2-5 h window, ties spread)
++  and planning on coverage net of breaks; one agent counts once, on the queue they are scheduled on
++  (`cross_skill_weight: 0`) and `vip` has one agent in every interval 06:00-24:00 (`min_cover`).
++  The plan is chosen cell by cell (queue, day) within the 1.57 hours bound and what the roster can give, then
++  people are assigned and improved by local search.
++- **Evaluator** (`wfm/evaluate/metrics.py`): attainment over every operating interval (vip 08:00-20:00),
++  `sla_target` 0.95, and audits for rest, split shifts and breaks where the contract sets them.
++- **Reports** (`wfm/report/sow.py`): this file and `exceptions.md`, recomputed from `schedule.csv` on each run.
++
++### SOW 2.8: pre-existing deviations from the section 1 method that touch Northwind's queues
++
++1. WFM-212: the occupancy cap was read but not applied in required staffing (SOW 1.3). Fixed for Northwind;
++   still open for the other clients.
++2. WFM-198: required staffing used the queue's mean handle time, not the interval's own (SOW 1.2). Off for
++   Northwind (`aht_smoothing: interval`); and the old `interval` mode collapsed to the mean as well.
++3. The service defaults are 80/20 on two queues and `sla_target` 0.90; Northwind's targets differ and `vip`
++   did not exist. Set in `configs/northwind.yaml`; defaults untouched.
++4. The evaluator counted only intervals with volume as the attainment denominator and took one `sla_target`
++   for all queues; SOW 1.6 counts every operating interval. Changed for Northwind only.
++5. The loader localised wall-clock labels (ambiguous at fall-back), used the delivered grid rather than the
++   calendar, and read only `priority` and `standard`.
++6. Minimum-cover credit: an agent on another queue counted 0.5 toward a floor (PR #31); the SOW counts a person
++   once. `cross_skill_weight: 0` for Northwind.
++7. The greedy scheduler places day by day, with no rest rule, split shifts for any contract, breaks at the shift
++   midpoint and coverage counted gross of breaks. Replaced for Northwind by `weekly`.
++8. Not applicable to Northwind: Fabrikam's `qlib` abandonment model and `attainment_basis: coverage` (PR #47)
++   are not used; Erlang C without abandonment is.
++
++### Data and roster findings
++
++- Export {week}: {data_notes(cfg, week)}
++- The roster note says every section 1 target is reachable. Checked against this schedule:
++
++{shortfalls}"""
++    (out_dir / "RUNBOOK.md").write_text(f"# Northwind weekly reconciliation, {week}\n\n{table}\n{note}")
++
++    ex = ["| queue | week | achievable | shortfall |", "|---|---|---|---|"]
++    ex += [f"| {q} | {w} | {a:.3f} | {s:.3f} |" for q, w, a, s in exc]
++    tail = "" if exc else "\nNo target missed this week.\n"
++    (out_dir / "exceptions.md").write_text(
++        f"# Northwind exceptions (SOW 2.7), {week}\n\n" + "\n".join(ex) + "\n" + tail)
+--- a/wfm/scheduler/weekly.py
++++ b/wfm/scheduler/weekly.py
+@@ -0,0 +1,614 @@
++"""Week-aware scheduler (finishes the WFM-231 draft, `greedy_v2.py`, which stays unwired).
++
++Selected per client with `scheduler: weekly`. Unlike `greedy.py` (one local day at a time, breaks at the
++shift midpoint, coverage counted gross) this one
++
++  * plans on coverage net of breaks: an interval is only covered when the agents on the queue, less the
++    agents on their 20-minute break, reach the requirement;
++  * places each break by the contract rule (`break_rule: surplus`): inside the window after the shift
++    start, in the planning interval where the queue's gross surplus (agents scheduled, breaks ignored,
++    minus agents required) is largest, spreading ties so that they do not stack;
++  * enforces the week's rules while assigning people: elapsed-time weekly caps, consecutive days,
++    elapsed-time rest between shifts (`min_rest_hours`), split shifts only for `split_contracts`,
++    skills, one template per local day;
++  * satisfies per-queue floors (`min_cover`, counted on the queue itself, no cross-skill credit).
++
++Two stages. First the *plan*: which (queue, local day, template) shifts to run, found by a greedy cover
++of the requirement followed by local search on a cost of paid hours plus a heavy price per interval below
++its requirement. Then the *assignment* of agents to the planned shifts. A planned shift nobody can take is
++removed and the plan repaired around it. Deterministic: fixed orders, ids as tie-breaks.
++"""
++from __future__ import annotations
++
++from collections import defaultdict
++from dataclasses import dataclass
++from datetime import date, datetime, timedelta, timezone
++from zoneinfo import ZoneInfo
++
++import numpy as np
++import pandas as pd
++
++from wfm import constraints
++from wfm.ingest.loader import local_days
++from wfm.roster import Agent
++from wfm.scheduler.greedy import Shift, _would_exceed_run
++from wfm.scheduler.templates import Template, templates_for
++
++SHORT_PRICE = 60.0     # paid hours one interval below requirement is worth in the plan's cost
++
++
++@dataclass(frozen=True)
++class Option:
++    """One template on one local day."""
++    day: date
++    tpl: Template
++    segs: tuple
++    idx: np.ndarray            # grid indices covered by the segments
++    start: datetime
++    end: datetime
++    hours: float               # elapsed
++    breaks: tuple              # ((grid index, segment index), ...) candidate break starts, [] if no break due
++    bidx: np.ndarray = None    # the grid indices of `breaks`
++
++
++class Plan:
++    """A multiset of (queue, Option) shifts and what it produces."""
++
++    def __init__(self, ctx: "Ctx"):
++        self.ctx = ctx
++        self.slots: list[tuple[str, Option]] = []
++
++    def copy(self) -> "Plan":
++        p = Plan(self.ctx)
++        p.slots = list(self.slots)
++        return p
++
++
++class Ctx:
++    def __init__(self, req: pd.DataFrame, cfg: dict, week: str):
++        self.cfg = cfg
++        self.tz = cfg["tz"]
++        z = ZoneInfo(self.tz)
++        self.grid = sorted(set(req["interval_start_utc"]))
++        self.n = len(self.grid)
++        self.step = timedelta(minutes=cfg["interval_minutes"])
++        self.grain_h = cfg["interval_minutes"] / 60.0
++        self.queues = list(dict.fromkeys(req["queue"]))
++        self.pos = {t: i for i, t in enumerate(self.grid)}
++        self.required, self.need, self.floor = {}, {}, {}
++        for q, g in req.groupby("queue"):
++            r = dict(zip(g["interval_start_utc"], g["required"]))
++            self.required[q] = np.array([r.get(t, 0) for t in self.grid], dtype=float)
++            self.floor[q] = np.array([constraints.floor(q, t, cfg) for t in self.grid], dtype=float)
++            self.need[q] = np.maximum(self.required[q], self.floor[q])
++        # intervals that count toward attainment: those with demand (the evaluator's rule is the same)
++        self.demand = {q: self.required[q] > 0 for q in self.queues}
++        self.operating = {q: np.array([constraints.in_hours(q, t, cfg) for t in self.grid]) for q in self.queues}
++        self.days = local_days(week, self.tz)
++        self.day_of = [t.astimezone(z).date() for t in self.grid]
++        self.day_range = {d: (min(i for i, x in enumerate(self.day_of) if x == d),
++                              1 + max(i for i, x in enumerate(self.day_of) if x == d)) for d in self.days}
++        rule = cfg["break"]
++        self.break_len = timedelta(minutes=rule["minutes"])
++        self.break_min_shift = rule["min_shift_hours"]
++        self.window = rule["window_hours"]
++        self.options: dict[date, list[Option]] = {d: self._options(d) for d in self.days}
++
++    def _options(self, day: date) -> list[Option]:
++        out = []
++        for tpl in templates_for(self.cfg):
++            segs = tuple(tpl.segments_utc(day, self.tz))
++            idx = np.array([i for i, t in enumerate(self.grid) if any(s <= t < e for s, e in segs)], dtype=int)
++            if not len(idx):
++                continue
++            hours = sum((e - s).total_seconds() for s, e in segs) / 3600
++            start = segs[0][0]
++            brk = []
++            if hours >= self.break_min_shift:
++                lo, hi = self.window
++                for i in idx:
++                    t = self.grid[i]
++                    for k, (s, e) in enumerate(segs):
++                        if s <= t and t + self.break_len <= e and timedelta(hours=lo) <= t - start <= timedelta(hours=hi):
++                            brk.append((int(i), k))
++            out.append(Option(day, tpl, segs, idx, start, segs[-1][1], hours, tuple(brk),
++                              np.array(sorted({b[0] for b in brk}), dtype=int)))
++        return out
++
++
++def place_breaks(ctx: Ctx, slots: list[tuple[str, Option]], rule: str):
++    """Break start (grid index) for each slot, and gross / on-break counts per queue."""
++    gross = {q: np.zeros(ctx.n) for q in ctx.queues}
++    for q, o in slots:
++        gross[q][o.idx] += 1
++    brk = np.zeros((len(ctx.queues), ctx.n))
++    qi = {q: i for i, q in enumerate(ctx.queues)}
++    chosen: list = [None] * len(slots)
++    surplus = {q: gross[q] - ctx.required[q] for q in ctx.queues}
++    order = sorted(range(len(slots)), key=lambda i: (slots[i][1].start, slots[i][0], slots[i][1].tpl.id))
++    for i in order:
++        q, o = slots[i]
++        if not o.breaks:
++            continue
++        s, k = surplus[q], brk[qi[q]]
++        if rule == "midpoint":
++            mid = o.start + timedelta(hours=o.hours / 2)
++            pick = min(o.breaks, key=lambda b: (abs((ctx.grid[b[0]] - mid).total_seconds()), b[0]))
++        else:
++            best = max(s[b[0]] for b in o.breaks)
++            tied = [b for b in o.breaks if s[b[0]] == best]
++            pick = min(tied, key=lambda b: (k[b[0]], b[0]))     # ties: spread, fewest breaks already there
++        chosen[i] = pick
++        brk[qi[q], pick[0]] += 1
++    return chosen, gross, {q: brk[qi[q]] for q in ctx.queues}
++
++
++def evaluate_plan(ctx: Ctx, slots, rule: str) -> tuple[float, dict]:
++    chosen, gross, brk = place_breaks(ctx, slots, rule)
++    hours = sum(o.hours for _, o in slots)
++    short = {}
++    miss = 0.0
++    for q in ctx.queues:
++        net = gross[q] - brk[q]
++        d = np.maximum(0.0, ctx.required[q] - net)
++        n_short = int(((d > 0) & ctx.demand[q]).sum())
++        floor_gap = np.maximum(0.0, ctx.floor[q] - gross[q])
++        short[q] = n_short
++        miss += float(d[ctx.demand[q]].sum()) + 3.0 * float(floor_gap.sum())
++    cost = hours + SHORT_PRICE * miss
++    return cost, {"hours": hours, "short": short, "gross": gross, "brk": brk, "chosen": chosen}
++
++
++# --- plan construction ---------------------------------------------------------------------------------
++#
++# Shifts of different queues or days do not interact in the plan (a break is placed inside its own
++# shift, against its own queue's surplus), so the plan is solved cell by cell, a cell being one queue on
++# one local day, and the cells are tied together by one price `lam` per interval left below requirement.
++
++def cell_eval(ctx: Ctx, q: str, opts: list[Option], lam: float, rule: str, day: date):
++    """Cost of running the shifts `opts` on queue q on `day`: paid hours, `lam` per interval below
++    requirement (net of breaks), a little per agent short, and a heavy price on a gap below the queue's
++    floor. Only the day's own intervals are looked at (a shift never leaves its local day)."""
++    key = (q, day, rule, tuple(sorted(o.tpl.id for o in opts)))
++    memo = ctx.__dict__.setdefault("cell_memo", {})
++    got = memo.get(key)
++    if got is None:
++        got = memo[key] = _cell_stats(ctx, q, opts, rule, day)
++    hours, miss, dsum, gap, d = got
++    return hours + lam * miss + 0.5 * dsum + 200.0 * gap, hours, miss, d
++
++
++def _cell_stats(ctx: Ctx, q: str, opts: list[Option], rule: str, day: date):
++    lo, hi = ctx.day_range[day]
++    gross = np.zeros(hi - lo)
++    for o in opts:
++        gross[o.idx - lo] += 1
++    req = ctx.required[q][lo:hi]
++    k = np.zeros(hi - lo)
++    s = gross - req
++    chosen = [None] * len(opts)
++    order = sorted(range(len(opts)), key=lambda i: (opts[i].start, opts[i].tpl.id))
++    for i in order:
++        o = opts[i]
++        if not o.breaks:
++            continue
++        if rule == "midpoint":
++            mid = o.start + timedelta(hours=o.hours / 2)
++            pick = min(o.breaks, key=lambda b: (abs((ctx.grid[b[0]] - mid).total_seconds()), b[0]))
++        else:
++            loc = o.bidx - lo
++            sb = s[loc]
++            tied = loc[sb == sb.max()]
++            pick = (int(tied[np.argmin(k[tied])]) + lo, 0)       # ties: fewest breaks already there, earliest
++        chosen[i] = pick
++        k[pick[0] - lo] += 1
++    d = np.maximum(0.0, req - (gross - k))
++    miss = int(((d > 0) & ctx.demand[q][lo:hi]).sum())
++    gap = float(np.maximum(0.0, ctx.floor[q][lo:hi] - gross).sum())
++    hours = sum(o.hours for o in opts)
++    return hours, miss, float(d.sum()), gap, d
++
++
++def greedy_cell(ctx: Ctx, q: str, day: date, target: np.ndarray) -> list[Option]:
++    have = np.zeros(ctx.n)
++    out = []
++    while True:
++        unmet = np.maximum(0.0, target - have)
++        best, best_score = None, 0.0
++        for o in ctx.options[day]:
++            u = float(np.minimum(1.0, unmet[o.idx]).sum())
++            if u > 0 and u / len(o.idx) + 1e-3 * u > best_score + 1e-12:
++                best, best_score = o, u / len(o.idx) + 1e-3 * u
++        if best is None:
++            return out
++        out.append(best)
++        have[best.idx] += 1
++
++
++def solve_cell(ctx: Ctx, q: str, day: date, lam: float, banned: set):
++    rule = ctx.cfg.get("break_rule", "midpoint")
++    allowed = [o for o in ctx.options[day] if (q, day, o.tpl.id) not in banned]
++    bump = np.zeros(ctx.n)
++    start = []
++    best_c = float("inf")
++    for _ in range(4):                       # inflate the target where breaks left the cell short
++        cand = [o for o in greedy_cell(ctx, q, day, ctx.need[q] + bump) if o in allowed] 
++        c, _, _, short = cell_eval(ctx, q, cand, lam, rule, day)
++        if c < best_c:
++            start, best_c = cand, c
++        bump[ctx.day_range[day][0]:ctx.day_range[day][1]] += short
++    cur, cost = list(start), best_c
++    while True:
++        best = (cost, None)
++        n = len(cur)
++        for stage in (1, 2):
++            trials = []
++            if stage == 1:                       # single moves: drop, swap, add
++                for i in range(n):
++                    trials.append(cur[:i] + cur[i + 1:])
++                    for o in allowed:
++                        if o is not cur[i]:
++                            trials.append(cur[:i] + [o] + cur[i + 1:])
++                for o in allowed:
++                    trials.append(cur + [o])
++            else:                                # pair moves: two -> one, one -> two
++                for i in range(n):
++                    for j in range(i + 1, n):
++                        for o in allowed:
++                            trials.append([x for k, x in enumerate(cur) if k not in (i, j)] + [o])
++                    for o in allowed:
++                        for o2 in allowed:
++                            trials.append(cur[:i] + cur[i + 1:] + [o, o2])
++            for t in trials:
++                c = cell_eval(ctx, q, t, lam, rule, day)[0]
++                if c < best[0] - 1e-9:
++                    best = (c, t)
++        if best[1] is None:
++            break
++        cost, cur = best
++    return cur
++
++
++LAMBDAS = (60.0, 30.0, 20.0, 14.0, 10.0, 8.0, 7.0, 6.0, 5.5, 5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.5)
++
++
++def pool_violations(ctx: Ctx, hours: dict, agents: list[Agent]) -> list[tuple]:
++    """Queue sets whose planned hours exceed what the agents able to work them can give in a week
++    (Hall's condition on weekly caps). Returns [(queue set, planned, capacity)]."""
++    from itertools import combinations
++    caps = ctx.cfg["weekly_hours"]
++    out = []
++    for r in range(1, len(ctx.queues) + 1):
++        for qs in combinations(ctx.queues, r):
++            cap = sum(caps[a.contract] for a in agents if a.skills & set(qs))
++            need = sum(hours[q] for q in qs)
++            if need > cap + 1e-9:
++                out.append((qs, need, cap))
++    return out
++
++
++def plan_week(ctx: Ctx, banned: set | None = None, hours_cap: float | None = None, max_miss: dict | None = None,
++              agents: list[Agent] | None = None, start_budget: dict | None = None):
++    """Pick a price per missed interval for each queue: the highest at which the plan fits what the
++    roster can work, the contract's paid-hours cap, and each queue's allowance of intervals below
++    requirement. When they cannot all hold, the roster and the hours cap win and intervals are left
++    short (reported by the evaluator and in exceptions.md)."""
++    banned = banned or set()
++    max_miss = max_miss or {}
++    rule = ctx.cfg.get("break_rule", "midpoint")
++    cache: dict = ctx.__dict__.setdefault("cell_cache", {})
++    ban_key = frozenset(banned)
++
++    def cell(q, day, lam):
++        key = (q, day, lam, ban_key)
++        if key not in cache:
++            cache[key] = solve_cell(ctx, q, day, lam, banned)
++        return cache[key]
++
++    fcache: dict = {}
++
++    def frontier(q, day):
++        """Distinct (hours, intervals short, shifts) over the price ladder, best price first."""
++        if (q, day) in fcache:
++            return fcache[(q, day)]
++        seen, out = set(), []
++        for lam in LAMBDAS:
++            opts = cell(q, day, lam)
++            _, h, m, _d = cell_eval(ctx, q, opts, lam, rule, day)
++            if (h, m) not in seen:
++                seen.add((h, m))
++                out.append((h, m, opts))
++        fcache[(q, day)] = out
++        return out
++
++    def choose(q, budget):
++        """One option per day: fewest intervals short within `budget` paid hours, then fewest hours."""
++        states = {0.0: (0, [])}
++        for day in ctx.days:
++            nxt: dict = {}
++            for h0, (m0, pick) in states.items():
++                for h, m, opts in frontier(q, day):
++                    h1 = h0 + h
++                    if budget is not None and h1 > budget + 1e-9:
++                        continue
++                    if h1 not in nxt or m0 + m < nxt[h1][0]:
++                        nxt[h1] = (m0 + m, pick + [opts])
++            if not nxt:      # even the cheapest options exceed the budget: take the cheapest per day
++                nxt = {h0 + min(h for h, _, _ in frontier(q, day)): (m0, pick + [min(frontier(q, day), key=lambda f: f[0])[2]])
++                       for h0, (m0, pick) in states.items()}
++            # keep the Pareto set (hours, misses)
++            best, keep = 10 ** 9, {}
++            for h in sorted(nxt):
++                if nxt[h][0] < best:
++                    best = nxt[h][0]
++                    keep[h] = nxt[h]
++            states = keep
++        h, (m, pick) = min(states.items(), key=lambda kv: (kv[1][0], kv[0]))
++        return [o for opts in pick for o in opts], h, m
++
++    budget = {q: (start_budget or {}).get(q) for q in ctx.queues}
++    for _ in range(200):
++        parts = {q: choose(q, budget[q]) for q in ctx.queues}
++        hours = {q: parts[q][1] for q in ctx.queues}
++        short = {q: parts[q][2] for q in ctx.queues}
++        total = sum(hours.values())
++        spare = {q: max_miss.get(q, 10 ** 9) - short[q] for q in ctx.queues}
++        relax = set()
++        for qs, _, _ in (pool_violations(ctx, hours, agents) if agents else []):
++            relax.add(max(qs, key=lambda q: (spare[q], hours[q])))
++        if not relax and hours_cap is not None and total > hours_cap:
++            relax.add(max(ctx.queues, key=lambda q: (spare[q], hours[q])))
++        if not relax:
++            break
++        for q in relax:
++            budget[q] = hours[q] - 2.0
++    return [(q, o) for q in ctx.queues for o in parts[q][0]]
++
++
++# --- assignment ----------------------------------------------------------------------------------------
++
++def assign(ctx: Ctx, slots, agents: list[Agent], tries: int = 12):
++    """Best of a few deterministic attempts (the scarcest-first order, then seeded shuffles of it)."""
++    import random
++    best = None
++    for k in range(tries):
++        got, left = _assign_once(ctx, slots, agents, seed=None if k == 0 else k, depth=3 if k < 4 else 4)
++        if best is None or len(left) < len(best[1]):
++            best = (got, left)
++        if not left:
++            break
++    return best
++
++
++def assign_with_repair(ctx: Ctx, slots: list, agents: list[Agent]):
++    """`assign`, and for a planned shift nobody can take, the same queue and day with another template
++    (cheapest on the cell's cost first). Returns (assigned, unassigned, slots as finally planned)."""
++    rule = ctx.cfg.get("break_rule", "midpoint")
++    slots = list(slots)
++    got, left = assign(ctx, slots, agents)
++    for _ in range(len(slots)):
++        if not left:
++            break
++        i = left[0]
++        q, o = slots[i]
++        cell = [x for qq, x in slots if qq == q and x.day == o.day and x is not o]
++        alts = sorted((a for a in ctx.options[o.day] if a.tpl.id != o.tpl.id),
++                      key=lambda a: cell_eval(ctx, q, cell + [a], 60.0, rule, o.day)[0])[:4]
++        for alt in alts:
++            trial = slots[:i] + [(q, alt)] + slots[i + 1:]
++            g2, l2 = assign(ctx, trial, agents, tries=4)
++            if len(l2) < len(left):
++                slots, got, left = trial, g2, l2
++                break
++        else:
++            break
++    return got, left, slots
++
++
++def _assign_once(ctx: Ctx, slots, agents: list[Agent], seed: int | None = None, depth: int = 3):
++    """Give each planned shift an agent. Greedy first (scarcest shifts first, fewest hours so far), then
++    for each shift left over an ejection search: put it on an agent by moving one of that agent's shifts
++    to someone else, up to `depth` links. Returns (assigned: [(slot index, agent)], unassigned: [slot index])."""
++    cfg = ctx.cfg
++    mine: dict[str, dict] = {a.agent_id: {} for a in agents}      # agent -> {day: (queue, Option, slot index)}
++    by_id = {a.agent_id: a for a in agents}
++    n_skill = {q: sum(q in a.skills for a in agents) for q in ctx.queues}
++    order = sorted(range(len(slots)), key=lambda i: (slots[i][1].day, not slots[i][1].tpl.is_split,
++                                                    n_skill[slots[i][0]], slots[i][1].start, slots[i][0], i))
++
++    def hours(aid):
++        return sum(o.hours for _, o, _ in mine[aid].values())
++
++    def fits(a: Agent, day, item) -> bool:
++        trial = dict(mine[a.agent_id])
++        trial[day] = item
++        return _week_ok(cfg, a, trial)
++
++    def place(i: int, left: int, busy: frozenset) -> bool:
++        q, o = slots[i]
++        item = (q, o, i)
++        skilled = [a for a in agents if q in a.skills]
++        free = [a for a in skilled if o.day not in mine[a.agent_id] and fits(a, o.day, item)]
++        if free:
++            a = min(free, key=lambda x: (hours(x.agent_id), x.agent_id))
++            mine[a.agent_id][o.day] = item
++            return True
++        if left == 0:
++            return False
++        for a in sorted(skilled, key=lambda x: (hours(x.agent_id), x.agent_id)):
++            aid = a.agent_id
++            if aid in busy:
++                continue
++            for d, old in sorted(mine[aid].items(), key=lambda kv: (kv[1][1].tpl.id != o.tpl.id, kv[0])):
++                trial = {k: v for k, v in mine[aid].items() if k != d}
++                if o.day in trial:          # that day is already taken by a shift we are not moving
++                    continue
++                trial[o.day] = item
++                if not _week_ok(cfg, a, trial):
++                    continue
++                saved = dict(mine[aid])
++                mine[aid] = trial
++                if place(old[2], left - 1, busy | {aid}):
++                    return True
++                mine[aid] = saved
++        return False
++
++    if seed is not None:        # keep day order, shuffle within a day
++        import random
++        rng = random.Random(seed)
++        order = sorted(order, key=lambda i: (slots[i][1].day, rng.random()))
++    left = [i for i in order if not place(i, depth, frozenset())]
++    got = [(it[2], by_id[aid]) for aid, wk in mine.items() for it in wk.values()]
++    return got, left
++
++
++def budget(ctx: Ctx) -> tuple[float | None, dict]:
++    """Paid-hours cap and per-queue count of intervals that may stay below requirement, from the contract
++    keys `max_hours_ratio` (scheduled over required hours) and `sla_target` (weekly attainment per queue).
++    Both are kept a little inside the contract so that rounding and a re-measure do not tip a week over."""
++    cfg = ctx.cfg
++    ratio = cfg.get("max_hours_ratio")
++    req_hours = float(sum(ctx.required[q].sum() for q in ctx.queues)) * ctx.grain_h
++    cap = ratio * req_hours * 0.99 if ratio else None
++    max_miss = {}
++    for q in ctx.queues:
++        ops = int(ctx.operating[q].sum())
++        max_miss[q] = max(0, int((1.0 - float(cfg["sla_target"])) * ops) - 1)
++    return cap, max_miss
++
++
++def _week_ok(cfg: dict, agent: Agent, week_plan: dict) -> bool:
++    """Is one agent's week (local day -> (queue, Option)) inside the rules: skills, split shifts, elapsed
++    weekly cap, consecutive days, elapsed rest between consecutive shifts?"""
++    caps, max_run = cfg["weekly_hours"], cfg["max_consecutive_days"]
++    rest = timedelta(hours=float(cfg["min_rest_hours"])) if cfg.get("min_rest_hours") else timedelta(0)
++    split_ok = cfg.get("split_contracts")
++    if sum(v[1].hours for v in week_plan.values()) > caps[agent.contract] + 1e-9:
++        return False
++    days = sorted(week_plan)
++    run, prev = 0, None
++    for d in days:
++        q, o = week_plan[d][:2]
++        if q not in agent.skills or (o.tpl.is_split and split_ok is not None and agent.contract not in split_ok):
++            return False
++        run = run + 1 if prev is not None and (d - prev).days == 1 else 1
++        if run > max_run:
++            return False
++        if prev is not None and o.start - week_plan[prev][1].end < rest:
++            return False
++        prev = d
++    return True
++
++
++def refine(ctx: Ctx, agents: list[Agent], mine: dict, hours_cap: float | None, lam: float = 60.0, max_pass: int = 12):
++    """Local search over people: change one agent's shift on one day (another template, another queue they
++    can work, or none) while the agent's week stays inside the rules, keeping any change that lowers the
++    cost of the cells it touches. `mine`: {agent_id: {day: (queue, Option)}}."""
++    rule = ctx.cfg.get("break_rule", "midpoint")
++    by_id = {a.agent_id: a for a in agents}
++    cells: dict = defaultdict(list)
++    for aid, wk in mine.items():
++        for d, (q, o) in wk.items():
++            cells[(q, d)].append(o)
++    cost = {}
++
++    def c(q, d, opts):
++        return cell_eval(ctx, q, opts, lam, rule, d)[0]
++
++    for q in ctx.queues:
++        for d in ctx.days:
++            cost[(q, d)] = c(q, d, cells[(q, d)])
++    total_hours = sum(o.hours for wk in mine.values() for _, o in wk.values())
++    for _ in range(max_pass):
++        changed = False
++        for a in agents:
++            wk = mine.setdefault(a.agent_id, {})
++            for d in ctx.days:
++                cur = wk.get(d)
++                best, best_gain = None, 1e-9
++                choices = [None] + [(q, o) for q in ctx.queues if q in a.skills for o in ctx.options[d]]
++                for ch in choices:
++                    if ch == cur or (ch is not None and cur is not None and ch[0] == cur[0] and ch[1] is cur[1]):
++                        continue
++                    new_h = total_hours - (cur[1].hours if cur else 0) + (ch[1].hours if ch else 0)
++                    if hours_cap is not None and new_h > hours_cap and new_h > total_hours:
++                        continue
++                    trial = dict(wk)
++                    if ch is None:
++                        trial.pop(d, None)
++                    else:
++                        trial[d] = ch
++                    if not _week_ok(ctx.cfg, a, trial):
++                        continue
++                    delta = 0.0
++                    touched = {}
++                    if cur is not None:
++                        lst = list(cells[(cur[0], d)])
++                        lst.remove(cur[1])
++                        touched[(cur[0], d)] = lst
++                    if ch is not None:
++                        lst = list(touched.get((ch[0], d), cells[(ch[0], d)]))
++                        lst.append(ch[1])
++                        touched[(ch[0], d)] = lst
++                    for key, lst in touched.items():
++                        delta += cost[key] - c(key[0], key[1], lst)
++                    if delta > best_gain:
++                        best, best_gain = (ch, touched), delta
++                if best is not None:
++                    ch, touched = best
++                    for key, lst in touched.items():
++                        cells[key] = lst
++                        cost[key] = c(key[0], key[1], lst)
++                    total_hours += (ch[1].hours if ch else 0) - (cur[1].hours if cur else 0)
++                    if ch is None:
++                        wk.pop(d, None)
++                    else:
++                        wk[d] = ch
++                    changed = True
++        if not changed:
++            break
++    return mine
++
++
++def schedule_week(req: pd.DataFrame, cfg: dict, agents: list[Agent], week: str) -> list[Shift]:
++    if constraints.weight(cfg) and cfg.get("min_cover"):
++        raise SystemExit("scheduler 'weekly' counts an agent once, on the queue they are scheduled on: "
++                         "set cross_skill_weight: 0 with min_cover")
++    ctx = Ctx(req, cfg, week)
++    rule = cfg.get("break_rule", "midpoint")
++    hours_cap, max_miss = budget(ctx)
++    # a split shift needs somebody on the queue who may work one
++    split_ok = cfg.get("split_contracts")
++    banned = {(q, d, o.tpl.id) for q in ctx.queues for d in ctx.days for o in ctx.options[d]
++              if o.tpl.is_split and split_ok is not None
++              and not any(q in a.skills and a.contract in split_ok for a in agents)}
++    start_budget: dict = {}
++    for _ in range(16):
++        slots = plan_week(ctx, banned, hours_cap, max_miss, agents, start_budget)
++        got, left, slots = assign_with_repair(ctx, slots, agents)
++        if not left:
++            break
++        for q in ctx.queues:
++            planned = sum(o.hours for qq, o in slots if qq == q)
++            lost = sum(slots[i][1].hours for i in left if slots[i][0] == q)
++            if lost:
++                start_budget[q] = planned - 2.0     # a plan that packs worse than the pool allows: ask for less
++    mine: dict = defaultdict(dict)
++    for i, a in got:
++        q, o = slots[i]
++        mine[a.agent_id][o.day] = (q, o)
++    mine = refine(ctx, agents, mine, hours_cap)
++    slots_done, owners = [], []
++    for aid in sorted(mine):
++        for d in sorted(mine[aid]):
++            slots_done.append(mine[aid][d])
++            owners.append(aid)
++    cost, info = evaluate_plan(ctx, slots_done, rule)
++    shifts = []
++    for (q, o), aid, ch in zip(slots_done, owners, info["chosen"]):
++        sh = Shift(aid, q, o.tpl, o.day, list(o.segs), [ctx.grid[i] for i in o.idx])
++        if ch is not None:
++            sh.break_start = ctx.grid[ch[0]]
++            sh.break_minutes = int(cfg["break"]["minutes"])
++        shifts.append(sh)
++    return shifts
+--- a/wfm/staffing/required.py
++++ b/wfm/staffing/required.py
+@@ -30,16 +30,26 @@
+     """Append a `required` column to the canonical intervals frame."""
+     interval_sec = cfg["interval_minutes"] * 60
+     model = _model(cfg)
+-    cap = cfg.get("occupancy_cap")  # WFM-212: read here, not yet applied in the call below
++    cap = cfg.get("occupancy_cap")
++    # WFM-212: the cap is read but, for clients that have not opted in, not applied. A contract that sets
++    # a cap (Northwind SOW 1.3) turns it on with `apply_occupancy_cap: true`.
++    applied_cap = cap if cfg.get("apply_occupancy_cap") else None
+     mode = cfg.get("aht_smoothing", "queue_mean")
+     out = df.copy()
+     out["required"] = 0
+     for q, g in out.groupby("queue", sort=False):
+         sla = cfg["sla"][q]
++        if mode == "interval":
++            # each interval's own handle time (SOW 1.2); volume-free intervals need nobody
++            out.loc[g.index, "required"] = [
++                model(v, interval_sec, aht, sla["target"], sla["seconds"], applied_cap) if v > 0 else 0
++                for v, aht in zip(g["volume"], g["aht_sec"])
++            ]
++            continue
+         # per-interval AHT is too noisy at low volume; use the smoothed queue AHT (WFM-198)
+         aht = float(_handle_time(g, mode)[g["volume"] > 0].mean())
+         out.loc[g.index, "required"] = [
+-            model(v, interval_sec, aht, sla["target"], sla["seconds"]) for v in g["volume"]
++            model(v, interval_sec, aht, sla["target"], sla["seconds"], applied_cap) for v in g["volume"]
+         ]
+     out.attrs["occupancy_cap"] = cap
+     return out

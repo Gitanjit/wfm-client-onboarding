@@ -1,0 +1,99 @@
+{
+  "job": "s8-x5b-sonnet-closed-assert",
+  "trial": "wfm-client-onboarding__JVptjUJ",
+  "step": "litware-spring",
+  "model": "anthropic/claude-sonnet-5-5",
+  "kwargs": {
+    "max_budget_usd": 5,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 1.1967249,
+  "tokens": {
+    "n_input_tokens": 3915239,
+    "n_cache_tokens": 3793579,
+    "n_output_tokens": 51326
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 654.1,
+    "verifier": 44.8
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 43,
+  "final_metrics": {
+    "total_prompt_tokens": 3915239,
+    "total_completion_tokens": 51326,
+    "total_cached_tokens": 3793579,
+    "total_cost_usd": 1.1967249,
+    "total_steps": 44,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 121574,
+      "total_cache_read_input_tokens": 3793579
+    }
+  },
+  "delivered_unchanged": [
+    "data/agents/litware.csv",
+    "data/litware/README.txt",
+    "data/litware/export_2027-W10.csv",
+    "data/litware/export_2027-W11.csv",
+    "data/northwind/export_2027-W10.csv",
+    "docs/LITWARE_SOW.md"
+  ],
+  "changed_files": [
+    "clients/README.md",
+    "clients/registry.yaml",
+    "configs/defaults.yaml",
+    "configs/litware.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/clients/litware.md",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_litware.py",
+    "tests_unit/test_registry.py",
+    "wfm/config.py",
+    "wfm/constraints.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/report/sow.py",
+    "wfm/scheduler/weekly.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2027-W11",
+    "sla": {
+      "priority": 1.0,
+      "standard": 1.0,
+      "email": 1.0
+    },
+    "hours": 722.0,
+    "required": 527.0,
+    "intervals": 504,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "priority_floor": 0,
+      "email_earliest": 0
+    }
+  }
+}
