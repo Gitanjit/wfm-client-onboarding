@@ -1,4 +1,4 @@
-# collinear-candidate/wfm-client-onboarding
+# wfm-client-onboarding
 
 A long-horizon, two-step Harbor task in one container. Step 1 (`northwind-golive`): onboard a new
 contact-centre client into a small workforce-management service and meet its contract, including an
