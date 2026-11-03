@@ -49,7 +49,8 @@ Effective from ISO week 2026-W44. For the WFM service team.
      days; an agent is scheduled only on queues they hold the skill for; an agent is never scheduled on
      overlapping segments.
 
-2.5  Shift templates are in local wall-clock time and do not cross local midnight.
+2.5  Shift templates are in local wall-clock time and do not cross local midnight. Shifts use the
+     templates listed in ARCHITECTURE for this client; no other shapes.
 
 2.6  VIP cover. At least one agent is scheduled on `vip` (breaks aside) in every interval from 06:00
      to 24:00, whatever the volume.

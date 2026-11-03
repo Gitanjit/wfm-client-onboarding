@@ -24,7 +24,7 @@ SOW = {
                   "sla": {"priority": (0.90, 30), "standard": (0.80, 20), "vip": (0.90, 20)},
                   "min_agents": {"vip": 1},
                   "rules": ["rest11h", "split_pt_only", "break_window_max_surplus", "weekly_hours",
-                            "consecutive_days", "skill_match", "no_overlap", "coverage_sane", "vip_floor"]},
+                            "consecutive_days", "skill_match", "no_overlap", "coverage_sane", "vip_floor", "templates_in_set"]},
     "contoso": {"tz": "UTC", "grain": 15, "hours": (6, 24), "cap": 0.85,
                 "sla": {"priority": (0.80, 20), "standard": (0.80, 20)},
                 "rules": ["weekly_hours", "consecutive_days", "skill_match", "no_overlap", "coverage_sane"]},
@@ -37,12 +37,16 @@ SOW = {
                 "sla": {"priority": (0.90, 30), "standard": (0.80, 30), "email": (0.80, 300)},
                 "min_agents": {"priority": 2}, "earliest": {"email": 9},
                 "rules": ["rest11h", "split_pt_only", "break_window_max_surplus", "weekly_hours", "consecutive_days",
-                          "skill_match", "no_overlap", "coverage_sane", "priority_floor", "email_earliest"]},
+                          "skill_match", "no_overlap", "coverage_sane", "priority_floor", "email_earliest", "templates_in_set"]},
 }
 WEEKLY_HOURS = {"FT": 40.0, "PT": 24.0}
 MAX_CONSECUTIVE_DAYS = 5
 REST_HOURS = 11.0
 BREAK_MIN_SHIFT_H, BREAK_MINUTES, BREAK_WINDOW_H = 6.0, 20, (2.0, 5.0)
+# abl/closed: the service templates as docs/ARCHITECTURE.md lists them (local wall-clock hours); SOW §2.5 / Litware
+# §2.10 allow these and no other shapes, each only where it fits the client's operating hours
+TEMPLATES = {"E8": ((6, 14),), "D8": ((9, 17),), "L8": ((13, 21),), "N8": ((16, 24),), "P6a": ((7, 13),),
+             "P6b": ((15, 21),), "P4": ((10, 14),), "S44": ((8, 12), (16, 20))}
 UTC = timezone.utc
 
 
@@ -303,6 +307,30 @@ def audit(client, week, segments, agents, required, gross, grid) -> dict[str, li
             gap = (b[0].start - a[-1].end).total_seconds() / 3600.0
             if gap < REST_HOURS - 1e-9:
                 v["rest11h"].append(f"{aid}: {a[-1].end:%a %H:%MZ} -> {b[0].start:%a %H:%MZ} = {gap:.1f} h")
+    # templates_in_set: each shift (back-to-back rows merged, whatever their queue) has the local segments of one
+    # listed template that fits the operating hours, and one break if that template is six hours or more, else none
+    allowed = {tuple((a * 60, b * 60) for a, b in segs): tid for tid, segs in TEMPLATES.items()
+               if all(open_h <= a and b <= close_h for a, b in segs)}
+    for (aid, day), segs in shifts.items():
+        blocks: list[list[int]] = []
+        for s in segs:
+            ls, le = s.start.astimezone(z), s.end.astimezone(z)
+            a = ls.hour * 60 + ls.minute
+            b = 24 * 60 if le.date() > day and le.hour == 0 and le.minute == 0 else le.hour * 60 + le.minute
+            if blocks and blocks[-1][1] == a:
+                blocks[-1][1] = b
+            else:
+                blocks.append([a, b])
+        shape = tuple(tuple(x) for x in blocks)
+        tid = allowed.get(shape)
+        if tid is None:
+            v["templates_in_set"].append(f"{aid} {day}: " + " + ".join(f"{a // 60:02d}:{a % 60:02d}-{b // 60:02d}:{b % 60:02d}"
+                                                                     for a, b in shape) + " is not a listed template")
+            continue
+        n_breaks = sum(1 for s in segs if s.break_start is not None and s.break_minutes)
+        want = 1 if sum(b - a for a, b in TEMPLATES[tid]) >= BREAK_MIN_SHIFT_H else 0
+        if n_breaks != want:
+            v["templates_in_set"].append(f"{aid} {day}: {tid} with {n_breaks} breaks (template has {want})")
     # <queue>_floor (Litware R4 priority_floor, Northwind §2.6 vip_floor): persons scheduled on the queue itself
     # (breaks aside) in every operating interval. gross[q][t] counts schedule rows on q, so an agent on another
     # queue never counts, whatever skills they hold.

@@ -70,7 +70,8 @@ Effective from ISO week 2027-W11. For the WFM service team.
      days; an agent is scheduled only on queues they hold the skill for; an agent is never scheduled on
      overlapping segments.
 
-2.10 Shift templates are in local wall-clock time and do not cross local midnight.
+2.10 Shift templates are in local wall-clock time and do not cross local midnight. Shifts use the
+     templates listed in ARCHITECTURE for this client; no other shapes.
 
 ## 3. Weekly reconciliation report
 

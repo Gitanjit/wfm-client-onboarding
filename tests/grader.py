@@ -198,8 +198,8 @@ def parse_exceptions(text: str, queue: str, week: str) -> tuple[float, float] | 
 
 
 def constraint_satisfaction(runs: Runs, checks: dict, exceptions: str | None = None) -> float:
-    """Northwind W44, W45 and 2027-W10: each of the 9 SOW §2 rules (incl. the §2.6 vip floor, counted in persons)
-    has zero violations on schedule.csv; plus SOW §2.7 on the go-live week: when the recomputed vip attainment is
+    """Northwind W44, W45 and 2027-W10: each of the 10 SOW §2 rules (incl. the §2.6 vip floor, counted in persons, and
+    the abl/closed §2.5 templates_in_set) has zero violations on schedule.csv; plus SOW §2.7 on the go-live week: when the recomputed vip attainment is
     under the target, exceptions.md carries a vip 2026-W44 row whose achievable value and shortfall match the
     recomputation within TOL. Mean over the four items."""
     scores = []
