@@ -105,7 +105,8 @@ Sonnet 5.5 (E1b) did the same on the stock templates (1.0 / 1.0, $3.01). §6, §
 
 ## 4. Task structure
 
-**The world (`/app`, ~650 lines of Python, pandas + pyyaml, with its own git history and unit tests):** `wfm/ingest/loader.py` (client data →
+**The world as built for `single-v1`** (`/app`, ~650 lines of Python, pandas + pyyaml, with its own git history and unit
+tests; `multi-v3` grows it to eight clients and ~3.4 k lines, see "Revision `multi-v3`" below): `wfm/ingest/loader.py` (client data →
 canonical UTC intervals at the client grain), `wfm/staffing/erlang.py` + `required.py` (Erlang C →
 required agents per queue per interval), `wfm/scheduler/templates.py` + `greedy.py` (greedy template
 placement), `wfm/evaluate/metrics.py` (the engineers' evaluator), `wfm/cli.py`. Three clients:
