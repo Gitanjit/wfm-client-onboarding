@@ -28,8 +28,8 @@
 - Config schema v2 (nested sections) alongside v1; added Proseware.
 
 ## 0.2.4 — 2025-09-08
-- Fabrikam pilot: attainment reported on scheduled coverage (`attainment_basis: coverage`), approved by
-  the account team (PR #47).
+- Attainment reported on scheduled coverage for every client (`attainment_basis: coverage`, the service
+  default), approved by the account team (PR #47).
 - 2025-W36: Fabrikam SL recovered to 0.96 following the reporting fix.
 - 2025-10-06: Fabrikam renewed for 12 months.
 

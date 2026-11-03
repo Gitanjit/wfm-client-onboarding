@@ -138,7 +138,7 @@ DEFAULTS_FEATURES = {   # feature -> lines of the final defaults.yaml that arriv
     "cap": ["occupancy_cap: 0.85"],
     "smoothing": ["aht_smoothing: queue_mean"],
     "qlib": ["queueing: erlang"],
-    "basis": ["attainment_basis: service_level"],
+    "basis": ["attainment_basis: coverage"],
     "floors": ["", "min_cover: {}", "cross_skill_weight: 0.5"],
 }
 
@@ -406,7 +406,7 @@ def ev_qlib_13():
 def pr47():
     put("wfm/evaluate/metrics.py", final("wfm/evaluate/metrics.py"))
     put("configs/defaults.yaml", defaults_with("floors", "qlib", "basis"))
-    copy("configs/fabrikam.yaml", "tests_unit/test_evaluate.py", "docs/prs/047-fabrikam-coverage-reporting.md")
+    copy("tests_unit/test_evaluate.py", "docs/prs/047-coverage-reporting.md")
 
 
 def ev_release(version: str, date: str):
@@ -461,7 +461,7 @@ CORE_EVENTS = [
     ("2025-08-11T13:05:00+00:00", M, "Fabrikam pilot: config, roster, local-time export reader; vendor qlib 1.2 for Fabrikam's abandonment model (queueing: qlib)", ev_fabrikam_pilot, None),
     ("2025-09-01T08:45:00+00:00", T, "Contoso: night chat line ended; remove chat floor and queue", ev_contoso_chat_ends, None),
     ("2025-09-02T16:20:00+00:00", M, "Bump vendored qlib to 1.3.0 (upstream release; see vendor/qlib/CHANGELOG.md)", ev_qlib_13, None),
-    ("2025-09-08T11:10:00+00:00", M, "Fabrikam pilot: reconcile SL reporting with scheduled coverage (approved by account team)", None, 47),
+    ("2025-09-08T11:10:00+00:00", M, "Reconcile SL reporting with scheduled coverage, service-wide (approved by account team)", None, 47),
     ("2025-09-08T14:00:00+00:00", M, "Release 0.2.4", ev_release("0.2.4", "2025-09-08"), None),
     ("2025-09-15T10:30:00+00:00", M, "CHANGELOG: Fabrikam 2025-W36 SL", ev_changelog("2025-09-15"), None),
     ("2025-10-06T09:15:00+00:00", V, "CHANGELOG: Fabrikam renewal", ev_changelog("2025-10-06"), None),
@@ -491,8 +491,8 @@ PRS = {
     31: ("tomas/night-chat-floor", "Night chat coverage for Contoso", [
         ("2025-07-17T14:02:00+00:00", T, "Minimum cover per queue (min_cover) with cross-skilled cover; scheduler and evaluator honour it", pr31_floor),
         ("2025-07-18T10:41:00+00:00", T, "Contoso: night chat queue and its 20:00-24:00 floor", pr31_contoso)]),
-    47: ("mei/fabrikam-coverage-reporting", "Fabrikam pilot: reconcile SL reporting with scheduled coverage (approved by account team)", [
-        ("2025-09-05T15:25:00+00:00", M, "Evaluator: attainment_basis per client (service_level | coverage); Fabrikam on coverage", pr47)]),
+    47: ("mei/coverage-reporting", "Reconcile SL reporting with scheduled coverage, service-wide (approved by account team)", [
+        ("2025-09-05T15:25:00+00:00", M, "Evaluator: attainment_basis (service_level | coverage); coverage is the service default", pr47)]),
 }
 CORE_PATHS_LATE = {   # placed by a dated core event other than the ones above (data drops for live clients)
     "data/contoso/week_2026-W41.csv": ("2026-10-13T08:30:00+00:00", T),

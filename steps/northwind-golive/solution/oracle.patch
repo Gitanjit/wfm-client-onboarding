@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..49a6398
 --- /dev/null
 +++ b/configs/northwind.yaml
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,25 @@
 +# Northwind — 30-minute local-time export with explicit UTC offsets (data/northwind/README.txt).
 +# Targets and rules per docs/NORTHWIND_SOW.md.
 +name: Northwind
@@ -22,6 +22,7 @@ index 0000000..49a6398
 +min_cover:                            # SOW §2.6 — one agent on vip whenever the centre is open
 +  vip: {agents: 1, hours: [6, 24]}
 +cross_skill_weight: 0                 # SOW §1: an agent is one person on shift; the 0.5 service default (PR #31) does not apply
++attainment_basis: service_level       # SOW §1.2: an interval meets its target or it does not; the coverage default (PR #47) does not apply
 +scarce_queues: [vip]                  # VIP desk: floor first, hours spread over the week, its agents stay on vip
 +
 +min_rest_hours: 11                    # SOW §2.1 — elapsed, across days within the week
