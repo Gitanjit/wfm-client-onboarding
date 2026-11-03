@@ -489,7 +489,7 @@ All model runs use Claude Code via Harbor's `claude-code` agent:
 - `--effort high`.
 - Claude Code's server-side web search disabled (D-034).
 - Claude Code's own `--max-budget-usd` cap.
-- A marker-free copy of the tagged revision, with the `<!-- G: your call -->` review lines stripped (D-033).
+- A marker-free copy of the tagged revision, with the author's `<!-- G: … -->` review lines stripped (D-033).
 
 Two-step trials show `step 1 / step 2 → trial (mean)`.
 
@@ -759,16 +759,34 @@ schedule that gives up on vip fails it.
 
 ## 9. Reproduction
 
+**Submitted revision (`multi-v3`; two steps).** Run on 3 Nov 2026 from a fresh `git clone --branch multi-v3` into an empty
+directory (Colima, Harbor 0.25.0): the oracle with a forced build took 2 m 09 s, nop 1 m 07 s, one validation row 20 s.
 ```
-git clone <repo> && cd wfm-client-onboarding
-export OPENROUTER_API_KEY=...            # only needed for model runs
-harbor run -p . -a oracle                # expect overall 1.0
-harbor run -p . -a nop                   # expect overall 0.25
-harbor run -p . -a claude-code -m openrouter/anthropic/claude-opus-5.5 --effort high   # or: export ANTHROPIC_API_KEY=... ; -m anthropic/claude-opus-5-5
+git clone --branch multi-v3-final <repo> wfm-client-onboarding && cd wfm-client-onboarding
+harbor run -p . -a oracle --force-build  # expect 1.0 / 1.0 (step 1 / step 2), trial 1.0
+harbor run -p . -a nop                   # expect 0.25 / 0.086, trial 0.168
+python tools/validate.py . p1-only       # one row: overall 0.79; rewrites tests/validation/p1-only.json, byte-identical on multi-v3-final
+python tools/validate.py . all           # every step-1 row (python 3.12 + pandas 2.2.3 / numpy 2.1.3 / pyyaml 6.0.2)
+python tools/validate_step2.py . all     # every step-2 row
+export ANTHROPIC_API_KEY=...             # model runs only; the trials used:
+harbor run -p . -a claude-code -m anthropic/claude-opus-5-5 --effort high --ak max_budget_usd=10 --ak disable_web_search=true
 harbor view ./jobs
-python tools/validate.py . all           # the validation table (needs python 3.12 + pandas/numpy/pyyaml)
 tools/make_fixtures.sh                   # regenerate fixtures; python tools/seedgen.py ... regenerates data
 ```
+An OpenRouter route (`export OPENROUTER_API_KEY=...`, `-m openrouter/anthropic/claude-opus-5.5`) is what the brief names;
+it was not used, because the key line was empty (D-054). The validation row files committed at the `multi-v3` tag predate
+the desk-11 tables (committed after the tag, c15751b); a clone of the tag regenerates the desk-11 values, and the files on
+`multi-v3-final` are those values.
+
+**What the trials ran on (D-024, D-033)** <<DRAFT — G to confirm at the final tag>>. Opus (s6-opus-1) and Sonnet (E1b) ran
+on a marker-free copy of `multi-v3`. A byte comparison on 3 Nov found that the marker-stripped `precedents` HEAD is
+identical to that copy in every agent-facing and harness file: `environment/`, `steps/` (both solutions included),
+`task.toml`, and `tests/` apart from validation evidence. The 21 review-marker lines in 9 files are the whole difference.
+`multi-v3-final` differs from what the trials ran on only by the wording choices in the author's pass, listed here by
+file and line: <<SESSION: filled at 2e>>. None changes a clause number, key, figure, path or rule. Session 6's own edits
+to the agent-facing text, against the drafts approved before it, are in `review/before/s6/DIFF.md`.
+
+**Earlier revisions (single step, `single-v1`):**
 Inside the image: `git log` shows the seed history (built by `environment/history/build_history.py` at image build, deterministic HEAD);
 `python -m pytest -q tests_unit` passes. Environment: Docker via Colima on macOS (arm64), Harbor 0.25.0. Base image
 `python:3.12.7-slim-bookworm@sha256:60d9996b6a8a3689d36db740b49f4327be3be09a21122bd02fb8895abb38b50d`;
@@ -901,12 +919,32 @@ the 11-hour rest period from EU Directive 2003/88/EC Art. 3. No employer code, d
 proprietary rules; the client names are the usual placeholder names. Libraries: Python 3.12, pandas
 2.2.3, numpy 2.1.3, PyYAML 6.0.2 (BSD/MIT). Not a port of any benchmark, CTF, Kaggle or public issue.
 
+Added for `multi-v3` (session 6), also written from scratch for this task:
+- The vendored `vendor/qlib`, its CHANGELOG and its MIT header. It is fiction, unrelated to Microsoft's quant library
+  of the same name. Its Erlang A model is the standard M/M/n+M approximation with exponential patience.
+- The three precedents, their PR notes, the 24-month CHANGELOG and the 299-commit history by three fictional engineers
+  (`environment/history/plan.py`, `build_history.py`).
+- The eight-client world: 225 data weeks from the same generator, five further client configs, 8 ADRs, 4 incident notes,
+  client notes and about 2.5 k lines of service code off the `run` path.
+
+The design draws on three papers:
+- ImpossibleBench (Zhong, Raghunathan and Carlini, arXiv 2510.20270): an honest exit for unsatisfiable requirements;
+  the §5 abort result is cited in §7.
+- SpecBench: held-out composition checks that add no requirement the spec does not already imply.
+- HVTB: a visible past solution is read as the intended approach.
+
+<<G: full citations for SpecBench and HVTB, from the planning doc's "Round 2" tab. The session has no source for them
+and cites neither beyond the name.>>
+
 ## 12. How this was built
 
 <<DRAFT — G to rewrite (60 words, honest).>>
 
 Planned in a Claude chat (task design, verifier spec, failure hypothesis, pre-mortem, difficulty
-levers) and built with Claude Code between 30 Oct and 3 Nov 2026. The domain, the choice of mechanism
-and the final wording of the agent-facing files are mine; the session wrote the code, data generator,
-grader, fixtures and tables from the spec, and proposed decisions where the spec was silent. Every
-decision and run is in `ledger/LEDGER.md` (D-001..D-048) with its reason.
+levers, and after each session the review of its handback) and built with Claude Code between 30 Oct and 3 Nov 2026.
+The domain, the choice of mechanism and the final wording of the agent-facing files are mine. The session wrote the code,
+data generator, grader, fixtures and tables from the spec, and proposed decisions where the spec was silent.
+
+In session 6, a Claude Code sub-agent built the Tier B volume (the eight-client world, history plan, docs and off-path
+code) on its own branch, `volume`. The session reviewed it and merged it after a byte-identical regression check on
+Contoso and Fabrikam. Every decision and run is in `ledger/LEDGER.md` (D-001..D-066) with its reason.
