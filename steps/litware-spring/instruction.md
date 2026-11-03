@@ -2,8 +2,8 @@
 
 # Onboard Litware; Northwind's March data is in
 
-It is March 2027. The workforce-management service at `/app` serves Contoso, Fabrikam and Northwind;
-Northwind was onboarded in ISO week 2026-W44. A fourth client, Litware, goes live in ISO week 2027-W11.
+It is March 2027. The workforce-management service at `/app` serves Contoso, Fabrikam, Wingtip and
+Northwind; Northwind was onboarded in ISO week 2026-W44. A new client, Litware, goes live in ISO week 2027-W11.
 Their contract is `/app/docs/LITWARE_SOW.md`. Their demand exports for 2027-W10 and 2027-W11 and a note
 on the format are in `/app/data/litware/`; their roster is `/app/data/agents/litware.csv`. Northwind's
 export for 2027-W10 has also arrived in `/app/data/northwind/`.

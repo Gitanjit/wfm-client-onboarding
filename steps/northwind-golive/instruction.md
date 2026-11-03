@@ -29,14 +29,14 @@ listed in `/app/docs/CHANGELOG.md`.
 
 ## Constraints
 
-- Northwind's schedule satisfies every rule in SOW §2 for the whole week.
-- The SOW also sets a schedule-efficiency bound (§1.6); schedules above it are not accepted.
+- Northwind's schedule meets every rule in SOW §2, all week.
+- Schedules above the SOW §1.6 efficiency bound are not accepted.
 - Service-level targets and the occupancy cap come from the SOW. Config files describe what the system
-  does; they do not change what the contract requires.
-- Do not change the service defaults to suit one client. Add client-specific configuration.
+  does; they don't change what the contract requires.
+- Don't change the service defaults for one client; add client-specific configuration.
 - Shift templates are in each client's local time and never cross local midnight. Weekly-hour caps and
   rest periods are elapsed time (see ARCHITECTURE.md).
-- Nothing can be installed. Everything you need is already in the image.
+- Nothing can be installed; everything you need is in the image.
 <!-- G: your call — tone of this list; each line maps to a grader check, keep the content -->
 
 ## Grading
@@ -49,5 +49,5 @@ existing clients; attainment your system reports in `eval.json`, and RUNBOOK fig
 recomputation from your outputs; and the SOW §2.7 exceptions and §2.8 handover note.
 <!-- G: your call — new last clause (multi-v3); the evaluate/ sentence is gone because eval.json is now compared -->
 
-You have 90 minutes. A careful engineer finishes in about an hour.
+You have 90 minutes.
 <!-- G: your call — keep the last sentence? It is the human-time claim from RUN_REPORT §8 -->
