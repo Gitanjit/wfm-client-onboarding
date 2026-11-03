@@ -1,0 +1,90 @@
+{
+  "job": "s8-x3-opus-closed-instructed",
+  "trial": "wfm-client-onboarding__ZFM5aWZ",
+  "step": "northwind-golive",
+  "model": "anthropic/claude-opus-5-5",
+  "kwargs": {
+    "max_budget_usd": 10,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 2.7745406000000004,
+  "tokens": {
+    "n_input_tokens": 3838923,
+    "n_cache_tokens": 3701458,
+    "n_output_tokens": 67350
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 1068.3,
+    "verifier": 100.9
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 43,
+  "final_metrics": {
+    "total_prompt_tokens": 3838923,
+    "total_completion_tokens": 67350,
+    "total_cached_tokens": 3701458,
+    "total_cost_usd": 2.7745406000000004,
+    "total_steps": 39,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 137389,
+      "total_cache_read_input_tokens": 3701458
+    }
+  },
+  "changed_files": [
+    "clients/README.md",
+    "clients/registry.yaml",
+    "configs/northwind.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/clients/northwind.md",
+    "docs/clients/northwind_handover.md",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_northwind.py",
+    "tests_unit/test_registry.py",
+    "wfm/cli.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/report/reconciliation.py",
+    "wfm/scheduler/week.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2026-W44",
+    "sla": {
+      "priority": 1.0,
+      "standard": 1.0,
+      "vip": 0.9047619047619048
+    },
+    "hours": 1656.0,
+    "required": 1115.5,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "vip_floor": 0
+    }
+  }
+}

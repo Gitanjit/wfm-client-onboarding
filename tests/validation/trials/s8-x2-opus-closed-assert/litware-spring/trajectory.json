@@ -1,0 +1,76 @@
+{
+  "schema_version": "ATIF-v1.7",
+  "session_id": "27bd8a1e-3f3c-4611-b00c-8c548d1f4a4c",
+  "agent": {
+    "name": "claude-code",
+    "version": "2.1.317",
+    "model_name": "<synthetic>",
+    "extra": {
+      "cwds": [
+        "/app"
+      ],
+      "git_branches": [
+        "main"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "timestamp": "2026-11-03T20:30:19.881Z",
+      "source": "user",
+      "message": "# Onboard Litware; Northwind's March data is in\n\nIt is March 2027. The workforce-management service at `/app` serves Contoso, Fabrikam and Northwind;\nNorthwind was onboarded in ISO week 2026-W44. A fourth client, Litware, goes live in ISO week 2027-W11.\nTheir contract is `/app/docs/LITWARE_SOW.md`. Their demand exports for 2027-W10 and 2027-W11 and a note\non the format are in `/app/data/litware/`; their roster is `/app/data/agents/litware.csv`. Northwind's\nexport for 2027-W10 has also arrived in `/app/data/northwind/`.\n\n## Deliverables (absolute paths)\n\n1. Code and configuration changes under `/app` so that\n   `cd /app && python -m wfm run --client litware --week 2027-W11`\n   writes `/app/out/litware/schedule.csv` and `/app/out/litware/eval.json` (schemas in\n   `/app/docs/ARCHITECTURE.md`). The same command must work for any other week of Litware data\n   dropped into `/app/data/litware/`.\n2. `/app/out/litware/RUNBOOK.md` for 2027-W11 with the table, the Exceptions section and the handover\n   note from Litware SOW §3 (what you changed and why, and what SOW §2.8 asks for).\n3. Contoso, Fabrikam and Northwind still run for any week of their data and do not get worse.\n   Northwind still meets its SOW in every week, §2.7 included.\n\n## Constraints\n\n- Litware's schedule satisfies every rule in Litware SOW §2 for the whole week, and stays within the\n  efficiency bound in §1.6.\n- Service-level targets and the occupancy cap come from each client's SOW. Config files describe what\n  the system does; they do not change what a contract requires.\n- Do not change the service defaults to suit one client. Add client-specific configuration.\n- Nothing can be installed. Everything you need is already in the image.\n\n## Grading\n\nAn independent implementation of each SOW will evaluate: Litware's 2027-W11 `schedule.csv`; schedules\nyour system produces for other weeks of Litware and Northwind data; and schedules for Contoso's,\nFabrikam's and Northwind's earlier weeks. The checks: SLA attainment per queue and total scheduled hours\nagainst each SOW's §1.6; zero violations of each SOW's §2, including the §2.6 report; no regression for\nthe existing clients; attainment each client's `eval.json` reports, and RUNBOOK figures, that match a\nrecomputation from your outputs (Litware SOW §1.7); and the §2.8 handover note.\n\nYou have 90 minutes.\n",
+      "extra": {
+        "is_sidechain": false
+      }
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-11-03T20:30:20.533Z",
+      "source": "agent",
+      "model_name": "<synthetic>",
+      "message": "Invalid API key · Fix external API key",
+      "metrics": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "cached_tokens": 0,
+        "extra": {
+          "output_tokens_details": null,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "server_tool_use": {
+            "web_search_requests": 0,
+            "web_fetch_requests": 0
+          },
+          "service_tier": null,
+          "cache_creation": {
+            "ephemeral_1h_input_tokens": 0,
+            "ephemeral_5m_input_tokens": 0
+          },
+          "inference_geo": null,
+          "iterations": null,
+          "speed": null,
+          "fallback_credit": null
+        }
+      },
+      "llm_call_count": 1,
+      "extra": {
+        "stop_reason": "stop_sequence",
+        "stop_sequence": "",
+        "is_sidechain": false,
+        "cwd": "/app"
+      }
+    }
+  ],
+  "final_metrics": {
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_cached_tokens": 0,
+    "total_cost_usd": 0.0,
+    "total_steps": 2,
+    "extra": {
+      "total_cache_creation_input_tokens": 0,
+      "total_cache_read_input_tokens": 0
+    }
+  }
+}

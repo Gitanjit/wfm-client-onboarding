@@ -1,0 +1,7 @@
+== summary (step 2: litware-spring) ==
+  functional_correctness   1.0000  (gate 0.9333)
+  constraint_satisfaction  1.0000  (gate 1.0000)
+  regression               1.0000  (gate 1.0000)
+  artifact_quality         0.8333  (gate 0.9167)
+  overall                  0.7900
+  failed checks: ['aq_files_changed', 'aq_declaration_2_8']

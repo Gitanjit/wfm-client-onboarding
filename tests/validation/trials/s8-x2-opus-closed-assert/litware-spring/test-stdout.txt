@@ -1,0 +1,16 @@
+== wfm-client-onboarding verifier, step 2 (litware-spring) ==
+== summary (step 2: litware-spring) ==
+  functional_correctness   0.3333  (gate 0.9333)
+  constraint_satisfaction  0.3333  (gate 1.0000)
+  regression               0.9310  (gate 1.0000)
+  artifact_quality         0.0000  (gate 0.9167)
+  overall                  0.3994
+  failed checks: ['fc_litware_2027-W11_intervals', 'fc_litware_2027-W11_sla_priority', 'fc_litware_2027-W11_sla_standard', 'fc_litware_2027-W11_sla_email', 'fc_litware_2027-W11_cost', 'fc_litware_2027-W12_intervals', 'fc_litware_2027-W12_sla_priority', 'fc_litware_2027-W12_sla_standard', 'fc_litware_2027-W12_sla_email', 'fc_litware_2027-W12_cost', 'cs_litware_2027-W11', 'cs_litware_2027-W12', 'reg_audit_litware_2027-W11', 'reg_audit_litware_2027-W12', 'aq_table', 'aq_intervals_in_week', 'aq_sla_attainment_priority', 'aq_sla_attainment_standard', 'aq_sla_attainment_email', 'aq_scheduled_hours_total', 'aq_required_hours_total', 'aq_understaffed_interval_hours', 'aq_agents_scheduled', 'aq_exception_intervals', 'aq_files_changed', 'aq_declaration_2_8']
+== reward ==
+{
+  "artifact_quality": 0.0,
+  "constraint_satisfaction": 0.3333,
+  "functional_correctness": 0.3333,
+  "overall": 0.3994,
+  "regression": 0.931
+}

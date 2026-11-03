@@ -1,0 +1,293 @@
+--- a/configs/litware.yaml
++++ b/configs/litware.yaml
+@@ -0,0 +1,44 @@
++# Litware Support — local-time 20-minute export, Europe/London, rows stamped with the END of their
++# interval and a UTC offset per row (data/litware/README.txt).
++# Every value below comes from docs/LITWARE_SOW.md (effective 2027-W11); section numbers in comments.
++name: Litware
++interval_minutes: 20                 # §1.5
++tz: Europe/London                    # §1.4
++operating_hours: [7, 21]             # §1.4 (also limits templates to those inside 07:00-21:00)
++queues: [priority, standard, email]  # §1.1
++enforce_operating_hours: true        # §1.4: outside operating hours no staff is required
++full_week_grid: true                 # every 20-minute interval of the local week (§3 intervals_in_week)
++
++sla:                                 # §1.2, per queue, per interval
++  priority: {target: 0.90, seconds: 30}
++  standard: {target: 0.80, seconds: 30}
++  email: {target: 0.80, seconds: 300}
++queueing: erlang                     # §1.2: Erlang C, no abandonment
++aht_smoothing: interval              # §1.2: each interval's own AHT
++occupancy_cap: 0.85                  # §1.3
++apply_occupancy_cap: true            # §1.3 (WFM-212 is open for the service default)
++attainment_basis: service_level      # §1.2: interval met when net agents >= Erlang C requirement
++attainment_intervals: operating      # §1.6: denominator is every operating interval of the queue
++sla_target: 0.95                     # §1.6: weekly attainment per queue
++max_hours_ratio: 1.45                # §1.6: scheduled hours <= 1.45 x required hours
++
++min_cover:                           # §2.4: two agents on priority, breaks aside, every operating interval
++  priority: {agents: 2, hours: [7, 21]}
++cross_skill_weight: 0                # §1.2: a person counts once, on the queue they are scheduled on
++floor_net_of_breaks: true            # §2.4 "breaks aside"
++queue_earliest_start: {email: 9}     # §2.5: no agent on email before 09:00 local
++exception_intervals: true            # §2.6: intervals the rules make infeasible are listed, not covered
++                                     #       by breaking a rule, and left out of attainment (§1.6)
++
++scheduler: week                      # wfm/scheduler/week.py: rules below enforced while placing
++min_rest_hours: 11                   # §2.1
++split_shift_contracts: [PT]          # §2.2
++templates: [D8, L8, P6a, P6b, P4, S44]   # §2.10: the ARCHITECTURE templates inside 07:00-21:00
++break:                               # §2.3
++  min_shift_hours: 6
++  minutes: 20
++  window_hours: [2, 5]
++  placement: max_surplus
++weekly_hours: {FT: 40, PT: 24}       # §2.9
++max_consecutive_days: 5              # §2.9
++reconciliation: true                 # §3: write RUNBOOK.md (and exceptions.md, §2.7) next to eval.json
+--- a/wfm/constraints.py
++++ b/wfm/constraints.py
+@@ -43,3 +43,52 @@
+     """What the interval still lacks: the staffing requirement (agents on the queue) or the floor
+     (cover as above), whichever is short by more."""
+     return max(0.0, required - on_queue, floor_need - cover(on_queue, cross_skilled, cfg))
++
++
++# ---------------------------------------------------------------------------------------------------
++# Queue start times and infeasible intervals (newer contracts; Litware SOW §2.5 and §2.6)
++
++def earliest_start(queue: str, cfg: dict) -> float | None:
++    """Local hour before which nobody may be scheduled on `queue` (`queue_earliest_start`), or None."""
++    value = (cfg.get("queue_earliest_start") or {}).get(queue)
++    return None if value is None else float(value)
++
++
++def template_allowed_on(template, queue: str, cfg: dict) -> bool:
++    """A template may be worked on `queue` only if no segment starts before the queue's earliest start."""
++    lo = earliest_start(queue, cfg)
++    return lo is None or all(s >= lo for s, _e in template.segments)
++
++
++def infeasible_intervals(req, cfg: dict, agents) -> list[tuple[str, datetime]]:
++    """(queue, interval start UTC) where the scheduling rules make the interval's target impossible
++    (`exception_intervals: true`; Litware SOW §2.6): the agents required exceed every agent who could
++    be on the queue in that interval at all, i.e. who holds the skill and has an allowed template
++    (client `templates`, inside operating hours, split shifts by contract, queue earliest start) covering
++    it. With the rules as they stand this is chiefly `email` contacts before 09:00 (§2.5). Weekly-hour,
++    rest and consecutive-day limits are not counted, so an interval is listed only if no schedule could
++    ever meet it. Empty unless the client sets `exception_intervals`."""
++    if not cfg.get("exception_intervals"):
++        return []
++    from wfm.scheduler.templates import templates_for
++    ids = cfg.get("templates")
++    tpls = [t for t in templates_for(cfg) if ids is None or t.id in ids]
++    split_ok = cfg.get("split_shift_contracts")
++    z = ZoneInfo(cfg["tz"])
++    out, possible = [], {}
++    for r in req.itertuples(index=False):
++        if r.required <= 0:
++            continue
++        t = r.interval_start_utc
++        t = t.to_pydatetime() if hasattr(t, "to_pydatetime") else t
++        day = t.astimezone(z).date()
++        key = (r.queue, t)
++        if key not in possible:
++            covering = [tp for tp in tpls if template_allowed_on(tp, r.queue, cfg)
++                        and any(s <= t < e for s, e in tp.segments_utc(day, cfg["tz"]))]
++            possible[key] = sum(1 for a in agents if r.queue in a.skills and any(
++                not tp.is_split or split_ok is None or a.contract in split_ok for tp in covering))
++        if r.required > possible[key]:
++            out.append(key)
++    order = {q: i for i, q in enumerate(dict.fromkeys(req["queue"]))}
++    return sorted(out, key=lambda k: (k[1], order[k[0]]))
+--- a/wfm/evaluate/metrics.py
++++ b/wfm/evaluate/metrics.py
+@@ -54,12 +54,18 @@
+     # Which intervals count toward attainment: `volume` (service default: intervals with contacts) or
+     # `operating` (every interval inside the queue's operating hours, contacts or not).
+     operating = cfg.get("attainment_intervals", "volume") == "operating"
++    # `exception_intervals` (Litware SOW §2.6): intervals no schedule can meet under the rules are listed
++    # and left out of attainment and of understaffed hours; they stay in the week and in required hours.
++    exc = [(q, pd.Timestamp(t)) for q, t in constraints.infeasible_intervals(req, cfg, agents)]
++    exc_set = set(exc)
+ 
+     sla, under, over, counts = {}, 0.0, 0.0, {}
+     for q, g in req.groupby("queue", sort=False):
+         met = tot = 0
+         for r in g.itertuples(index=False):
+             scheduled = gross[q][r.interval_start_utc] - on_break[q][r.interval_start_utc]
++            if (q, pd.Timestamp(r.interval_start_utc)) in exc_set:
++                continue
+             if operating:
+                 under += max(0, r.required - scheduled) * h
+                 over += max(0, scheduled - r.required) * h
+@@ -97,6 +103,9 @@
+             result["max_hours_ratio"] = cfg["max_hours_ratio"]
+         result["violations"].update(contract_audit(sched, req, gross, cfg, agents))
+         result["data_notes"] = list(req.attrs.get("data_notes", []))
++    if cfg.get("exception_intervals"):
++        result["exception_intervals"] = [{"queue": q, "interval_start_utc": t.strftime("%Y-%m-%dT%H:%M:%SZ")}
++                                         for q, t in exc]
+     return result
+ 
+ 
+@@ -123,6 +132,8 @@
+     required = {(r.queue, r.interval_start_utc): r.required for r in req.itertuples(index=False)}
+     grid = sorted(set(req["interval_start_utc"]))
+     v = {"rest": 0, "split_shift": 0, "templates": 0, "breaks": 0}
++    if cfg.get("queue_earliest_start"):
++        v["queue_start"] = 0
+     sched = sched.assign(day=[t.astimezone(z).date() for t in sched["segment_start_utc"]])
+     for aid, g in sched.groupby("agent_id"):
+         a = by_id.get(aid)
+@@ -140,6 +151,11 @@
+             if len(segs) > 1 and cfg.get("split_shift_contracts") is not None and (
+                     a is None or a.contract not in cfg["split_shift_contracts"]):
+                 v["split_shift"] += 1
++            if cfg.get("queue_earliest_start"):   # e.g. Litware §2.5: nobody on email before 09:00
++                v["queue_start"] += int(any(
++                    constraints.earliest_start(q, cfg) is not None
++                    and b.astimezone(z).hour + b.astimezone(z).minute / 60 < constraints.earliest_start(q, cfg)
++                    for q, b in zip(s["queue"], s["segment_start_utc"])))
+             if rule.get("placement") == "max_surplus":
+                 v["breaks"] += _break_wrong(s, segs, required, gross, grid, rule, step)
+         if cfg.get("min_rest_hours"):
+--- a/wfm/ingest/loader.py
++++ b/wfm/ingest/loader.py
+@@ -66,18 +66,36 @@
+                           format="%Y-%m-%d %H:%M%z", utc=True)
+ 
+ 
++def _parse_local(labels: pd.Series) -> pd.Series:
++    """Wall-clock labels -> naive datetimes. An end stamp may be written `24:00` (the next day's 00:00)."""
++    text = labels.astype(str).str.strip()
++    late = text.str.endswith(" 24:00")
++    out = pd.to_datetime(text.where(~late, text.str[:-5] + "00:00"))
++    return out.where(~late, out + pd.Timedelta(days=1))
++
++
+ def _read_export(path, cfg: dict) -> pd.DataFrame:
+     df = pd.read_csv(path)
+-    local = pd.to_datetime(df["interval_start_local"])
++    # Most exports stamp a row with the start of its interval (`interval_start_local`). Litware's stamps
++    # the END (`interval_end_local`, data/litware/README.txt): a row stamped 09:20 covers 09:00-09:20, and
++    # its utc_offset is the one in effect at that end moment. Such rows are converted to UTC at their end
++    # stamp and moved back one interval (the export is at the client's configured grain).
++    end_stamped = "interval_start_local" not in df and "interval_end_local" in df
++    label = "interval_end_local" if end_stamped else "interval_start_local"
++    if end_stamped:
++        df["interval_start_local"] = df[label]
++    local = _parse_local(df[label])
+     if "utc_offset" in df:
+         # The row's own offset is authoritative (Northwind README): wall-clock labels repeat in the
+         # fall-back hour and cannot be localised unambiguously.
+-        df["interval_start_utc"] = pd.to_datetime(local.dt.strftime("%Y-%m-%d %H:%M") + df["utc_offset"].astype(str),
+-                                                  format="%Y-%m-%d %H:%M%z", utc=True)
++        stamp_utc = pd.to_datetime(local.dt.strftime("%Y-%m-%d %H:%M") + df["utc_offset"].astype(str),
++                                   format="%Y-%m-%d %H:%M%z", utc=True)
+     elif cfg["client"] == "fabrikam":   # WFM-204: re-sent 2025 exports have no offset column
+-        df["interval_start_utc"] = _fixed_offsets(local, FABRIKAM_OFFSETS)
++        stamp_utc = _fixed_offsets(local, FABRIKAM_OFFSETS)
+     else:
+-        df["interval_start_utc"] = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
++        stamp_utc = local.dt.tz_localize(cfg["tz"]).dt.tz_convert("UTC")
++    df["_stamp_utc"] = stamp_utc
++    df["interval_start_utc"] = stamp_utc - pd.Timedelta(minutes=cfg["interval_minutes"]) if end_stamped else stamp_utc
+     out = df[["queue", "interval_start_utc", "volume", "aht_sec"]].copy()
+     out.attrs["data_notes"] = export_notes(df, local, cfg)
+     return out
+@@ -93,7 +111,7 @@
+                      f"counted in the interval it falls in")
+     if "utc_offset" in df:
+         z = ZoneInfo(cfg["tz"])
+-        for r, t in zip(df.itertuples(index=False), df["interval_start_utc"]):
++        for r, t in zip(df.itertuples(index=False), df["_stamp_utc"]):
+             expect = t.to_pydatetime().astimezone(z).strftime("%z")
+             if expect[:3] + ":" + expect[3:] != str(r.utc_offset):
+                 notes.append(f"row {r.interval_start_local} ({r.queue}) carries offset {r.utc_offset}, "
+--- a/wfm/report/reconciliation.py
++++ b/wfm/report/reconciliation.py
+@@ -36,9 +36,20 @@
+     out += [("scheduled_hours_total", f"{ev['scheduled_hours']:.1f}"),
+             ("required_hours_total", f"{ev['required_hours']:.1f}"),
+             ("understaffed_interval_hours", f"{ev['understaffed_interval_hours']:.1f}"),
+-            ("agents_scheduled", str(ev["agents_scheduled"])),
+-            ("files_changed", ", ".join(files))]
++            ("agents_scheduled", str(ev["agents_scheduled"]))]
++    if cfg.get("exception_intervals"):   # Litware SOW §3 / §2.6
++        out.append(("exception_intervals", str(len(ev.get("exception_intervals", [])))))
++    out.append(("files_changed", ", ".join(files)))
+     return out
++
++
++def exception_lines(ev: dict) -> list[str]:
++    """The `## Exceptions` section (Litware SOW §3): one line per §2.6 interval, `- <queue> <UTC start>`."""
++    lines = ["## Exceptions", ""]
++    lines += [f"- {e['queue']} {e['interval_start_utc']}" for e in ev.get("exception_intervals", [])]
++    if not ev.get("exception_intervals"):
++        lines.append("None this week.")
++    return lines + [""]
+ 
+ 
+ def exceptions(ev: dict, cfg: dict) -> list[tuple[str, str, str, str]]:
+@@ -61,7 +72,7 @@
+     table = ["| key | value |", "|---|---|"] + [f"| {k} | {v} |" for k, v in rows(ev, cfg, files)]
+     runbook = [f"# {cfg.get('name', cfg['client'])} — weekly reconciliation, {ev['week']}", "",
+                "Figures from this run's `schedule.csv` and `eval.json` (SOW §3 definitions).", "",
+-               *table, "", note]
++               *table, "", *(exception_lines(ev) if cfg.get("exception_intervals") else []), note]
+     (out_dir / "RUNBOOK.md").write_text("\n".join(runbook).rstrip() + "\n")
+ 
+     exc = exceptions(ev, cfg)
+@@ -74,12 +85,15 @@
+         lines += [f"Target: weekly attainment of at least {target:.2f} on each queue (SOW §1.6), measured as "
+                   "defined in SOW §1 (service level per interval: agents on the queue net of breaks against "
+                   "the Erlang C requirement at the interval's own volume and AHT, occupancy capped at "
+-                  f"{cfg.get('occupancy_cap')}; every operating interval counts). `achievable` is the "
++                  f"{cfg.get('occupancy_cap')}; every operating interval counts"
++                  f"{', except the intervals listed under Exceptions in RUNBOOK.md' if cfg.get('exception_intervals') else ''}"
++                  "). `achievable` is the "
+                   "attainment of this week's schedule: the best the planner found with the roster provided "
+                   "while keeping every SOW §2 rule and the SOW §1.6 hours bound. `shortfall` = target − achievable.",
+                   ""]
+         lines += [line for line in _exception_notes(ev, cfg)]
+-        lines += ["", "Status: to be raised with the Northwind account team (SOW §2.7). Not re-stated on a "
++        lines += ["", f"Status: to be raised with the {cfg.get('short_name', cfg['client'].capitalize())} account team "
++                  "(SOW §2.7). Not re-stated on a "
+                   "coverage basis: the PR #47 coverage reporting was approved for Fabrikam only and SOW §2.7 "
+                   "requires attainment as defined in §1.", ""]
+     else:
+--- a/wfm/scheduler/week.py
++++ b/wfm/scheduler/week.py
+@@ -79,8 +79,11 @@
+         for r in req.itertuples(index=False):
+             self.req[r.queue][self.idx[r.interval_start_utc.to_pydatetime()]] = int(r.required)
+         self.floor = {q: [constraints.floor(q, t, cfg) for t in self.grid] for q in self.queues}
++        # §2.6-style intervals no schedule can meet (`exception_intervals`): not chased, only the floor counts
++        self.exceptions = {(q, self.idx[t]) for q, t in constraints.infeasible_intervals(req, cfg, agents)}
+         # what an interval must have on the queue, net of breaks
+-        self.target = {q: [max(self.req[q][i], self.floor[q][i]) for i in range(n)] for q in self.queues}
++        self.target = {q: [self.floor[q][i] if (q, i) in self.exceptions else max(self.req[q][i], self.floor[q][i])
++                           for i in range(n)] for q in self.queues}
+         self.brk = cfg["break"]
+         self.min_rest = timedelta(hours=float(cfg.get("min_rest_hours") or 0))
+         self.caps = cfg["weekly_hours"]
+@@ -94,7 +97,8 @@
+                 ivs = tuple(i for i, t in enumerate(self.grid) if day_of[i] == d and any(s <= t < e for s, e in segs))
+                 hours = sum((e - s).total_seconds() for s, e in segs) / 3600.0
+                 for q in self.queues:
+-                    self.options.append(Option(d, tpl, q, segs, ivs, hours))
++                    if constraints.template_allowed_on(tpl, q, cfg):   # queue_earliest_start (e.g. §2.5)
++                        self.options.append(Option(d, tpl, q, segs, ivs, hours))
+         self.shifts: list[Shift] = []
+         self.gross = {q: [0] * n for q in self.queues}
+         self.onbrk = {q: [0] * n for q in self.queues}
+@@ -193,7 +197,7 @@
+         for q in self.queues:
+             for i in range(len(self.grid)):
+                 n = self.net(q, i)
+-                if n < self.req[q][i]:
++                if n < self.req[q][i] and (q, i) not in self.exceptions:
+                     bad += 1
+                 if n < self.floor[q][i]:
+                     bad += FLOOR_WEIGHT
