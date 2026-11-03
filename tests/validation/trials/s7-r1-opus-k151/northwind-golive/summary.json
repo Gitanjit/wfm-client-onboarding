@@ -1,0 +1,89 @@
+{
+  "job": "s7-r1-opus-k151",
+  "trial": "wfm-client-onboarding__NnPDu97",
+  "step": "northwind-golive",
+  "model": "anthropic/claude-opus-5-5",
+  "kwargs": {
+    "max_budget_usd": 10,
+    "disable_web_search": true,
+    "reasoning_effort": "high"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 3.5946480000000003,
+  "tokens": {
+    "n_input_tokens": 4384490,
+    "n_cache_tokens": 4107797,
+    "n_output_tokens": 68464
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 2219.3,
+    "verifier": 94.7
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 1.0,
+    "functional_correctness": 1.0,
+    "overall": 1.0,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 49,
+  "final_metrics": {
+    "total_prompt_tokens": 4384490,
+    "total_completion_tokens": 68464,
+    "total_cached_tokens": 4107797,
+    "total_cost_usd": 3.5946480000000003,
+    "total_steps": 47,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 276601,
+      "total_cache_read_input_tokens": 4107797
+    }
+  },
+  "changed_files": [
+    "clients/registry.yaml",
+    "configs/northwind.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/clients/northwind.md",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_northwind.py",
+    "tests_unit/test_registry.py",
+    "wfm/cli.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/report/reconcile.py",
+    "wfm/scheduler/greedy_v2.py",
+    "wfm/scheduler/templates.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2026-W44",
+    "sla": {
+      "priority": 1.0,
+      "standard": 1.0,
+      "vip": 0.9880952380952381
+    },
+    "hours": 1534.0,
+    "required": 1115.5,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "vip_floor": 0
+    }
+  }
+}
