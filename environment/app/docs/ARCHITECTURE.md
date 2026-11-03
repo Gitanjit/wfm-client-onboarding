@@ -81,7 +81,7 @@ One row per segment. The break row is the segment that contains it. `break_minut
 
 ## eval.json
 
-`intervals`, attainment per queue (`sla`, on the client's `attainment_basis`: `service_level` by
+`intervals`, attainment per queue (`sla`, on the client's `attainment_basis`: `coverage` by
 default), `meets_target` (attainment at or above the configured `sla_target`), `scheduled_hours`, `understaffed_interval_hours`, `overstaffed_interval_hours`,
 `agents_scheduled`, and `violations` keyed by rule name. The evaluator is a convenience for engineers.
 Contractual evaluation is done independently against each client's SOW.

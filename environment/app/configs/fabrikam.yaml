@@ -4,4 +4,3 @@ interval_minutes: 60
 tz: America/New_York
 operating_hours: [6, 24]
 queueing: qlib            # abandonment model (vendor/qlib); Fabrikam's ACD reports abandons separately
-attainment_basis: coverage   # PR #47, approved by the account team for the pilot and kept on renewal

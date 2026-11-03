@@ -12,7 +12,7 @@ sla:                          # service-level targets per queue: fraction answer
   priority: {target: 0.80, seconds: 20}
   standard: {target: 0.80, seconds: 20}
 sla_target: 0.90              # evaluator verdict: attainment at or above this is reported as "meets_target"
-attainment_basis: service_level   # service_level (interval met when scheduled >= required) or coverage
+attainment_basis: coverage        # PR #47: coverage (scheduled / required, capped at 1) or service_level (interval met when scheduled >= required)
 
 min_cover: {}                 # per-queue floors, e.g. {chat: {agents: 2, hours: [20, 24]}} (wfm/constraints.py)
 cross_skill_weight: 0.5       # an agent on another queue holding the floor queue's skill counts this much toward it
