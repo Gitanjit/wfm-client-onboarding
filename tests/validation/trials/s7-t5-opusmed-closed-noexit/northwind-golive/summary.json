@@ -1,0 +1,90 @@
+{
+  "job": "s7-t5-opusmed-closed-noexit",
+  "trial": "wfm-client-onboarding__8Pa8Jx8",
+  "step": "northwind-golive",
+  "model": "anthropic/claude-opus-5-5",
+  "kwargs": {
+    "max_budget_usd": 10,
+    "disable_web_search": true,
+    "reasoning_effort": "medium"
+  },
+  "claude_code_version": "2.1.317",
+  "cost_usd": 4.211690999999999,
+  "tokens": {
+    "n_input_tokens": 8246573,
+    "n_cache_tokens": 8088205,
+    "n_output_tokens": 90118
+  },
+  "wall_clock_s": {
+    "total": null,
+    "environment_setup": null,
+    "agent_setup": null,
+    "agent_execution": 1475.9,
+    "verifier": 46.0
+  },
+  "rewards": {
+    "artifact_quality": 1.0,
+    "constraint_satisfaction": 0.75,
+    "functional_correctness": 1.0,
+    "overall": 0.79,
+    "regression": 1.0
+  },
+  "exception": null,
+  "exception_message": null,
+  "tool_calls": 78,
+  "final_metrics": {
+    "total_prompt_tokens": 8246573,
+    "total_completion_tokens": 90118,
+    "total_cached_tokens": 8088205,
+    "total_cost_usd": 4.211690999999999,
+    "total_steps": 76,
+    "extra": {
+      "service_tiers": [
+        "standard"
+      ],
+      "total_cache_creation_input_tokens": 158218,
+      "total_cache_read_input_tokens": 8088205
+    }
+  },
+  "changed_files": [
+    "clients/README.md",
+    "clients/registry.yaml",
+    "configs/northwind.yaml",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/clients/northwind.md",
+    "tests_unit/test_cli_subcommands.py",
+    "tests_unit/test_northwind.py",
+    "tests_unit/test_registry.py",
+    "wfm/cli.py",
+    "wfm/evaluate/metrics.py",
+    "wfm/ingest/loader.py",
+    "wfm/report/runbook.py",
+    "wfm/scheduler/week.py",
+    "wfm/staffing/required.py"
+  ],
+  "unit_tests_exit": 0,
+  "hand_reeval": {
+    "week": "2026-W44",
+    "sla": {
+      "priority": 0.9603174603174603,
+      "standard": 0.9603174603174603,
+      "vip": 0.9047619047619048
+    },
+    "hours": 1534.0,
+    "required": 1115.5,
+    "intervals": 338,
+    "violations": {
+      "rest11h": 0,
+      "split_pt_only": 0,
+      "break_window_max_surplus": 0,
+      "weekly_hours": 0,
+      "consecutive_days": 0,
+      "skill_match": 0,
+      "no_overlap": 0,
+      "coverage_sane": 0,
+      "vip_floor": 0,
+      "templates_in_set": 0
+    }
+  }
+}
