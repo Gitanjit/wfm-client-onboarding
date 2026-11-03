@@ -921,7 +921,7 @@ proprietary rules; the client names are the usual placeholder names. Libraries: 
 
 Added for `multi-v3` (session 6), also written from scratch for this task:
 - The vendored `vendor/qlib`, its CHANGELOG and its MIT header. It is fiction, unrelated to Microsoft's quant library
-  of the same name. Its Erlang A model is the standard M/M/n+M approximation with exponential patience.
+  of the same name. Its Erlang A model is an M/M/n+M approximation written for the task.
 - The three precedents, their PR notes, the 24-month CHANGELOG and the 299-commit history by three fictional engineers
   (`environment/history/plan.py`, `build_history.py`).
 - The eight-client world: 225 data weeks from the same generator, five further client configs, 8 ADRs, 4 incident notes,
