@@ -1,0 +1,17 @@
+........................................................................ [ 78%]
+....................                                                     [100%]
+=============================== warnings summary ===============================
+tests_unit/test_litware.py: 60 warnings
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplfnu20te/app/wfm/scheduler/greedy.py:350: RuntimeWarning: divide by zero encountered in matmul
+    hours = combos @ hrs
+
+tests_unit/test_litware.py: 60 warnings
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplfnu20te/app/wfm/scheduler/greedy.py:350: RuntimeWarning: overflow encountered in matmul
+    hours = combos @ hrs
+
+tests_unit/test_litware.py: 60 warnings
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplfnu20te/app/wfm/scheduler/greedy.py:350: RuntimeWarning: invalid value encountered in matmul
+    hours = combos @ hrs
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+92 passed, 180 warnings in 16.35s

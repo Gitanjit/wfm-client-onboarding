@@ -1,0 +1,15 @@
+clients/registry.yaml
+configs/defaults.yaml
+configs/litware.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+docs/handover/litware-2027-W11.md
+tests_unit/test_cli_subcommands.py
+tests_unit/test_litware.py
+tests_unit/test_registry.py
+wfm/config.py
+wfm/constraints.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/scheduler/greedy.py
+wfm/sow.py

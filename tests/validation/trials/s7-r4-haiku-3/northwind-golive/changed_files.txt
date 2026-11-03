@@ -1,0 +1,17 @@
+clients/README.md
+clients/registry.yaml
+configs/defaults.yaml
+configs/northwind.yaml
+docs/ARCHITECTURE.md
+docs/CHANGELOG.md
+docs/handover/northwind-2026-W44.md
+tests_unit/test_cli_subcommands.py
+tests_unit/test_northwind.py
+tests_unit/test_registry.py
+wfm/cli.py
+wfm/config.py
+wfm/evaluate/metrics.py
+wfm/ingest/loader.py
+wfm/scheduler/greedy.py
+wfm/sow.py
+wfm/staffing/required.py
