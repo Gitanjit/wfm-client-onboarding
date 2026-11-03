@@ -1,4 +1,4 @@
-# collinear-candidate/wfm-client-onboarding
+# wfm-client-onboarding
 
 A long-horizon Harbor task: onboard a new contact-centre client into a small workforce-management
 service without regressing the existing clients. Full write-up: [`RUN_REPORT.md`](RUN_REPORT.md).
