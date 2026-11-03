@@ -1,8 +1,8 @@
 {
     "id": "6acac30c-b715-4598-aeff-1418583a9325",
-    "task_name": "collinear-candidate/wfm-client-onboarding",
+    "task_name": "gitanjit/wfm-client-onboarding",
     "trial_name": "wfm-client-onboarding__KADCHjU",
-    "trial_uri": "file:///Users/gitanjit/dev/coll_task/collinear-candidate/wfm-client-onboarding/jobs/s3-sonnet-1/wfm-client-onboarding__KADCHjU",
+    "trial_uri": "file:///Users/gitanjit/dev/coll_task/wfm-client-onboarding/jobs/s3-sonnet-1/wfm-client-onboarding__KADCHjU",
     "task_id": {
         "path": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/runcopy/multi-v1/wfm-client-onboarding"
     },
@@ -20,7 +20,7 @@
             "source": null
         },
         "trial_name": "wfm-client-onboarding__KADCHjU",
-        "trials_dir": "/Users/gitanjit/dev/coll_task/collinear-candidate/wfm-client-onboarding/jobs/s3-sonnet-1",
+        "trials_dir": "/Users/gitanjit/dev/coll_task/wfm-client-onboarding/jobs/s3-sonnet-1",
         "install_only": false,
         "timeout_multiplier": 1.0,
         "agent_timeout_multiplier": null,

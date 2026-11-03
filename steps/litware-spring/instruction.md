@@ -1,4 +1,4 @@
-<!-- canary: collinear-candidate wfm-client-onboarding 2026-10 gm -->
+<!-- canary: wfm-client-onboarding 2026-10 gm -->
 
 # Onboard Litware; Northwind's March data is in
 
