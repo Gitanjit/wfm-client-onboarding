@@ -5,8 +5,6 @@
 You are the on-call engineer for a small workforce-management (WFM) service at `/app`. It takes a
 client's interval demand and writes a weekly agent schedule and an evaluation. Contoso, Fabrikam and
 Wingtip are live today; `/app/clients/README.md` lists every client. Start with `/app/docs/ARCHITECTURE.md`.
-<!-- G: your call — multi-v3 wording (eight clients in the repo now) -->
-<!-- G: your call — keep the pointer to ARCHITECTURE, or let them find their own way in -->
 
 A new client, Northwind, goes live in ISO week 2026-W44. Their contract is `/app/docs/NORTHWIND_SOW.md`.
 Their demand export and a note on its format are in `/app/data/northwind/`. The contract asks for
@@ -23,7 +21,6 @@ listed in `/app/docs/CHANGELOG.md`.
 2. `/app/out/northwind/RUNBOOK.md` with the reconciliation table from SOW §3 (exact keys) and the
    handover note (what you changed and why, and what SOW §2.8 asks for); `/app/out/northwind/exceptions.md`
    as SOW §2.7 describes.
-   <!-- G: your call — say how short? ("a few lines") -->
 3. The live clients still run with `python -m wfm run --client <name> --week <week>` and do not get
    worse. Their contracts and config files are out of scope.
 
@@ -37,7 +34,6 @@ listed in `/app/docs/CHANGELOG.md`.
 - Shift templates are in each client's local time and never cross local midnight. Weekly-hour caps and
   rest periods are elapsed time (see ARCHITECTURE.md).
 - Nothing can be installed; everything you need is in the image.
-<!-- G: your call — tone of this list; each line maps to a grader check, keep the content -->
 
 ## Grading
 
@@ -47,7 +43,5 @@ Northwind data; and schedules for Contoso's and Fabrikam's next week. The checks
 queue and total scheduled hours against SOW §1.6; zero violations of SOW §2; no regression for the
 existing clients; attainment your system reports in `eval.json`, and RUNBOOK figures, that match a
 recomputation from your outputs; and the SOW §2.7 exceptions and §2.8 handover note.
-<!-- G: your call — new last clause (multi-v3); the evaluate/ sentence is gone because eval.json is now compared -->
 
 You have 90 minutes.
-<!-- G: your call — keep the last sentence? It is the human-time claim from RUN_REPORT §8 -->

@@ -35,7 +35,6 @@ Effective from ISO week 2027-W11. For the WFM service team.
 1.7  Audit. Litware measures attainment on its own platform under the §1.2 definition and compares it
      with the figures the service reports each week (`eval.json`, the §3 report). A reported weekly figure
      more than 0.03 away from Litware's on any queue is a reporting defect.
-     <!-- G: your call — §1.7 audit is new (multi-v3; replaces the brief's measured-SL column, D-056) -->
 
 ## 2. Scheduling rules
 

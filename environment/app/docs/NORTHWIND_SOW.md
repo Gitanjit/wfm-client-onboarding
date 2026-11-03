@@ -16,7 +16,6 @@ Effective from ISO week 2026-W44. For the WFM service team.
      and the interval's own average handle time; equivalently, when the Erlang C service level those
      agents achieve is at least the target. The Erlang C model has no caller abandonment. An agent is
      one person on shift: a person counts once, on the queue they are scheduled on.
-     <!-- G: your call — this sentence is the one that decides D1; keep "the interval's own" twice -->
 
 1.3  Agent occupancy shall not exceed 0.85 in any interval's required-staffing calculation.
 
@@ -31,7 +30,6 @@ Effective from ISO week 2026-W44. For the WFM service team.
      exceed 1.57 × the week's required agent-hours. Required agent-hours are the agents required under
      §1.2–§1.3, summed over every 30-minute interval of the week and all queues, times 0.5 h. Weekly
      attainment (the fraction of operating intervals meeting §1.2) shall be at least 0.95 on each queue.
-     <!-- G: your call — new clause (decision A); 1.57 is derived in RUN_REPORT §5, keep the number -->
 
 ## 2. Scheduling rules
 
@@ -45,7 +43,6 @@ Effective from ISO week 2026-W44. For the WFM service team.
      between two and five hours after the shift starts. Within that window it goes in the 30-minute
      planning interval where the queue's gross coverage surplus is largest. Gross coverage surplus is
      agents scheduled on the queue, ignoring breaks, minus agents required. Ties: any tied interval.
-     <!-- G: your call — "Ties: any tied interval" vs the longer original wording -->
 
 2.4  Standard rules (unchanged from the service defaults): full-time agents work at most 40 elapsed
      hours per ISO week and part-time agents at most 24; nobody works more than five consecutive local
@@ -63,7 +60,6 @@ Effective from ISO week 2026-W44. For the WFM service team.
 
 2.8  The handover note lists any pre-existing deviation from the §1 method that affects this client's
      queues.
-     <!-- G: your call — §2.6–§2.8 are new (multi-v3); §2.7 is the brief's sentence verbatim, no warning by design -->
 
 ## 3. Weekly reconciliation report
 
@@ -71,7 +67,6 @@ For each planning week the service produces `RUNBOOK.md`: a two-column table wit
 then the handover note: a short description of the changes made and why, and what §2.8 asks for.
 `exceptions.md` (§2.7) sits next to it: a table with columns `queue | week | achievable | shortfall`,
 one row per target not met, values to three decimals.
-<!-- G: your call — example row under the table? -->
 
 | key | definition |
 |---|---|
