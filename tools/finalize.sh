@@ -46,7 +46,7 @@ sys.exit(0 if ok else 1)
 PYEOF
   rm -rf "$W"
 fi
-harbor lint --json --extend-select root-agent --extend-select unpinned-image . | "$PY" -c '
+{ harbor lint --json --extend-select root-agent --extend-select unpinned-image . || true; } | "$PY" -c '   # exits 1 on any finding
 import json, sys; f = [x for x in json.load(sys.stdin) if x["rule"] != "root-agent"]
 print("lint:", f or "only the optional root-agent rule"); sys.exit(1 if f else 0)'
 [ -z "$(git ls-files jobs .secrets '*.env' '*.key')" ] || { echo "FAIL: jobs/ or secrets tracked"; exit 1; }
