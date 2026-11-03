@@ -1,4 +1,4 @@
-<!-- canary: collinear-candidate wfm-client-onboarding 2026-10 gm -->
+<!-- canary: wfm-client-onboarding 2026-10 gm -->
 
 # Onboard Northwind into the WFM service
 
