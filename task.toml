@@ -20,7 +20,7 @@ domain = "contact-centre workforce management"
 
 # The agent (Claude Code) runs inside the sandbox and must reach the model API; nothing else.
 [agent]
-timeout_sec = 5400.0
+timeout_sec = 2400.0
 network_mode = "allowlist"
 allowed_hosts = ["openrouter.ai", "api.anthropic.com"]
 

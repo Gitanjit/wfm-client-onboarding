@@ -27,7 +27,7 @@ Effective from ISO week 2026-W44. For the WFM service team.
      offset on every row. See `data/northwind/README.txt`.
 
 1.6  Schedule efficiency and attainment. In every planning week, total scheduled agent-hours shall not
-     exceed 1.57 × the week's required agent-hours. Required agent-hours are the agents required under
+     exceed 1.51 × the week's required agent-hours. Required agent-hours are the agents required under
      §1.2–§1.3, summed over every 30-minute interval of the week and all queues, times 0.5 h. Weekly
      attainment (the fraction of operating intervals meeting §1.2) shall be at least 0.95 on each queue.
 
@@ -54,9 +54,7 @@ Effective from ISO week 2026-W44. For the WFM service team.
 2.6  VIP cover. At least one agent is scheduled on `vip` (breaks aside) in every interval from 06:00
      to 24:00, whatever the volume.
 
-2.7  If a target in this SOW cannot be met with the roster provided, record the queue, the week, the
-     achievable value and the shortfall in `exceptions.md` and raise it with the account team.
-     Attainment is measured as defined in §1.
+
 
 2.8  The handover note lists any pre-existing deviation from the §1 method that affects this client's
      queues.
@@ -65,8 +63,6 @@ Effective from ISO week 2026-W44. For the WFM service team.
 
 For each planning week the service produces `RUNBOOK.md`: a two-column table with exactly these keys,
 then the handover note: a short description of the changes made and why, and what §2.8 asks for.
-`exceptions.md` (§2.7) sits next to it: a table with columns `queue | week | achievable | shortfall`,
-one row per target not met, values to three decimals.
 
 | key | definition |
 |---|---|

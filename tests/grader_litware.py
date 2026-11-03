@@ -5,7 +5,7 @@ every dimension wrapped). Dimensions and gates:
   FC  15 checks, gate 14/15: Litware 2027-W11 (seen, go-live) and 2027-W12 (held-out; UK spring-forward):
       interval count, attainment >= 0.95 per queue (three queues), hours <= 1.45 x required (Litware §1.6);
       Northwind 2027-W11 (held-out): count, attainment per queue (vip: the floor or, short of it, within 0.05 of
-      the reference — Northwind §2.7), hours <= 1.57 x required (Northwind §1.6).
+      the reference — Northwind §2.7), hours <= 1.51 x required (Northwind §1.6).
   CS  gate 1.0: Litware SOW §2 rules (incl. R4 priority floor, R5 email start) on both Litware weeks; the §2.6
       Exceptions list in out/litware/RUNBOOK.md equals the grader's infeasible set for 2027-W11; Northwind SOW §2
       on 2027-W11.

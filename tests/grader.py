@@ -27,7 +27,7 @@ DIMS = ["functional_correctness", "constraint_satisfaction", "regression", "arti
 NW_WEEKS = ("2026-W44", "2026-W45", "2027-W10")   # seen; held-out; held-out with the US spring-forward
 EXPECTED_INTERVALS = {("northwind", "2026-W44"): 338, ("northwind", "2026-W45"): 336, ("northwind", "2027-W10"): 334,
                       ("contoso", "2026-W44"): 672, ("fabrikam", "2026-W44"): 169}
-SOW_EFFICIENCY_K, SOW_ATTAINMENT_FLOOR = 1.57, 0.95   # Northwind SOW §1.6
+SOW_EFFICIENCY_K, SOW_ATTAINMENT_FLOOR = 1.51, 0.95   # Northwind SOW §1.6
 QUEUES_NW = ("priority", "standard", "vip")
 # reported_sla: eval.json attainment vs the recomputation (instruction, SOW §2.7 "measured as defined in §1");
 # vip_ref: vip cannot reach the 0.95 floor with this roster; the §2.7 "achievable value" must be within this of the reference's;

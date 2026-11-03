@@ -333,7 +333,7 @@ def capture(t: Path, out: Path, r: dict, base_app: Path, manifest: dict, a, step
     lines = [f"# Hand re-evaluation (tests/indep_eval.py on the agent's own out/{client}/schedule.csv, {week})", ""]
     if sched.exists() and data.exists():
         m = ie.evaluate(client, week, sched, data, roster)
-        k = 1.45 if litware else 1.57
+        k = 1.45 if litware else 1.51
         lines += ["| metric | agent |", "|---|---|", f"| intervals | {m['intervals']} |",
                   *[f"| sla {q} | {v:.3f} |" for q, v in m["sla"].items()],
                   f"| scheduled_hours | {m['scheduled_hours']:.1f} |", f"| required_hours | {m['required_hours']:.1f} |",

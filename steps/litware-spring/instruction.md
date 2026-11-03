@@ -18,7 +18,7 @@ export for 2027-W10 has also arrived in `/app/data/northwind/`.
 2. `/app/out/litware/RUNBOOK.md` for 2027-W11 with the table, the Exceptions section and the handover
    note from Litware SOW §3 (what you changed and why, and what SOW §2.8 asks for).
 3. Contoso, Fabrikam and Northwind still run for any week of their data and do not get worse.
-   Northwind still meets its SOW in every week, §2.7 included.
+   Northwind still meets its SOW in every week.
 
 ## Constraints
 
@@ -38,4 +38,4 @@ against each SOW's §1.6; zero violations of each SOW's §2, including the §2.6
 the existing clients; attainment each client's `eval.json` reports, and RUNBOOK figures, that match a
 recomputation from your outputs (Litware SOW §1.7); and the §2.8 handover note.
 
-You have 90 minutes.
+You have 40 minutes.
