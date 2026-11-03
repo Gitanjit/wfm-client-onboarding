@@ -4,7 +4,7 @@ schema_version = "1.3"
 artifacts = ["/app"]
 
 [task]
-name = "collinear-candidate/wfm-client-onboarding"
+name = "gitanjit/wfm-client-onboarding"
 description = "Onboard a new contact-centre client into a small workforce-management service (new export format with a DST transition, a peak-only staffing defect, three contractual scheduling rules) without regressing two existing clients on held-out weeks."
 keywords = ["long-horizon", "workforce-management", "scheduling", "data-forensics", "regression", "erlang-c"]
 authors = [{ name = "Gitanjit Medhi", email = "gitanjit6@gmail.com" }]
