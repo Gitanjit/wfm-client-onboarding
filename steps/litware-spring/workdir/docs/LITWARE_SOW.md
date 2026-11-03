@@ -58,9 +58,7 @@ Effective from ISO week 2027-W11. For the WFM service team.
      lists that interval under Exceptions in the weekly report (§3). It does not break another rule to
      cover it, and it does not drop the interval from the week.
 
-2.7  If a target in this SOW cannot be met with the roster provided, record the queue, the week, the
-     achievable value and the shortfall in `exceptions.md` and raise it with the account team.
-     Attainment is measured as defined in §1.
+
 
 2.8  The handover note lists any pre-existing deviation from the §1 method that affects this client's
      queues.

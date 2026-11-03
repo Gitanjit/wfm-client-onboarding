@@ -19,8 +19,7 @@ listed in `/app/docs/CHANGELOG.md`.
    `/app/docs/ARCHITECTURE.md`). The same command must work for any other week of Northwind data
    dropped into `/app/data/northwind/`.
 2. `/app/out/northwind/RUNBOOK.md` with the reconciliation table from SOW §3 (exact keys) and the
-   handover note (what you changed and why, and what SOW §2.8 asks for); `/app/out/northwind/exceptions.md`
-   as SOW §2.7 describes.
+   handover note (what you changed and why, and what SOW §2.8 asks for).
 3. The live clients still run with `python -m wfm run --client <name> --week <week>` and do not get
    worse. Their contracts and config files are out of scope.
 
@@ -42,6 +41,6 @@ evaluate: your Northwind 2026-W44 `schedule.csv`; schedules your system produces
 Northwind data; and schedules for Contoso's and Fabrikam's next week. The checks: SLA attainment per
 queue and total scheduled hours against SOW §1.6; zero violations of SOW §2; no regression for the
 existing clients; attainment your system reports in `eval.json`, and RUNBOOK figures, that match a
-recomputation from your outputs; and the SOW §2.7 exceptions and §2.8 handover note.
+recomputation from your outputs; and the SOW §2.8 handover note.
 
 You have 90 minutes. A careful engineer finishes in about an hour.
