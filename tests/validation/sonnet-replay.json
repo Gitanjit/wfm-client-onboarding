@@ -1,5 +1,5 @@
 {
-  "artifact_quality": 0.6364,
+  "artifact_quality": 0.4545,
   "checks": {
     "aq_agents_scheduled": {
       "pass": true,
@@ -21,12 +21,16 @@
           "configs/defaults.yaml",
           "configs/fabrikam.yaml",
           "configs/northwind.yaml",
+          "data/agents/northwind.csv",
+          "data/northwind/README.txt",
           "docs/ARCHITECTURE.md",
           "docs/CHANGELOG.md",
+          "docs/NORTHWIND_SOW.md",
           "docs/northwind_runbook_notes.md",
           "tests_unit/test_northwind.py",
           "tests_unit/test_staffing.py",
           "wfm/cli.py",
+          "wfm/config.py",
           "wfm/evaluate/metrics.py",
           "wfm/ingest/loader.py",
           "wfm/runbook.py",
@@ -51,24 +55,24 @@
       }
     },
     "aq_intervals_in_week": {
-      "pass": true,
+      "pass": false,
       "value": {
         "grader": 338,
-        "runbook": 338.0
+        "runbook": 334.0
       }
     },
     "aq_required_hours_total": {
       "pass": false,
       "value": {
         "grader": 1115.5,
-        "runbook": 809.5
+        "runbook": 803.0
       }
     },
     "aq_scheduled_hours_total": {
-      "pass": true,
+      "pass": false,
       "value": {
         "grader": 1224.0,
-        "runbook": 1224.0
+        "runbook": 1252.0
       }
     },
     "aq_sla_attainment_priority": {
@@ -261,9 +265,9 @@
       "pass": true,
       "value": {
         "agent": 1224.0,
-        "bound": 1751.3,
+        "bound": 1684.4,
         "ratio": 1.0973,
-        "reference": 1704.0,
+        "reference": 1656.0,
         "required": 1115.5
       }
     },
@@ -311,17 +315,17 @@
       "value": {
         "agent": 0.0,
         "floor": 0.95,
-        "min_if_short": 0.8429,
-        "reference": 0.8929
+        "min_if_short": 0.7536,
+        "reference": 0.8036
       }
     },
     "fc_2026-W45_cost": {
       "pass": true,
       "value": {
         "agent": 1236.0,
-        "bound": 1745.8,
+        "bound": 1679.1,
         "ratio": 1.1115,
-        "reference": 1668.0,
+        "reference": 1636.0,
         "required": 1112.0
       }
     },
@@ -369,17 +373,17 @@
       "value": {
         "agent": 0.0,
         "floor": 0.95,
-        "min_if_short": 0.8548,
-        "reference": 0.9048
+        "min_if_short": 0.7714,
+        "reference": 0.8214
       }
     },
     "fc_2027-W10_cost": {
       "pass": true,
       "value": {
         "agent": 1252.0,
-        "bound": 1745.8,
+        "bound": 1679.1,
         "ratio": 1.1259,
-        "reference": 1680.0,
+        "reference": 1654.0,
         "required": 1112.0
       }
     },
@@ -427,8 +431,8 @@
       "value": {
         "agent": 0.0,
         "floor": 0.95,
-        "min_if_short": 0.8369,
-        "reference": 0.8869
+        "min_if_short": 0.7952,
+        "reference": 0.8452
       }
     },
     "preflight_wfm_help": true,
@@ -545,6 +549,6 @@
   },
   "constraint_satisfaction": 0.6667,
   "functional_correctness": 0.6667,
-  "overall": 0.7174,
+  "overall": 0.672,
   "regression": 0.9
 }

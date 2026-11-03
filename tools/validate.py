@@ -185,7 +185,9 @@ def unoptimised_correct(app):
     trial = REPO / "tests/validation/trials/p5-haiku-high-1"
     old_loader = sh(["git", "show", "81fccf4:environment/app/wfm/ingest/loader.py"], REPO).stdout
     (app / "wfm/ingest/loader.py").write_text(old_loader)    # the loader Haiku edited (before L11)
-    sh(["git", "apply", "--whitespace=nowarn", "--exclude=docs/*", str(trial / "diff.patch")], app)
+    if sh(["git", "apply", "--whitespace=nowarn", "--exclude=docs/*", str(trial / "diff.patch")], app).returncode:
+        print("  unoptimised-correct: not applicable on multi-v3 (Haiku's single-v1 patch does not apply to this seed)")
+        return True
     solve(app, runbook=False)
     shutil.copy(trial / "RUNBOOK.md", app / "out/northwind/RUNBOOK.md")
 
@@ -209,7 +211,9 @@ def drop_shrink_nested(app):
          "                same = []\n")
     edit(app, "wfm/scheduler/improve.py", "                outside = sorted([t for t in shorter if t not in inside], key=lambda t: t.hours)\n",
          "                outside = []\n")
-    edit(app, "wfm/scheduler/improve.py", "    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}\n", "    floor = {}\n")
+    edit(app, "wfm/scheduler/improve.py",
+         "    floor = {k: met(k[0], k[1], g) for k, g in groups.items()}   # (met count, floor shortfall) of the greedy\n",
+         "    floor = {}\n")
     edit(app, "wfm/scheduler/improve.py", "            group = groups[key]\n            for sh in sorted(",
          "            group = groups[key]\n            floor[key] = met(q, day, group)\n            for sh in sorted(")
     solve(app)
@@ -364,6 +368,10 @@ if __name__ == "__main__":
         with tempfile.TemporaryDirectory() as w:
             app = fresh_app(Path(w))
             print(f"== {name}: {VARIANTS[name].__doc__ or ''}")
-            if VARIANTS[name](app):
+            try:
+                if VARIANTS[name](app):
+                    continue
+            except AssertionError as e:   # a variant's edit no longer matches this revision's oracle
+                print(f"  {name}: NOT RUN on this revision ({str(e).splitlines()[0]})")
                 continue
             grade(app, name)

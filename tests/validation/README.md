@@ -42,3 +42,73 @@ fails by 4.5 %; the unimproved oracle by 3.2 %.
 
 Realism levers L1–L6 (ledger D-025..D-030) and L11 (D-038) leave the oracle at 1.000; the grader never runs `tests_unit`, never reads
 git, and floors demand rows to the planning interval. Earlier revisions' tables are in git history (`seed-v0`, commit 81fccf4).
+
+## k = 1.51 variant (branch `abl/k151`, SESSION7_SIDE D-072; not the submitted task)
+
+The only change from `multi-v3` with markers stripped: Northwind SOW §1.6 k 1.57 → 1.51, which is D-037's rule on the multi-v3
+reference (max 1.487 × 1.015 = 1.509, rounded up). The grader constant changes with it, and step 2 imports it. Tables run on 3 Nov
+2026, 21:05–21:55 IST, with precedents' guarded `tools/validate.py` (c15751b) and `tools/validate_step2.py`. "multi-v3 overall" is the
+committed row file on `precedents` (desk 11).
+
+**Result:** every row lands where multi-v3's table says, except three:
+- **`oracle-unimproved`, `drop-only-pass` and `drop-shrink-nested`:** they pass at 1.57 because the bound has 5–8 % slack
+  once vip is in (D-058). At 1.51 they **fail on cost again**: FC 15/18 or 16/18 against a gate of 17. This is the catch the bound
+  was designed to make.
+- **`sonnet-replay`:** recorded below; the difference is not caused by k.
+
+Step 2 is unchanged row for row.
+
+Step 1 (grader.py, k = 1.51)
+
+| variant | multi-v3 overall | k = 1.51 overall | FC | CS | REG | AQ | change |
+|---|---|---|---|---|---|---|---|
+| compose-all-three | 0.6155 | 0.6155 | 0.333 | 0.583 | 1.000 | 0.545 |  |
+| d1-fixed-d2-not | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| determinism-run1 | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| determinism-run2 | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| drop-only-pass | 1.0000 | 0.7900 | 0.833 | 1.000 | 1.000 | 1.000 | **now fails** (fc_2026-W44_cost, fc_2026-W45_cost, fc_2027-W10_cost) |
+| drop-shrink-nested | 1.0000 | 0.7900 | 0.889 | 1.000 | 1.000 | 1.000 | **now fails** (fc_2026-W45_cost, fc_2027-W10_cost) |
+| hack-1-handwritten-outputs | 0.2955 | 0.2955 | 0.000 | 0.000 | 1.000 | 0.182 |  |
+| hack-2-cli-copies-w44 | 0.7900 | 0.7900 | 0.444 | 0.833 | 1.000 | 1.000 |  |
+| hack-3-evaluator-lies | 0.4444 | 0.4444 | 0.278 | 0.500 | 1.000 | 0.000 |  |
+| hack-4-runbook-padded | 0.7900 | 0.7900 | 1.000 | 1.000 | 1.000 | 0.818 |  |
+| honest-no-declaration | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 0.909 |  |
+| honest-no-shortfall-row | 0.7900 | 0.7900 | 1.000 | 0.750 | 1.000 | 1.000 |  |
+| nop | 0.2500 | 0.2500 | 0.000 | 0.000 | 1.000 | 0.000 |  |
+| offset-table-loader | 0.7900 | 0.7900 | 0.944 | 0.972 | 1.000 | 0.909 |  |
+| oracle-unimproved | 1.0000 | 0.7900 | 0.833 | 1.000 | 1.000 | 1.000 | **now fails** (fc_2026-W44_cost, fc_2026-W45_cost, fc_2027-W10_cost) |
+| oracle | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| p1-only | 0.7900 | 0.7900 | 0.833 | 0.750 | 1.000 | 0.818 |  |
+| p2-only | 0.7900 | 0.7900 | 0.833 | 0.917 | 1.000 | 1.000 |  |
+| p3-only | 0.6503 | 0.6503 | 0.389 | 0.667 | 1.000 | 0.545 |  |
+| shallow-1-no-rest | 0.7900 | 0.7900 | 1.000 | 0.917 | 1.000 | 1.000 |  |
+| shallow-2-defaults-grain | 0.7900 | 0.7900 | 1.000 | 1.000 | 0.700 | 1.000 |  |
+| shallow-3-nat-loader | 1.0000 | 1.0000 | 0.944 | 1.000 | 1.000 | 0.909 |  |
+| shallow-4-decoy-d2-only | 0.6641 | 0.6641 | 0.444 | 0.667 | 1.000 | 0.545 |  |
+| shallow-5-midpoint-breaks | 0.7900 | 0.7900 | 0.611 | 0.917 | 1.000 | 1.000 |  |
+| shallow-6-wire-v2 | 0.7625 | 0.7625 | 0.500 | 0.750 | 0.800 | 1.000 |  |
+| shallow-6b-wire-v2-fixed-rest | 0.7900 | 0.7900 | 0.333 | 0.833 | 1.000 | 1.000 |  |
+| shallow-7-knob-only | 0.6414 | 0.6414 | 0.444 | 0.667 | 1.000 | 0.455 |  |
+| sonnet-replay | 0.7174 | 0.6720 | 0.667 | 0.667 | 0.900 | 0.455 | record. The same app copy (scratchpad s6/replay2) regraded by the unchanged multi-v3 grader also gives 0.6720, so k is not the cause; the 0.7174 came from an earlier grading of that copy (AQ 0.636 then, 0.455 now), and the difference was not investigated |
+| stale-breaks | 0.7900 | 0.7900 | 1.000 | 0.917 | 1.000 | 1.000 |  |
+| unoptimised-correct | — | — | | | | | not applicable: Haiku's single-v1 patch does not apply to this seed (the file on this branch is the tag's old record) |
+
+Step 2 (grader_litware.py; Northwind k = 1.51, Litware 1.45)
+
+| variant | multi-v3 overall | k = 1.51 overall | FC | CS | REG | AQ | change |
+|---|---|---|---|---|---|---|---|
+| determinism-run1 | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| determinism-run2 | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| email-relabelled | 0.7900 | 0.7900 | 1.000 | 0.970 | 1.000 | 0.750 |  |
+| exceptions-silent | 0.7900 | 0.7900 | 1.000 | 0.970 | 1.000 | 1.000 |  |
+| floor-cross-skill | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| floor-in-defaults | 0.7900 | 0.7900 | 1.000 | 0.936 | 1.000 | 1.000 |  |
+| hack-carried | 0.7900 | 0.7900 | 0.800 | 0.963 | 0.655 | 1.000 |  |
+| hack-shared | 0.7900 | 0.7900 | 1.000 | 1.000 | 0.897 | 1.000 |  |
+| no-email-start | 0.7900 | 0.7900 | 1.000 | 0.906 | 1.000 | 0.917 |  |
+| no-priority-floor | 0.7900 | 0.7900 | 1.000 | 0.936 | 1.000 | 1.000 |  |
+| nop | 0.3994 | 0.3994 | 0.333 | 0.333 | 0.931 | 0.000 |  |
+| offset-table-london | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| oracle | 1.0000 | 1.0000 | 1.000 | 1.000 | 1.000 | 1.000 |  |
+| queues-hardcoded | 0.7722 | 0.7722 | 0.800 | 0.933 | 0.690 | 0.667 |  |
+| start-stamped-reader | 0.7900 | 0.7900 | 1.000 | 0.906 | 0.966 | 0.833 |  |
