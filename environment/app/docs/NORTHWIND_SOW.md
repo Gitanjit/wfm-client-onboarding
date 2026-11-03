@@ -27,7 +27,7 @@ Effective from ISO week 2026-W44. For the WFM service team.
      offset on every row. See `data/northwind/README.txt`.
 
 1.6  Schedule efficiency and attainment. In every planning week, total scheduled agent-hours shall not
-     exceed 1.57 × the week's required agent-hours. Required agent-hours are the agents required under
+     exceed 1.51 × the week's required agent-hours. Required agent-hours are the agents required under
      §1.2–§1.3, summed over every 30-minute interval of the week and all queues, times 0.5 h. Weekly
      attainment (the fraction of operating intervals meeting §1.2) shall be at least 0.95 on each queue.
 
