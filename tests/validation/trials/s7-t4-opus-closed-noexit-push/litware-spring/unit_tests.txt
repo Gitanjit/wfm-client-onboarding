@@ -1,0 +1,17 @@
+........................................................................ [ 78%]
+....................                                                     [100%]
+=============================== warnings summary ===============================
+tests_unit/test_northwind.py::test_fall_back_week_has_338_intervals_and_three_queues
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplbvfcnzj/app/wfm/scheduler/week.py:307: RuntimeWarning: divide by zero encountered in matmul
+    hrs = combos @ H
+
+tests_unit/test_northwind.py::test_fall_back_week_has_338_intervals_and_three_queues
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplbvfcnzj/app/wfm/scheduler/week.py:307: RuntimeWarning: overflow encountered in matmul
+    hrs = combos @ H
+
+tests_unit/test_northwind.py::test_fall_back_week_has_338_intervals_and_three_queues
+  /private/var/folders/zl/w4jk04252f3bsw05zxx44l400000gn/T/tmplbvfcnzj/app/wfm/scheduler/week.py:307: RuntimeWarning: invalid value encountered in matmul
+    hrs = combos @ H
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+92 passed, 3 warnings in 10.84s
