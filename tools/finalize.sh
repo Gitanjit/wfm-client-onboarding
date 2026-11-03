@@ -54,5 +54,5 @@ for p in jobs/x .env x.key dist/x; do git check-ignore -q "$p" || { echo "FAIL: 
 mkdir -p dist; Z="dist/wfm-client-onboarding-$(git rev-parse --short HEAD).zip"
 git archive --format=zip --prefix=wfm-client-onboarding/ -o "$Z" HEAD
 ! unzip -Z1 "$Z" | grep -E '(^|/)(jobs|\.secrets)/|\.env$|\.key$' || { echo "FAIL: excluded path in zip"; exit 1; }
-echo "zip: $Z ($(unzip -Z1 "$Z" | wc -l | tr -d ' ') entries, $(du -h "$Z" | cut -f1))"
+echo "zip: $Z ($(unzip -Z1 "$Z" | wc -l | tr -d ' ') entries, $(wc -c < "$Z" | tr -d ' ') bytes, sha256 $(shasum -a 256 "$Z" | cut -c1-12))"
 echo "next: git tag ${TAG:-multi-v3-final} $(git rev-parse --short HEAD)"
