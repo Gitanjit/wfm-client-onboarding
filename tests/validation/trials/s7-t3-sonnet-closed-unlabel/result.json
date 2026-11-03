@@ -1,0 +1,192 @@
+{
+    "id": "6a25977e-b4f6-45cf-aa93-eca5c5055870",
+    "task_name": "collinear-candidate/wfm-client-onboarding",
+    "trial_name": "wfm-client-onboarding__Nu6C4hg",
+    "trial_uri": "file:///private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/s7/jobs/s7-t3-sonnet-closed-unlabel/wfm-client-onboarding__Nu6C4hg",
+    "task_id": {
+        "path": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/runcopy/abl-closed-unlabel/wfm-client-onboarding"
+    },
+    "source": null,
+    "task_checksum": "b6e99b24974092345cd39430cd4a2291eab86c32c73f4dcfb590714f5b2f2d99",
+    "config": {
+        "task": {
+            "path": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/runcopy/abl-closed-unlabel/wfm-client-onboarding",
+            "git_url": null,
+            "git_commit_id": null,
+            "name": null,
+            "ref": null,
+            "overwrite": false,
+            "download_dir": null,
+            "source": null
+        },
+        "trial_name": "wfm-client-onboarding__Nu6C4hg",
+        "trials_dir": "/private/tmp/claude-501/-Users-gitanjit-dev-coll-task/eb1cf793-cbc5-40c8-8e26-c7b0ad8a8652/scratchpad/s7/jobs/s7-t3-sonnet-closed-unlabel",
+        "install_only": false,
+        "timeout_multiplier": 1.0,
+        "agent_timeout_multiplier": null,
+        "verifier_timeout_multiplier": null,
+        "agent_setup_timeout_multiplier": null,
+        "environment_build_timeout_multiplier": null,
+        "agent": {
+            "name": "claude-code",
+            "import_path": null,
+            "model_name": "anthropic/claude-sonnet-5-5",
+            "base_url": null,
+            "model_api_key_name": null,
+            "model_api_format": null,
+            "skip_model_parsing": false,
+            "n_concurrent": null,
+            "concurrency_group": null,
+            "skills": [],
+            "override_timeout_sec": null,
+            "override_setup_timeout_sec": null,
+            "max_timeout_sec": null,
+            "resume_trajectory": false,
+            "load_trajectory": null,
+            "extra_allowed_hosts": [],
+            "kwargs": {
+                "max_budget_usd": 5,
+                "disable_web_search": true,
+                "reasoning_effort": "high"
+            },
+            "mcp_servers": []
+        },
+        "user_agent": null,
+        "environment": {
+            "type": "docker",
+            "import_path": null,
+            "force_build": false,
+            "delete": true,
+            "stream": false,
+            "cpu_enforcement_policy": "auto",
+            "memory_enforcement_policy": "auto",
+            "override_cpus": null,
+            "override_memory_mb": null,
+            "override_storage_mb": null,
+            "override_gpus": null,
+            "override_tpu": null,
+            "mounts": null,
+            "extra_docker_compose": [],
+            "kwargs": {},
+            "extra_allowed_hosts": []
+        },
+        "verifier": {
+            "override_timeout_sec": null,
+            "max_timeout_sec": null,
+            "disable": false
+        },
+        "artifacts": [],
+        "extra_instruction_paths": [],
+        "extra_instructions": [],
+        "job_id": "0abb6787-f752-48b8-8472-3840e0466059",
+        "source_trial": null
+    },
+    "agent_info": {
+        "name": "claude-code",
+        "version": "2.1.317",
+        "model_info": {
+            "name": "claude-sonnet-5-5",
+            "provider": "anthropic"
+        }
+    },
+    "agent_result": null,
+    "verifier_result": {
+        "rewards": {
+            "constraint_satisfaction": 1.0,
+            "functional_correctness": 1.0,
+            "artifact_quality": 1.0,
+            "regression": 1.0,
+            "overall": 1.0
+        }
+    },
+    "verifier_environment_mode": null,
+    "exception_info": null,
+    "started_at": "2026-11-03T18:22:57.349688Z",
+    "finished_at": "2026-11-03T19:03:55.083667Z",
+    "environment_setup": {
+        "started_at": "2026-11-03T18:22:57.512587Z",
+        "finished_at": "2026-11-03T18:23:01.168589Z"
+    },
+    "agent_setup": {
+        "started_at": "2026-11-03T18:23:01.168674Z",
+        "finished_at": "2026-11-03T18:30:56.631651Z"
+    },
+    "agent_execution": null,
+    "verifier": null,
+    "step_results": [
+        {
+            "step_name": "northwind-golive",
+            "agent_result": {
+                "n_input_tokens": 5118680,
+                "n_cache_tokens": 4975764,
+                "n_output_tokens": 86967,
+                "cost_usd": 1.7244874,
+                "model_usage": {
+                    "claude-sonnet-5-5": {
+                        "n_input_tokens": 5118680,
+                        "n_cache_tokens": 4975764,
+                        "n_output_tokens": 86967,
+                        "cost_usd": 1.7244873999999997
+                    }
+                },
+                "rollout_details": null,
+                "metadata": null
+            },
+            "verifier_result": {
+                "rewards": {
+                    "artifact_quality": 1.0,
+                    "constraint_satisfaction": 1.0,
+                    "functional_correctness": 1.0,
+                    "overall": 1.0,
+                    "regression": 1.0
+                }
+            },
+            "exception_info": null,
+            "agent_execution": {
+                "started_at": "2026-11-03T18:30:56.785807Z",
+                "finished_at": "2026-11-03T18:48:45.603066Z"
+            },
+            "verifier": {
+                "started_at": "2026-11-03T18:48:46.632134Z",
+                "finished_at": "2026-11-03T18:49:53.555958Z"
+            }
+        },
+        {
+            "step_name": "litware-spring",
+            "agent_result": {
+                "n_input_tokens": 5462102,
+                "n_cache_tokens": 5321880,
+                "n_output_tokens": 63500,
+                "cost_usd": 1.517691,
+                "model_usage": {
+                    "claude-sonnet-5-5": {
+                        "n_input_tokens": 5462102,
+                        "n_cache_tokens": 5321880,
+                        "n_output_tokens": 63500,
+                        "cost_usd": 1.517691
+                    }
+                },
+                "rollout_details": null,
+                "metadata": null
+            },
+            "verifier_result": {
+                "rewards": {
+                    "artifact_quality": 1.0,
+                    "constraint_satisfaction": 1.0,
+                    "functional_correctness": 1.0,
+                    "overall": 1.0,
+                    "regression": 1.0
+                }
+            },
+            "exception_info": null,
+            "agent_execution": {
+                "started_at": "2026-11-03T18:49:53.752504Z",
+                "finished_at": "2026-11-03T19:02:30.726136Z"
+            },
+            "verifier": {
+                "started_at": "2026-11-03T19:02:42.834141Z",
+                "finished_at": "2026-11-03T19:03:55.078174Z"
+            }
+        }
+    ]
+}

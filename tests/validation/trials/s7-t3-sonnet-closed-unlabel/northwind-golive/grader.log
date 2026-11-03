@@ -1,0 +1,7 @@
+== summary ==
+  functional_correctness   1.0000  (gate 0.9444444444444444)
+  constraint_satisfaction  1.0000  (gate 1.0)
+  regression               1.0000  (gate 1.0)
+  artifact_quality         1.0000  (gate 0.9090909090909091)
+  overall                  1.0000
+  failed checks: none
