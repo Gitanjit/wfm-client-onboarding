@@ -1,6 +1,6 @@
 # wfm-client-onboarding — RUN_REPORT
 
-**Author:** Gitanjit Medhi · **Task:** `collinear-candidate/wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
+**Author:** Gitanjit Medhi · **Task:** `wfm-client-onboarding` · **Date:** 3 Nov 2026 ·
 **Submitted revision:** <<G: `multi-v1` (two steps, recommended) or `single-v1`>>
 
 One line: onboard a new contact-centre client (Northwind) into a small workforce-management service.
